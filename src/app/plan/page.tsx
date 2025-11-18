@@ -43,13 +43,6 @@ export default function PlanPage() {
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    // Open editor by default if there's no plan
-    if (!isPlanLoading && !activePlan) {
-      setIsEditorOpen(true);
-    }
-  }, [isPlanLoading, activePlan]);
-
 
   useEffect(() => {
     const isOverallLoading = isUserLoading || isPlanLoading;
