@@ -2,7 +2,7 @@
 // src/components/pro/plan-editor.tsx
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { type Room } from '@/types/room';
@@ -11,10 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, Rocket, Target, Weight, CalendarIcon, FolderDown, DownloadCloud, PlayCircle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, runTransaction } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -27,7 +25,6 @@ import { Calendar } from '../ui/calendar';
 import { ptBR } from 'date-fns/locale';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
 import type { GeneratedPlan } from '@/lib/ai-schemas';
-import { onProfileUpdate } from '@/firebase/provider';
 
 const formSchema = z.object({
   calorieGoal: z.coerce.number().positive('A meta de calorias deve ser positiva.'),
@@ -105,7 +102,15 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
       if (!generatedPlan || !userProfile) return;
       setIsSaving(true);
       
-      const newPlan = { ...generatedPlan, name: `Plano ${slotIndex + 1}` };
+      const newPlan: ActivePlan = {
+        name: `Plano ${slotIndex + 1}`,
+        calorieGoal: generatedPlan.calorieGoal,
+        proteinGoal: generatedPlan.proteinGoal,
+        hydrationGoal: generatedPlan.hydrationGoal,
+        meals: generatedPlan.meals,
+        createdAt: serverTimestamp(),
+      };
+      
       const currentSavedPlans = userProfile.savedPlans || [];
       const newSavedPlans = [...currentSavedPlans];
       
@@ -363,3 +368,5 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
     </div>
   );
 }
+
+    

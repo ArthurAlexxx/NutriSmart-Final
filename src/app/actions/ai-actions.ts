@@ -95,45 +95,65 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
   const prompt = `
-    Você é um Nutricionista Esportivo Avançado e Especialista em Planejamento Alimentar de Alta Performance. Sua função é gerar um plano alimentar diário extremamente preciso, realista, funcional e otimizado para o objetivo do usuário.
+    Você é uma ENGINE de software nutricional. Sua única função é receber dados de um usuário e retornar um objeto JSON estrito com um plano alimentar diário, sem qualquer texto, explicação ou formatação adicional.
 
-    DADOS DO USUÁRIO:
-    - Meta Calórica: ${input.calorieGoal} kcal
-    - Meta de Proteína: ${input.proteinGoal} g
-    - Meta de Hidratação: ${input.hydrationGoal} ml
+    DADOS DO USUÁRIO PARA O PLANO:
+    - Meta Calórica Diária: ${input.calorieGoal} kcal
+    - Meta de Proteína Diária: ${input.proteinGoal} g
+    - Meta de Hidratação Diária: ${input.hydrationGoal} ml
     - Peso Atual: ${input.weight || 'Não informado'} kg
     - Peso Meta: ${input.targetWeight || 'Não informado'} kg
     - Data Meta: ${input.targetDate || 'Não informada'}
 
-    INSTRUÇÕES FUNDAMENTAIS:
+    REGRAS ESTRITAS DE PROCESSAMENTO:
+    1.  **CRIAR PLANO:** Gere um plano com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil. As quantidades devem ser precisas (ex: 120g, 1 unidade, 1 colher de sopa).
+    2.  **AJUSTAR METAS:** Os valores finais de 'calorieGoal' e 'proteinGoal' no JSON podem ter uma variação de até 5% para mais ou para menos em relação às metas do usuário para garantir um plano funcional e realista. A 'hydrationGoal' deve ser mantida exatamente igual.
+    3.  **NOME DAS REFEIÇÕES:** Use nomes padrão: 'Café da Manhã', 'Lanche da Manhã', 'Almoço', 'Lanche da Tarde', 'Jantar', 'Ceia'.
+    4.  **HORÁRIOS:** Atribua horários lógicos para cada refeição no formato "HH:MM".
+    5.  **SAÍDA FINAL:** A saída deve ser APENAS o código JSON. NENHUMA palavra antes ou depois.
 
-    1. **Estrutura do Plano**
-       - Gerar obrigatoriamente 5 a 6 refeições: café da manhã, lanche da manhã, almoço, lanche da tarde, jantar e, opcionalmente, ceia.
+    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    {
+      "calorieGoal": 1985,
+      "proteinGoal": 155,
+      "hydrationGoal": 2500,
+      "meals": [
+        {
+          "name": "Café da Manhã",
+          "time": "07:30",
+          "items": "2 ovos mexidos, 1 fatia de pão integral com abacate, 1/2 mamão papaia."
+        },
+        {
+          "name": "Lanche da Manhã",
+          "time": "10:00",
+          "items": "1 pote de iogurte natural (170g) com 1 colher de sopa de aveia."
+        },
+        {
+          "name": "Almoço",
+          "time": "13:00",
+          "items": "150g de peito de frango grelhado, 100g de arroz integral, salada de folhas verdes à vontade com 1 colher de sopa de azeite."
+        },
+        {
+          "name": "Lanche da Tarde",
+          "time": "16:00",
+          "items": "1 maçã, 30g de mix de castanhas (nozes, amêndoas)."
+        },
+        {
+          "name": "Jantar",
+          "time": "19:30",
+          "items": "Omelete com 2 ovos e queijo minas, salada de tomate e pepino."
+        }
+      ]
+    }
 
-    2. **Adaptação Inteligente das Metas**
-       - Permite-se oscilar até 5% nas metas de calorias e proteínas para ajustar o plano de forma funcional.
-       - A meta de hidratação deve ser mantida exatamente.
-
-    3. **Refeições Realistas e Brasileiras**
-       - Utilize alimentos comuns no Brasil, com medidas precisas (ex.: 120g, 1 colher de sopa, 1 unidade).
-       - O preparo e combinações devem ser viáveis no dia a dia.
-
-    4. **Distribuição Nutricional Estratégica**
-       - Distribua calorias e macros com lógica esportiva e nutricional.
-       - Evite cargas concentradas em apenas uma refeição.
-
-    5. **FORMATO OBRIGATÓRIO**
-       - Responda exclusivamente com um JSON válido que siga estritamente o schema:
-         ${JSON.stringify(PlanSchema.shape)}
-
-    Nenhum texto, explicação ou formatação adicional é permitido além do JSON.
+    A RESPOSTA DEVE SER APENAS O CÓDIGO JSON. NENHUM TEXTO ADICIONAL.
   `;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "system", content: prompt }],
     response_format: { type: "json_object" },
-    temperature: 0.8,
+    temperature: 0.7,
   });
 
   const resultText = response.choices[0].message.content;
@@ -143,22 +163,29 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   
   try {
     const planJson = JSON.parse(resultText);
-    const dataToValidate = planJson.plan || planJson;
-    
-    // Correctly use the comprehensive GeneratedPlan schema for validation
-    const validatedPlan = z.object({
-      calorieGoal: z.number(),
-      proteinGoal: z.number(),
-      hydrationGoal: z.number(),
-      meals: z.array(z.object({
-        name: z.string(),
-        time: z.string(),
-        items: z.string(),
-      })),
-    }).parse(dataToValidate);
 
-    return validatedPlan as GeneratedPlan;
-  } catch (error) {
+    // Try validating the root object first, then try the nested 'plan' object.
+    const validationResult = PlanSchema.safeParse(planJson);
+    if (validationResult.success) {
+        return validationResult.data as GeneratedPlan;
+    }
+
+    if (planJson.plan) {
+        const nestedValidationResult = PlanSchema.safeParse(planJson.plan);
+        if (nestedValidationResult.success) {
+            return nestedValidationResult.data as GeneratedPlan;
+        }
+    }
+
+    // If both fail, throw a detailed error.
+    console.error("Zod validation failed for root and nested 'plan' objects.");
+    console.error("Received JSON:", resultText);
+    throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
+
+  } catch (error: any) {
+     if (error.message.includes('formato de plano')) {
+        throw error;
+     }
      console.error("Erro ao fazer parse do JSON do plano ou validar com Zod:", error);
      console.error("JSON recebido da OpenAI:", resultText);
      throw new Error("A resposta da IA não estava no formato de plano esperado.");
@@ -248,3 +275,5 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
+
+    
