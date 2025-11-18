@@ -1,5 +1,4 @@
 
-// src/components/pro/plan-editor.tsx
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -15,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Loader2, User, Shield, Footprints, ChevronsRight, Sparkles, Wand2, ChevronsLeft, Save } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
@@ -182,7 +181,7 @@ const ResultStep = ({ plan }: { plan: GeneratedPlan }) => {
 };
 
 
-export default function PlanEditor({ userProfile }: { userProfile: UserProfile; }) {
+export default function PlanEditor({ userProfile, activePlan }: { userProfile: UserProfile; activePlan: ActivePlan | null }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [step, setStep] = useState<Step>('goals');
@@ -245,17 +244,20 @@ export default function PlanEditor({ userProfile }: { userProfile: UserProfile; 
     setIsSaving(true);
     try {
       const userRef = doc(firestore, 'users', userProfile.id);
+      const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
       
+      // First, update the user's profile with the goals/preferences used for generation
       const profileData = form.getValues();
       await updateDoc(userRef, { ...profileData });
       
+      // Then, save the generated plan to the subcollection
       const newActivePlan: ActivePlan = {
           name: 'Plano Gerado por IA',
           ...generatedPlan,
           createdAt: serverTimestamp(),
       };
 
-      await updateDoc(userRef, { activePlan: newActivePlan });
+      await setDoc(planRef, newActivePlan);
 
       toast({
           title: "Plano Salvo!",

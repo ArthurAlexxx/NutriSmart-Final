@@ -3,11 +3,10 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { type Room } from '@/types/room';
-import { type UserProfile } from '@/types/user';
-import { Droplet, Flame, Utensils, Target, CalendarX, Info, Clock, Soup, Rocket } from 'lucide-react';
+import { type ActivePlan, type MealPlanItem } from '@/types/user';
+import { Droplet, Flame, Utensils, Target, Soup, Clock, Rocket } from 'lucide-react';
 
-const PlanMealItem = ({ meal }: { meal: Room['activePlan']['meals'][0] }) => (
+const PlanMealItem = ({ meal }: { meal: MealPlanItem }) => (
     <div className="rounded-2xl border p-4 space-y-4 relative bg-card shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             <div>
@@ -46,37 +45,23 @@ const EmptyPlanState = () => (
             <Soup className="h-12 w-12 text-primary mx-auto mb-4" />
             <CardTitle className="text-2xl">Nenhum Plano Alimentar Ativo</CardTitle>
             <CardDescription className="mt-2 max-w-md mx-auto">
-                No momento, você não tem um plano alimentar ativo.
+                No momento, você não tem um plano alimentar ativo. Use o assistente de IA para gerar um.
             </CardDescription>
         </CardHeader>
-        <CardContent className="p-8 pt-0 text-center">
-             <div className="bg-secondary/50 border-l-4 border-primary/50 text-left p-4 rounded-r-lg">
-                <div className="flex">
-                    <div className="py-1"><Info className="h-5 w-5 text-primary mr-3"/></div>
-                    <div>
-                        <p className="font-semibold text-foreground">Dica:</p>
-                        <p className="text-sm text-muted-foreground">Use o assistente "Meu Plano (IA)" para gerar um novo plano personalizado ou, se estiver em acompanhamento, peça para seu nutricionista criar um para você.</p>
-                    </div>
-                </div>
-            </div>
-        </CardContent>
     </Card>
 );
 
 interface MealPlanViewProps {
-  room: Room | null;
-  userProfile?: UserProfile | null;
+  plan: ActivePlan | null;
 }
 
-export default function MealPlanView({ room, userProfile }: MealPlanViewProps) {
-  const activePlan = room?.activePlan || userProfile?.activePlan;
-
-  if (!activePlan || !activePlan.calorieGoal) {
+export default function MealPlanView({ plan }: MealPlanViewProps) {
+  
+  if (!plan || !plan.calorieGoal) {
     return <EmptyPlanState />;
   }
   
-  const proteinGoal = activePlan.proteinGoal || Math.round((activePlan.calorieGoal * 0.35) / 4);
-
+  const proteinGoal = plan.proteinGoal || Math.round((plan.calorieGoal * 0.35) / 4);
 
   return (
     <div className='animate-fade-in space-y-8 max-w-4xl mx-auto'>
@@ -84,9 +69,9 @@ export default function MealPlanView({ room, userProfile }: MealPlanViewProps) {
             <h2 className='text-2xl font-bold text-foreground mb-2 flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias do Plano Ativo</h2>
             <p className='text-muted-foreground mb-4'>Estas são as metas definidas para o plano que está ativo no momento.</p>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <InfoCard icon={Flame} title="Calorias" value={activePlan.calorieGoal} unit="kcal" color="bg-orange-400" />
+                <InfoCard icon={Flame} title="Calorias" value={plan.calorieGoal} unit="kcal" color="bg-orange-400" />
                 <InfoCard icon={Rocket} title="Proteínas" value={proteinGoal} unit="g" color="bg-blue-400" />
-                <InfoCard icon={Droplet} title="Hidratação" value={activePlan.hydrationGoal / 1000} unit="L" color="bg-sky-400" />
+                <InfoCard icon={Droplet} title="Hidratação" value={plan.hydrationGoal / 1000} unit="L" color="bg-sky-400" />
             </div>
         </section>
 
@@ -94,8 +79,8 @@ export default function MealPlanView({ room, userProfile }: MealPlanViewProps) {
             <h2 className='text-2xl font-bold text-foreground mb-2 flex items-center gap-2 font-heading'><Utensils className='h-6 w-6 text-primary' /> Refeições</h2>
             <p className='text-muted-foreground mb-4'>Siga este guia de refeições para atingir suas metas.</p>
              <div className='space-y-4'>
-                 {activePlan.meals && activePlan.meals.length > 0 ? (
-                    activePlan.meals.map((meal, index) => (
+                 {plan.meals && plan.meals.length > 0 ? (
+                    plan.meals.map((meal, index) => (
                         <PlanMealItem key={meal.id || index} meal={meal} />
                     ))
                  ) : (

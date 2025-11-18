@@ -2,16 +2,16 @@
 // src/app/plan/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { doc, onSnapshot, Unsubscribe, updateDoc } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { doc, onSnapshot, Unsubscribe, collection, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { Loader2, BookCopy, BrainCircuit } from 'lucide-react';
-import type { UserProfile } from '@/types/user';
+import type { UserProfile, ActivePlan } from '@/types/user';
 import type { Room } from '@/types/room';
 import PlanEditor from '@/components/pro/plan-editor';
 import MealPlanView from '@/components/meal-plan-view';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,6 +26,14 @@ export default function PlanPage() {
   
   const isUnderProfessionalCare = !!userProfile?.patientRoomId;
 
+  // Hook to fetch the user's active plan from the subcollection
+  const activePlanRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid, 'plans', 'active');
+  }, [user, firestore]);
+  const { data: activePlan, isLoading: isPlanLoading } = useDoc<ActivePlan>(activePlanRef);
+
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
@@ -33,44 +41,34 @@ export default function PlanPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (isUserLoading || !user) {
-        setLoading(isUserLoading);
-        return;
-    }
+    // Combine loading states
+    const isOverallLoading = isUserLoading || isPlanLoading;
+    setLoading(isOverallLoading);
 
+    // Fetch room data only if the user is under professional care
     let unsubRoom: Unsubscribe | undefined;
-    if (userProfile?.patientRoomId && firestore) {
-      setLoading(true);
+    if (!isOverallLoading && userProfile?.patientRoomId && firestore) {
       const roomRef = doc(firestore, 'rooms', userProfile.patientRoomId);
       unsubRoom = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
           setRoom({ id: doc.id, ...doc.data() } as Room);
         } else {
-          if (user) {
-            const userRef = doc(firestore, 'users', user.uid);
-            updateDoc(userRef, { patientRoomId: null });
-          }
           setRoom(null);
         }
-        setLoading(false);
       }, (error) => {
         console.error("Error fetching room data:", error);
         toast({ title: "Erro ao carregar plano", description: "Não foi possível buscar os dados do seu nutricionista.", variant: "destructive" });
-        setLoading(false);
       });
-    } else {
-      // If user is not under professional care, we're done loading.
-      setLoading(false);
     }
-    
+
     return () => {
       if (unsubRoom) unsubRoom();
     };
 
-  }, [user, isUserLoading, userProfile, firestore, toast]);
+  }, [user, isUserLoading, isPlanLoading, userProfile, firestore, toast]);
   
 
-  if (isUserLoading || loading) {
+  if (loading) {
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="flex min-h-[calc(100vh-150px)] w-full flex-col items-center justify-center">
@@ -81,6 +79,11 @@ export default function PlanPage() {
     );
   }
   
+  // Determine which plan to display in the "Pro Plan" tab
+  const proPlan = room?.activePlan;
+  // The user's personal plan is always `activePlan` from the subcollection
+  const myPlan = activePlan;
+
   return (
     <AppLayout
         user={user}
@@ -111,10 +114,12 @@ export default function PlanPage() {
         </div>
 
         <TabsContent value="pro-plan">
-          <MealPlanView room={room} userProfile={userProfile} />
+          {/* Always pass the professional's plan to this view */}
+          <MealPlanView plan={proPlan} />
         </TabsContent>
-        <TabsContent value="my-plan">
-          {userProfile && <PlanEditor userProfile={userProfile} />}
+        <TabsContent value="my-plan" className="flex flex-col gap-8">
+            {userProfile && <PlanEditor userProfile={userProfile} activePlan={myPlan} />}
+            <MealPlanView plan={myPlan} />
         </TabsContent>
       </Tabs>
     </AppLayout>

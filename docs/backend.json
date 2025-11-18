@@ -20,15 +20,7 @@
         "targetDate": { "type": "string", "format": "date-time" },
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
-        "waterGoal": { "type": "number" },
-        "savedPlans": {
-          "type": "array",
-          "description": "An array to store up to 3 saved meal plans.",
-          "items": {
-            "$ref": "#/entities/ActivePlan"
-          },
-          "maxItems": 3
-        }
+        "waterGoal": { "type": "number" }
       },
       "required": ["id", "profileType", "fullName", "email", "createdAt"]
     },
@@ -119,6 +111,13 @@
         "definition": {
           "schema": { "$ref": "#/entities/UserProfile" },
           "description": "Stores all user profiles, whether patient or professional."
+        }
+      },
+      {
+        "path": "/users/{userId}/plans/{planId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ActivePlan" },
+          "description": "Stores user-specific meal plans, such as the active plan."
         }
       },
       {

@@ -47,8 +47,6 @@ export interface UserProfile {
     proteinGoal?: number;
     waterGoal?: number;
 
-    activePlan?: ActivePlan;
-
     subscriptionStatus?: 'premium' | 'free' | 'professional';
     photoAnalysisCount?: number;
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
