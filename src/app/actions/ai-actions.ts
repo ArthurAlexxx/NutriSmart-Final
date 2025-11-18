@@ -214,7 +214,7 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
 
     2. **Cálculo Nutricional Científico**
        - Calcule calorias, proteínas, carboidratos e gorduras utilizando referências nutricionais padrão.
-       - Os valores devem ser inteiros e o mais próximos possível da realidade.
+       - Os valores devem ser o mais próximos possível da realidade, podendo ser decimais para maior precisão.
 
     3. **Descrição da Refeição**
        - Crie uma descrição curta, objetiva e fiel ao conteúdo da foto.
