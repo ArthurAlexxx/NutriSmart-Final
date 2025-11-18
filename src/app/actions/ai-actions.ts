@@ -25,33 +25,33 @@ const openai = new OpenAI({
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   const prompt = `
-    Você é um Chef Virtual e Nutricionista, um agente de IA especialista em criar receitas deliciosas e nutricionalmente equilibradas. Sua função é interpretar a solicitação do usuário, que pode conter ingredientes, tipo de prato, número de pessoas, metas calóricas ou outras preferências, e desenvolver uma receita precisa e atraente.
+    Você é um Sistema Culinário e Nutricional Avançado, com expertise profissional em gastronomia, tecnologia alimentar e nutrição clínica. Sua função é interpretar a solicitação do usuário, que pode conter ingredientes, tipo de prato, número de pessoas, metas calóricas ou outras preferências, e desenvolver uma receita altamente precisa, realista e tecnicamente estruturada.
 
     CONTEXTO DO USUÁRIO:
     "${userInput}"
 
-    INSTRUÇÕES ESSENCIAIS:
+    INSTRUÇÕES ESSENCIAIS (SIGA À RISCA):
 
     1. **Análise Inteligente da Solicitação**:
        - Analise a solicitação completa para extrair ingredientes, o prato desejado, o número de porções (ex: "para 2 pessoas"), metas calóricas (ex: "com 500 calorias") ou restrições (ex: "low-carb").
        - Se a solicitação não parecer relacionada a comida (ex: "qual a capital do Brasil?"), retorne o erro específico.
 
-    2. **Validação de Alimento**:
+    2. **Validação de Validade Alimentar**
        - Se o input não contiver nenhum termo relacionado à culinária, retorne APENAS:
          {"error": "O item informado não parece ser um alimento."}
 
-    3. **Construção da Receita Adaptativa**:
+    3. **Construção da Receita Adaptativa**
        - Crie **apenas 1 receita** que atenda à solicitação.
-       - Use os ingredientes fornecidos como base. Adicione itens básicos (sal, pimenta, azeite, etc.) apenas se essencial.
+       - Utilize principalmente os ingredientes fornecidos; acrescente apenas itens básicos (sal, pimenta, alho, cebola, azeite) quando indispensáveis.
        - **Ajuste as quantidades e porções** para corresponder ao número de pessoas ou metas calóricas, se informado.
-       - O preparo deve ser em *passos numerados*, claros e concisos.
+       - O preparo deve ser em *passos numerados*, concisos e tecnicamente claros.
        - O tempo de preparo, cozimento e o número de porções devem ser realistas e ajustados à solicitação.
 
-    4. **Cálculo Nutricional Preciso**:
-       - Estime calorias, proteínas, carboidratos e gorduras **por porção**, com a maior precisão possível, refletindo os ajustes feitos.
+    4. **Cálculo Nutricional Profissional**
+       - Estime calorias, proteínas, carboidratos e gorduras **por porção** com a maior precisão possível, refletindo os ajustes feitos.
 
-    5. **Apresentação Profissional**:
-       - Crie um título profissional e uma descrição atrativa para a receita.
+    5. **Apresentação Profissional**
+       - Gere um título profissional e uma descrição objetiva, elegante e atrativa.
 
     6. **FORMATO DE SAÍDA OBRIGATÓRIO**:
        - A resposta deve ser SOMENTE um objeto JSON válido que siga o schema abaixo. Nenhum texto ou caractere adicional fora do JSON.
@@ -78,17 +78,30 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
         throw new Error(recipeJson.error);
     }
 
-    // Handle cases where the AI might wrap the response
-    const dataToValidate = recipeJson.recipe || recipeJson;
-    
-    const validatedRecipe = RecipeSchema.parse(dataToValidate);
-    return validatedRecipe;
-  } catch (error) {
-      console.error("Erro ao fazer parse do JSON da receita ou validar com Zod:", error);
-      console.error("JSON recebido da OpenAI:", resultText);
-      if (error instanceof Error && error.message.includes("alimento")) {
-          throw error;
+    // Handle cases where the AI might wrap the response in a "recipe" object
+    const validationResult = RecipeSchema.safeParse(recipeJson);
+    if (validationResult.success) {
+      return validationResult.data;
+    }
+
+    if (recipeJson.recipe) {
+      const nestedValidationResult = RecipeSchema.safeParse(recipeJson.recipe);
+      if (nestedValidationResult.success) {
+        return nestedValidationResult.data;
       }
+    }
+
+    console.error("Zod validation failed for root and nested 'recipe' objects.");
+    console.error("Received JSON:", resultText);
+    throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
+
+  } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Zod validation error:", error.errors);
+      } else {
+        console.error("Error parsing or validating recipe JSON:", error);
+      }
+      console.error("Original JSON string from OpenAI:", resultText);
       throw new Error("A resposta da IA não estava no formato de receita esperado. Tente ser mais específico sobre os ingredientes.");
   }
 }
@@ -129,24 +142,9 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
           "items": "2 ovos mexidos, 1 fatia de pão integral com abacate, 1/2 mamão papaia."
         },
         {
-          "name": "Lanche da Manhã",
-          "time": "10:00",
-          "items": "1 pote de iogurte natural (170g) com 1 colher de sopa de aveia."
-        },
-        {
           "name": "Almoço",
           "time": "13:00",
           "items": "150g de peito de frango grelhado, 100g de arroz integral, salada de folhas verdes à vontade com 1 colher de sopa de azeite."
-        },
-        {
-          "name": "Lanche da Tarde",
-          "time": "16:00",
-          "items": "1 maçã, 30g de mix de castanhas (nozes, amêndoas)."
-        },
-        {
-          "name": "Jantar",
-          "time": "19:30",
-          "items": "Omelete com 2 ovos e queijo minas, salada de tomate e pepino."
         }
       ]
     }
@@ -169,17 +167,15 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   try {
     const planJson = JSON.parse(resultText);
 
-    const validationResult = PlanSchema.safeParse(planJson);
+    const validationResult = GeneratedPlan.safeParse(planJson);
     if (validationResult.success) {
-        const validatedPlan = GeneratedPlan.parse(validationResult.data);
-        return validatedPlan;
+        return validationResult.data;
     }
 
     if (planJson.plan) {
-        const nestedValidationResult = PlanSchema.safeParse(planJson.plan);
+        const nestedValidationResult = GeneratedPlan.safeParse(planJson.plan);
         if (nestedValidationResult.success) {
-            const validatedPlan = GeneratedPlan.parse(nestedValidationResult.data);
-            return validatedPlan;
+            return nestedValidationResult.data;
         }
     }
 
@@ -188,11 +184,14 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
     throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
 
   } catch (error: any) {
-     if (error.message.includes('formato de plano')) {
+     if (error instanceof z.ZodError) {
+        console.error("Zod validation error in generateMealPlanAction:", error.errors);
+     } else if (error.message.includes('formato de plano')) {
         throw error;
+     } else {
+        console.error("Error parsing or validating plan JSON:", error);
      }
-     console.error("Erro ao fazer parse do JSON do plano ou validar com Zod:", error);
-     console.error("JSON recebido da OpenAI:", resultText);
+     console.error("Original JSON string from OpenAI:", resultText);
      throw new Error("A resposta da IA não estava no formato de plano esperado.");
   }
 }
@@ -280,3 +279,4 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
+
