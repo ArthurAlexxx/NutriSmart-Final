@@ -185,25 +185,27 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
                             />
                         </div>
                         
-                        <AnimatePresence>
-                        {showDiaryTotals && (
-                             <motion.div
-                                key={`${currentDiaryExample.id}-totals`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0, transition: { duration: 0.5 } }}
-                                exit={{ opacity: 0 }}
-                                className="p-4 border rounded-lg bg-primary/5"
-                            >
-                                <h4 className='font-semibold mb-2'>Análise da IA:</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    <NutrientDisplay label="Calorias" value={currentDiaryExample.totals.calorias} icon={Flame} color='text-orange-500'/>
-                                    <NutrientDisplay label="Proteínas" value={currentDiaryExample.totals.proteinas} icon={Rocket} color='text-blue-500'/>
-                                    <NutrientDisplay label="Carbos" value={currentDiaryExample.totals.carboidratos} icon={FaBreadSlice} color='text-yellow-500'/>
-                                    <NutrientDisplay label="Gorduras" value={currentDiaryExample.totals.gorduras} icon={Donut} color='text-pink-500'/>
-                                </div>
-                            </motion.div>
-                        )}
-                        </AnimatePresence>
+                        <div className="min-h-[120px]">
+                            <AnimatePresence>
+                            {showDiaryTotals && (
+                                <motion.div
+                                    key={`${currentDiaryExample.id}-totals`}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0, transition: { duration: 0.5 } }}
+                                    exit={{ opacity: 0 }}
+                                    className="p-4 border rounded-lg bg-primary/5"
+                                >
+                                    <h4 className='font-semibold mb-2'>Análise da IA:</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        <NutrientDisplay label="Calorias" value={currentDiaryExample.totals.calorias} icon={Flame} color='text-orange-500'/>
+                                        <NutrientDisplay label="Proteínas" value={currentDiaryExample.totals.proteinas} icon={Rocket} color='text-blue-500'/>
+                                        <NutrientDisplay label="Carbos" value={currentDiaryExample.totals.carboidratos} icon={FaBreadSlice} color='text-yellow-500'/>
+                                        <NutrientDisplay label="Gorduras" value={currentDiaryExample.totals.gorduras} icon={Donut} color='text-pink-500'/>
+                                    </div>
+                                </motion.div>
+                            )}
+                            </AnimatePresence>
+                        </div>
                     </CardContent>
                 </Card>
             );
