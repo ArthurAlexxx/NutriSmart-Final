@@ -69,12 +69,15 @@ export default function MealPlanView({ plan, onPlanDelete }: MealPlanViewProps) 
   return (
     <div className='animate-fade-in space-y-8 max-w-4xl mx-auto'>
         <section>
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-2">
-                <h2 className='text-2xl font-bold text-foreground flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
+                <div>
+                    <h2 className='text-2xl font-bold text-foreground flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias</h2>
+                    <p className='text-muted-foreground mt-1'>Estas são as metas definidas para o plano que está ativo no momento.</p>
+                </div>
                  {onPlanDelete && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
+                            <Button variant="destructive" size="sm" className="mt-2 sm:mt-0">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Excluir Plano
                             </Button>
@@ -96,8 +99,7 @@ export default function MealPlanView({ plan, onPlanDelete }: MealPlanViewProps) 
                     </AlertDialog>
                  )}
             </div>
-            <p className='text-muted-foreground mb-4'>Estas são as metas definidas para o plano que está ativo no momento.</p>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-4'>
                 <InfoCard icon={Flame} title="Calorias" value={plan.calorieGoal} unit="kcal" color="bg-orange-400" />
                 <InfoCard icon={Rocket} title="Proteínas" value={proteinGoal} unit="g" color="bg-blue-400" />
                 <InfoCard icon={Droplet} title="Hidratação" value={plan.hydrationGoal / 1000} unit="L" color="bg-sky-400" />
