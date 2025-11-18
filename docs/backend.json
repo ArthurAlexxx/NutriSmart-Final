@@ -1,0 +1,117 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user, who can be a patient or a professional.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The type of user profile." },
+        "fullName": { "type": "string", "description": "User's full name." },
+        "email": { "type": "string", "description": "User's email address.", "format": "email" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
+        "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
+        "patientRoomId": { "type": "string", "description": "ID of the room if the user is a patient being monitored." },
+        "professionalRoomIds": { "type": "array", "items": { "type": "string" }, "description": "List of room IDs if the user is a professional." },
+        "weight": { "type": "number" },
+        "targetWeight": { "type": "number" },
+        "targetDate": { "type": "string", "format": "date-time" },
+        "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "waterGoal": { "type": "number" }
+      },
+      "required": ["id", "profileType", "fullName", "email", "createdAt"]
+    },
+    "Room": {
+        "title": "Room",
+        "type": "object",
+        "description": "A virtual room connecting a professional with a patient.",
+        "properties": {
+            "id": { "type": "string" },
+            "professionalId": { "type": "string" },
+            "patientId": { "type": "string" },
+            "roomName": { "type": "string" }
+        },
+        "required": ["id", "professionalId", "patientId", "roomName"]
+    },
+    "MealEntry": {
+      "title": "MealEntry",
+      "type": "object",
+      "description": "Represents a meal entry recorded by a user.",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "mealType": { "type": "string", "enum": ["cafe-da-manha", "almoco", "jantar", "lanche"] },
+        "mealData": { "type": "object" }
+      },
+      "required": ["userId", "date", "mealType", "mealData"]
+    },
+    "HydrationEntry": {
+        "title": "HydrationEntry",
+        "description": "Represents a hydration entry for a user on a specific day.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "intake": { "type": "number", "description": "Total water intake in ml." }
+        },
+        "required": ["userId", "date", "intake"]
+    },
+    "ChefMessage": {
+      "title": "ChefMessage",
+      "type": "object",
+      "description": "Represents a message in the conversation with the virtual chef.",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "recipe": { "type": "object" }
+      },
+      "required": ["userId", "role", "content"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/UserProfile" },
+          "description": "Stores all user profiles, whether patient or professional."
+        }
+      },
+      {
+        "path": "/rooms/{roomId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/Room" },
+            "description": "Stores the connection between a professional and a patient."
+        }
+      },
+      {
+        "path": "/users/{userId}/meal_entries/{mealEntryId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/MealEntry" },
+          "description": "Stores individual meal entries for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/hydration_entries/{hydrationEntryId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/HydrationEntry" },
+            "description": "Stores daily hydration records for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/chef_messages/{messageId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ChefMessage" },
+          "description": "Stores the chat history between a user and the virtual chef."
+        }
+      }
+    ]
+  }
+}

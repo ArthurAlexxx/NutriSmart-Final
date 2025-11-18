@@ -1,0 +1,103 @@
+declare module "lucide-react" {
+    import {SVGProps, FC} from "react";
+  
+    // Define a type for the dynamic icon import
+    export type Icon = FC<SVGProps<SVGSVGElement>>;
+  
+    // List all the icons that you are using in your application
+    // This is not exhaustive and should be updated as you use more icons
+    export const AlarmClock: Icon;
+    export const AlertCircle: Icon;
+    export const AlignLeft: Icon;
+    export const ArrowRight: Icon;
+    export const ArrowLeft: Icon;
+    export const BarChart3: Icon;
+    export const Baseline: Icon;
+    export const Beef: Icon;
+    export const Bell: Icon;
+    export const BookCheck: Icon;
+    export const BookMarked: Icon;
+    export const BrainCircuit: Icon;
+    export const Briefcase: Icon;
+    export const Building: Icon;
+    export const Cake: Icon;
+    export const Calendar: Icon;
+    export const CalendarDays: Icon;
+    export const CalendarIcon: Icon;
+    export const CalendarOff: Icon;
+    export const CalendarX: Icon;
+    export const CaseSensitive: Icon;
+    export const Check: Icon;
+    export const CheckSquare: Icon;
+    export const ChefHat: Icon;
+    export const ChevronDown: Icon;
+    export const ChevronLeft: Icon;
+    export const ChevronRight: Icon;
+    export const Clock: Icon;
+    export const Copy: Icon;
+    export const CornerDownLeft: Icon;
+    export const CreditCard: Icon;
+    export const Download: Icon;
+    export const Donut: Icon;
+    export const Droplet: Icon;
+    export const Dumbbell: Icon;
+    export const Eye: Icon;
+    export const Facebook: Icon;
+    export const FileImage: Icon;
+    export const Filter: Icon;
+    export const Flame: Icon;
+    export const GlassWater: Icon;
+    export const Globe: Icon;
+    export const HelpCircle: Icon;
+    export const History: Icon;
+    export const Info: Icon;
+    export const Instagram: Icon;
+    export const LayoutDashboard: Icon;
+    export const Leaf: Icon;
+    export const Loader2: Icon;
+    export const LogOut: Icon;
+    export const Mail: Icon;
+    export const MapPin: Icon;
+    export const Menu: Icon;
+    export const MessageCircle: Icon;
+    export const MessageSquare: Icon;
+    export const Minus: Icon;
+    export const Palette: Icon;
+    export const Pencil: Icon;
+    export const Plus: Icon;
+    export const PlusCircle: Icon;
+    export const Rocket: Icon;
+    export const RotateCcw: Icon;
+    export const Save: Icon;
+    export const Search: Icon;
+    export const Send: Icon;
+    export const Settings: Icon;
+    export const Settings2: Icon;
+    export const Share2: Icon;
+    export const Shield: Icon;
+    export const ShoppingCart: Icon;
+    export const Soup: Icon;
+    export const Sparkles: Icon;
+    export const Star: Icon;
+    export const Stethoscope: Icon;
+    export const Sun: Icon;
+    export const Target: Icon;
+    export const Trash2: Icon;
+    export const TrendingUp: Icon;
+    export const Twitter: Icon;
+    export const Type: Icon;
+    export const User: Icon;
+    export const UserCog: Icon;
+    export const UserIcon: Icon;
+    export const UserPlus: Icon;
+    export const UserX: Icon;
+    export const Users: Icon;
+    export const Utensils: Icon;
+    export const Weight: Icon;
+    export const Wheat: Icon;
+    export const X: Icon;
+    export const Zap: Icon;
+    export const icons: {[key: string]: Icon};
+  }
+  
+    

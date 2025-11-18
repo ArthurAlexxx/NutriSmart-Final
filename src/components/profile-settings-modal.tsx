@@ -1,0 +1,176 @@
+
+// src/components/profile-settings-modal.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { type UserProfile } from '@/types/user';
+import { useAuth, useUser } from '@/firebase';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from './ui/badge';
+import Link from 'next/link';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
+const formSchema = z.object({
+  fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
+});
+
+type ProfileFormValues = z.infer<typeof formSchema>;
+
+interface ProfileSettingsModalProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  userProfile: UserProfile;
+  userId: string;
+}
+
+export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile, userId }: ProfileSettingsModalProps) {
+  const { toast } = useToast();
+  const { onProfileUpdate } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const [isCopied, setIsCopied] = useState(false);
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(formSchema),
+  });
+  
+  const { isSubmitting, isDirty } = form.formState;
+
+  useEffect(() => {
+    if (userProfile) {
+      form.reset({
+        fullName: userProfile.fullName || '',
+      });
+    }
+  }, [userProfile, form]);
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+        await signOut(auth);
+        onOpenChange(false);
+        router.push('/');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      toast({ title: 'Erro ao Sair', description: 'Não foi possível encerrar a sessão. Tente novamente.', variant: 'destructive' });
+    }
+  };
+
+  const onSubmit = async (data: ProfileFormValues) => {
+    if (!isDirty) {
+      onOpenChange(false);
+      return;
+    }
+    try {
+        await onProfileUpdate({
+            fullName: data.fullName,
+        });
+        toast({
+            title: 'Perfil Atualizado',
+            description: 'Seus dados foram salvos com sucesso.',
+        });
+    } catch (error: any) {
+        toast({
+            title: 'Erro ao Salvar',
+            description: error.message || 'Não foi possível atualizar seus dados.',
+            variant: 'destructive',
+        });
+    } finally {
+        onOpenChange(false);
+    }
+  };
+  
+  const handleCopyCode = () => {
+    if (!userProfile.dashboardShareCode) return;
+    navigator.clipboard.writeText(userProfile.dashboardShareCode);
+    setIsCopied(true);
+    toast({ title: 'Código Copiado!', description: 'Você pode enviar este código para seu nutricionista.'});
+    setTimeout(() => setIsCopied(false), 3000);
+  };
+
+  const tabsToShow = userProfile.profileType === 'patient' ? ['personal-data', 'sharing', 'subscription'] : ['personal-data', 'subscription'];
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl shadow-2xl p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-2xl font-bold">Configurações</DialogTitle>
+          <DialogDescription>
+            Gerencie seus dados e sua assinatura.
+          </DialogDescription>
+        </DialogHeader>
+        <Tabs defaultValue="personal-data" className="w-full pt-4">
+            <TabsList className={cn("grid w-full mx-auto max-w-[calc(100%-3rem)]", tabsToShow.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+                <TabsTrigger value="personal-data"><UserIcon className="h-5 w-5"/></TabsTrigger>
+                {userProfile.profileType === 'patient' && <TabsTrigger value="sharing"><Share2 className="h-5 w-5"/></TabsTrigger>}
+                <TabsTrigger value="subscription"><CreditCard className="h-5 w-5"/></TabsTrigger>
+            </TabsList>
+            <div className="p-6">
+                <TabsContent value="personal-data">
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                           <h3 className="font-semibold text-foreground">Seus Dados</h3>
+                          <FormField control={form.control} name="fullName" render={({ field }) => (
+                              <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                        <div className="flex justify-end pt-2">
+                            <Button type="submit" disabled={isSubmitting || !isDirty}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Salvar Dados
+                            </Button>
+                        </div>
+                      </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="sharing">
+                     <div className="space-y-4 text-center">
+                         <h3 className="font-semibold text-foreground">Compartilhamento de Dados</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Compartilhe o código abaixo com seu nutricionista para que ele possa acompanhar seu progresso e criar planos alimentares.
+                        </p>
+                        <div className="p-4 bg-muted rounded-lg flex items-center justify-between gap-4">
+                            <span className="font-mono text-lg font-bold text-primary">{userProfile.dashboardShareCode || 'Gerando...'}</span>
+                            <Button variant="outline" size="icon" onClick={handleCopyCode} disabled={isCopied}>
+                                <Copy className={cn("h-4 w-4", isCopied && 'text-green-500')}/>
+                            </Button>
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="subscription">
+                    <div className="space-y-4 text-center">
+                         <h3 className="font-semibold text-foreground">Sua Assinatura</h3>
+                        <p className="text-sm">Status da sua assinatura:</p>
+                        <Badge variant={userProfile.subscriptionStatus === 'premium' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
+                            {userProfile.subscriptionStatus || 'Grátis'}
+                        </Badge>
+                        <div className="pt-4">
+                            <Button asChild>
+                                <Link href="/pricing">Gerenciar Assinatura</Link>
+                            </Button>
+                        </div>
+                    </div>
+                </TabsContent>
+            </div>
+        </Tabs>
+        <DialogFooter className="border-t p-4 sm:hidden">
+            <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair da Conta
+            </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

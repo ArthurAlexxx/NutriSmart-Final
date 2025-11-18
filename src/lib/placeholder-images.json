@@ -1,0 +1,88 @@
+{
+  "placeholderImages": [
+    {
+      "id": "logo",
+      "description": "NutriSmart logo",
+      "imageUrl": "https://i.imgur.com/QHV8Oil.png",
+      "imageHint": "logo"
+    },
+    {
+      "id": "hero-image-1",
+      "description": "Prato saudável com salmão, abacate e vegetais variados.",
+      "imageUrl": "https://www.dropbox.com/scl/fi/sfku81gzln2yqand67wqa/Generated_Image_November_10__2025_-_11_42AM-removebg-preview_upscayl_5x_upscayl-standard-4x.png?rlkey=n7e64kbwmxenqfjaqp7u35tgq&raw=1",
+      "imageHint": "healthy food plate"
+    },
+    {
+      "id": "feature-1",
+      "description": "Uma mulher sorrindo e mexendo em um tablet, mostrando a interface do app NutriSmart.",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "woman using app"
+    },
+    {
+      "id": "feature-2",
+      "description": "Uma pessoa meditando ao ar livre em um ambiente de floresta pacífica.",
+      "imageUrl": "https://images.unsplash.com/photo-1506126613408-4e7e9be78eda?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%:3D%3D",
+      "imageHint": "meditating outdoors"
+    },
+    {
+      "id": "feature-3",
+      "description": "Demonstração do dashboard do aplicativo, mostrando gráficos de calorias e macros.",
+      "imageUrl": "https://i.imgur.com/eWRrJp7.png",
+      "imageHint": "app dashboard"
+    },
+    {
+      "id": "feature-4",
+      "description": "Demonstração da interface do Chef Virtual.",
+      "imageUrl": "https://i.imgur.com/tH03pNa.png",
+      "imageHint": "AI chef"
+    },
+    {
+      "id": "feature-5",
+      "description": "Demonstração da interface de Análise de Desempenho.",
+      "imageUrl": "https://i.imgur.com/5u9b9sO.png",
+      "imageHint": "analysis charts"
+    },
+    {
+      "id": "feature-6",
+      "description": "Demonstração do plano alimentar.",
+      "imageUrl": "https://i.imgur.com/sC5I5qY.png",
+      "imageHint": "meal plan"
+    },
+    {
+      "id": "testimonial-1",
+      "description": "Retrato de uma mulher feliz e confiante na casa dos 20 anos, com um fundo limpo.",
+      "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfHx8fDE3NTg5MDk0Mjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "profile picture"
+    },
+    {
+      "id": "testimonial-2",
+      "description": "Retrato de um homem atlético na casa dos 30 anos, sorrindo.",
+      "imageUrl": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "athletic man"
+    },
+    {
+      "id": "testimonial-3",
+      "description": "Retrato de uma profissional de saúde sorrindo calorosamente.",
+      "imageUrl": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxoZWFsdGglMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzU4OTA4Mzk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "health professional"
+    },
+    {
+      "id": "testimonial-4",
+      "description": "Retrato de um homem sorridente na casa dos 40 anos.",
+      "imageUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "smiling man"
+    },
+    {
+      "id": "cta-image-1",
+      "description": "Nutricionista conversando com um paciente em um consultório.",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "nutritionist patient"
+    },
+    {
+      "id": "cta-image-2",
+      "description": "Demonstração do aplicativo em um tablet e celular",
+      "imageUrl": "https://www.dropbox.com/scl/fi/j0sjiqa6k0xw1lzxne5t7/Generated-Image-November-10-2025-11_42AM_upscayl_5x_upscayl-standard-4x.png?rlkey=4pg7zu8mxlb7yxsydlq6gccmy&raw=1",
+      "imageHint": "app mockup"
+    }
+  ]
+}
