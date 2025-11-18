@@ -12,9 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, Rocket, Target, Weight, CalendarIcon, FolderDown, DownloadCloud, PlayCircle } from 'lucide-react';
+import { Loader2, Save, Sparkles, Rocket, Target, Weight, CalendarIcon, Flame, Droplet, FolderDown, PlayCircle, Trash2 } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, runTransaction } from 'firebase/firestore';
+import { doc, serverTimestamp, getDoc, updateDoc, Timestamp, runTransaction } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
@@ -49,7 +49,6 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
   const isProfessionalMode = !!room;
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAIModalOpen, setAIModalOpen] = useState(false);
   
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
@@ -368,5 +367,7 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
     </div>
   );
 }
+
+    
 
     

@@ -287,5 +287,6 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
+    
 
     
