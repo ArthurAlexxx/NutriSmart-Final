@@ -40,7 +40,6 @@ export interface UserProfile {
     proteinGoal?: number;
     waterGoal?: number;
     activePlan?: ActivePlan;
-    savedPlans?: (ActivePlan | null)[]; // Array for up to 3 saved plans
 
     // Subscription fields
     subscriptionStatus?: 'premium' | 'free' | 'professional';
