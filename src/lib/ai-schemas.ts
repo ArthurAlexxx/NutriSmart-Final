@@ -1,3 +1,4 @@
+
 // src/lib/ai-schemas.ts
 import { z } from 'zod';
 
@@ -38,7 +39,6 @@ export interface AnalyzeMealInput {
 }
 
 const MealPlanItemSchema = z.object({
-  id: z.string().optional(),
   name: z.string().describe("Tipo da refeição (ex: Café da Manhã, Almoço, Jantar)."),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)').describe("Horário da refeição no formato HH:MM."),
   items: z.string().describe("Descrição dos alimentos e quantidades para a refeição."),
@@ -61,6 +61,7 @@ export const GeneratePlanInputSchema = z.object({
     gender: z.enum(['male', 'female']).optional(),
     activityLevel: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
     dietaryRestrictions: z.array(z.string()).optional(),
+    allergies: z.array(z.string()).optional(),
     preferences: z.string().optional(),
     budget: z.enum(['economical', 'moderate', 'flexible']).optional(),
 });

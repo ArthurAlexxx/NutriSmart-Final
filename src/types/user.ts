@@ -1,3 +1,4 @@
+
 // src/types/user.ts
 import { Timestamp } from "firebase/firestore";
 
@@ -38,6 +39,7 @@ export interface UserProfile {
     gender?: 'male' | 'female';
     activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
     dietaryRestrictions?: string[];
+    allergies?: string[];
     preferences?: string;
 
     // These are derived/set by the active plan, not directly by user in goals

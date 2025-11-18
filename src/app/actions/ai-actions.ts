@@ -144,13 +144,14 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
     - Meta de Peso: ${input.targetWeight || 'Não informada'} kg
     - Nível de Atividade: ${input.activityLevel || 'moderado'}
     - Restrições Alimentares: ${input.dietaryRestrictions?.join(', ') || 'Nenhuma'}
+    - Alergias: ${input.allergies?.join(', ') || 'Nenhuma'}
     - Preferências/Aversões: ${input.preferences || 'Nenhuma'}
     - Orçamento: ${input.budget || 'moderado'}
 
     REGRAS DE PROCESSAMENTO (SIGA ESTRITAMENTE):
     1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Crie um déficit calórico seguro (se a meta for perder peso) ou um superávit (se for ganhar peso).
     2.  **Distribuição de Macros:** Distribua os macronutrientes de forma equilibrada (ex: 40% carboidratos, 30% proteínas, 30% gorduras), ajustando conforme o objetivo.
-    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, respeitando o orçamento e as restrições/preferências.
+    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, respeitando o orçamento e TODAS as restrições e alergias.
     4.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
     5.  **Hidratação:** Defina uma meta de hidratação razoável, geralmente entre 2000-3000ml.
 

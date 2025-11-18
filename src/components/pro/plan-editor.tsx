@@ -2,7 +2,7 @@
 // src/components/pro/plan-editor.tsx
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { type Room } from '@/types/room';
@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, Weight, Target, Footprints, Shield, Salad, ChevronsRight, BrainCircuit, Save, Sparkles, Wand2, Redo } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Loader2, User, Weight, Target, Footprints, Shield, Salad, ChevronsRight, BrainCircuit, Save, Sparkles, Wand2, Redo, ChevronsLeft } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { doc, runTransaction, serverTimestamp, updateDoc, Timestamp, collection, query, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Separator } from '../ui/separator';
@@ -22,12 +22,6 @@ import { generateMealPlanAction } from '@/app/actions/ai-actions';
 import { GeneratedPlan, GeneratePlanInputSchema } from '@/lib/ai-schemas';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { cn } from '@/lib/utils';
-import { Calendar } from '../ui/calendar';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 
 
 type Step = 'goals' | 'confirmation' | 'result';
@@ -55,85 +49,69 @@ const dietaryRestrictions = [
     { id: 'pescetarian', label: 'Pescetariano' },
 ];
 
+const allergyOptions = [
+    { id: 'peanuts', label: 'Amendoim' },
+    { id: 'shellfish', label: 'Frutos do mar' },
+    { id: 'milk', label: 'Leite' },
+    { id: 'eggs', label: 'Ovos' },
+    { id: 'fish', label: 'Peixe' },
+    { id: 'soy', label: 'Soja' },
+    { id: 'nuts', label: 'Nozes' },
+];
+
 
 const FormStep = ({ form, onNext }: { form: any, onNext: () => void }) => {
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onNext)} className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Perfil Básico</CardTitle>
-                        <CardDescription>Nos ajude a entender seu corpo e seus objetivos.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={form.handleSubmit(onNext)} id="plan-generator-form" className="space-y-8">
+                <section>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Perfil Básico</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="weight" render={({ field }) => (<FormItem><FormLabel>Peso Atual (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 75.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="targetWeight" render={({ field }) => (<FormItem><FormLabel>Peso Meta (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 70" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="height" render={({ field }) => (<FormItem><FormLabel>Altura (cm)</FormLabel><FormControl><Input type="number" placeholder="Ex: 178" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="age" render={({ field }) => (<FormItem><FormLabel>Idade</FormLabel><FormControl><Input type="number" placeholder="Ex: 30" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
-                         <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Gênero</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2"><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="male" /></FormControl><FormLabel className="font-normal">Masculino</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="female" /></FormControl><FormLabel className="font-normal">Feminino</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Footprints className="h-5 w-5 text-primary" /> Nível de Atividade</CardTitle>
-                        <CardDescription>Como é seu nível de atividade física semanal?</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <FormField control={form.control} name="activityLevel" render={({ field }) => (<FormItem><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">{activityLevels.map(item => (<FormItem key={item.id}><FormControl><RadioGroupItem value={item.id} id={item.id} className="sr-only" /></FormControl><FormLabel htmlFor={item.id} className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full"><p className="font-semibold">{item.label}</p><p className="text-xs text-muted-foreground">{item.description}</p></FormLabel></FormItem>))}</RadioGroup></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Restrições e Preferências</CardTitle>
-                        <CardDescription>Nos diga o que você não come ou o que prefere evitar.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div className="mb-4"><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas que se aplicam.</FormDescription></div>{dietaryRestrictions.map((item) => (<FormField key={item.id} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>)} } />))}<FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Gênero</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2"><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="male" /></FormControl><FormLabel className="font-normal">Masculino</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="female" /></FormControl><FormLabel className="font-normal">Feminino</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                </section>
+                <Separator />
+                <section>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Footprints className="h-5 w-5 text-primary" /> Nível de Atividade Semanal</h3>
+                    <FormField control={form.control} name="activityLevel" render={({ field }) => (<FormItem><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">{activityLevels.map(item => (<FormItem key={item.id}><FormControl><RadioGroupItem value={item.id} id={item.id} className="sr-only" checked={field.value === item.id} /></FormControl><FormLabel htmlFor={item.id} className="flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full"><p className="font-semibold">{item.label}</p><p className="text-xs text-muted-foreground">{item.description}</p></FormLabel></FormItem>))}</RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                </section>
+                <Separator />
+                <section>
+                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Restrições e Preferências</h3>
+                     <div className="space-y-6">
+                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="preferences" render={({ field }) => (<FormItem><FormLabel>Preferências ou Aversões</FormLabel><FormControl><Textarea placeholder="Ex: 'Não gosto de coentro', 'Prefiro peixe a carne vermelha', 'Gostaria de opções de café da manhã rápidas'" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                </Card>
-                <div className="flex justify-end">
-                    <Button type="submit">Próximo <ChevronsRight className="ml-2 h-4 w-4" /></Button>
-                </div>
+                     </div>
+                </section>
             </form>
         </Form>
     );
 };
 
-const ConfirmationStep = ({ data, onBack, onConfirm, isGenerating }: { data: PlanGeneratorFormValues, onBack: () => void, onConfirm: () => void, isGenerating: boolean }) => {
+const ConfirmationStep = ({ data }: { data: PlanGeneratorFormValues }) => {
     
     const getLabel = (arr: {id: string, label: string}[], id?: string) => arr.find(item => item.id === id)?.label || 'Não informado';
 
+    const renderList = (items: string[] | undefined, defaultText: string) => {
+        if (!items || items.length === 0) return defaultText;
+        return items.map(item => item.charAt(0).toUpperCase() + item.slice(1)).join(', ');
+    }
+
     return (
-        <div className="space-y-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Confirme seus Dados</CardTitle>
-                    <CardDescription>Revise as informações abaixo antes de gerarmos seu plano com a IA.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <InfoItem title="Peso" value={`${data.weight || 'N/A'} kg`} />
-                        <InfoItem title="Meta" value={`${data.targetWeight || 'N/A'} kg`} />
-                        <InfoItem title="Altura" value={`${data.height || 'N/A'} cm`} />
-                        <InfoItem title="Idade" value={`${data.age || 'N/A'} anos`} />
-                    </div>
-                     <InfoItem title="Nível de Atividade" value={getLabel(activityLevels, data.activityLevel)} />
-                     <InfoItem title="Restrições" value={data.dietaryRestrictions && data.dietaryRestrictions.length > 0 ? data.dietaryRestrictions.map(r => getLabel(dietaryRestrictions, r)).join(', ') : 'Nenhuma'} />
-                     {data.preferences && <InfoItem title="Preferências" value={data.preferences} />}
-
-                </CardContent>
-            </Card>
-
-            <div className="flex justify-between items-center">
-                <Button variant="outline" onClick={onBack}>Voltar</Button>
-                <Button onClick={onConfirm} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Gerar Plano com IA
-                </Button>
-            </div>
+        <div className="space-y-4">
+            <InfoItem title="Peso" value={`${data.weight || 'N/A'} kg`} />
+            <InfoItem title="Meta de Peso" value={`${data.targetWeight || 'N/A'} kg`} />
+            <InfoItem title="Altura" value={`${data.height || 'N/A'} cm`} />
+            <InfoItem title="Idade" value={`${data.age || 'N/A'} anos`} />
+            <InfoItem title="Nível de Atividade" value={getLabel(activityLevels, data.activityLevel)} />
+            <InfoItem title="Restrições" value={renderList(data.dietaryRestrictions?.map(r => getLabel(dietaryRestrictions, r)), 'Nenhuma')} />
+            <InfoItem title="Alergias" value={renderList(data.allergies?.map(a => getLabel(allergyOptions, a)), 'Nenhuma')} />
+            {data.preferences && <InfoItem title="Preferências" value={data.preferences} />}
         </div>
     );
 };
@@ -146,41 +124,24 @@ const InfoItem = ({title, value}: {title: string, value: string}) => (
 );
 
 
-const ResultStep = ({ plan, onSave, onRegenerate, isSaving }: { plan: GeneratedPlan, onSave: () => void, onRegenerate: () => void, isSaving: boolean }) => {
+const ResultStep = ({ plan, isSaving }: { plan: GeneratedPlan, isSaving: boolean }) => {
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BrainCircuit className="h-6 w-6 text-primary" /> Plano Gerado pela IA</CardTitle>
-                    <CardDescription>Este é o plano que a IA criou com base nos seus dados. Você pode salvá-lo ou gerar um novo.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                     <div className="grid grid-cols-3 gap-4">
-                        <InfoItem title="Meta de Calorias" value={`${plan.calorieGoal} kcal`} />
-                        <InfoItem title="Meta de Proteínas" value={`${plan.proteinGoal} g`} />
-                        <InfoItem title="Meta de Hidratação" value={`${plan.hydrationGoal / 1000} L`} />
-                     </div>
-                     <div>
-                        <h3 className="text-lg font-semibold mb-2">Refeições Sugeridas</h3>
-                         <div className="space-y-3">
-                             {plan.meals.map(meal => (
-                                <div key={meal.name} className="p-4 border rounded-lg">
-                                    <p className="font-semibold">{meal.name} <span className="text-sm text-muted-foreground font-normal">({meal.time})</span></p>
-                                    <p className="text-muted-foreground whitespace-pre-line">{meal.items}</p>
-                                </div>
-                             ))}
-                         </div>
-                     </div>
-                </CardContent>
-            </Card>
-            <div className="flex justify-between items-center">
-                <Button variant="outline" onClick={onRegenerate}>
-                    <Redo className="mr-2 h-4 w-4" /> Gerar Novamente
-                </Button>
-                <Button onClick={onSave} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Salvar este Plano
-                </Button>
+            <div className="grid grid-cols-3 gap-4">
+                <InfoItem title="Meta de Calorias" value={`${plan.calorieGoal} kcal`} />
+                <InfoItem title="Meta de Proteínas" value={`${plan.proteinGoal} g`} />
+                <InfoItem title="Meta de Hidratação" value={`${plan.hydrationGoal / 1000} L`} />
+            </div>
+            <div>
+                <h3 className="text-lg font-semibold mb-2">Refeições Sugeridas</h3>
+                <div className="space-y-3">
+                    {plan.meals.map(meal => (
+                        <div key={meal.name} className="p-4 border rounded-lg bg-secondary/30">
+                            <p className="font-semibold">{meal.name} <span className="text-sm text-muted-foreground font-normal">({meal.time})</span></p>
+                            <p className="text-muted-foreground whitespace-pre-line">{meal.items}</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     )
@@ -208,6 +169,7 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
       gender: userProfile?.gender || undefined,
       activityLevel: userProfile?.activityLevel || 'moderate',
       dietaryRestrictions: userProfile?.dietaryRestrictions || [],
+      allergies: userProfile?.allergies || [],
       preferences: userProfile?.preferences || '',
     },
   });
@@ -222,6 +184,7 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
             gender: userProfile.gender || undefined,
             activityLevel: userProfile.activityLevel || 'moderate',
             dietaryRestrictions: userProfile.dietaryRestrictions || [],
+            allergies: userProfile.allergies || [],
             preferences: userProfile.preferences || '',
         })
     }
@@ -252,11 +215,9 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
     try {
       const userRef = doc(firestore, 'users', userProfile.id);
       
-      // Salva os dados do formulário no perfil do usuário
       const profileData = form.getValues();
       await updateDoc(userRef, { ...profileData });
       
-      // Salva o plano gerado como plano ativo
       const newActivePlan: ActivePlan = {
           name: 'Plano Gerado por IA',
           ...generatedPlan,
@@ -269,7 +230,7 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
           title: "Plano Salvo!",
           description: `Seu novo plano alimentar foi salvo e ativado.`,
       });
-      setStep('goals'); // Volta para a primeira etapa
+      setStep('goals');
 
     } catch (error: any) {
          toast({
@@ -283,33 +244,58 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
   };
 
 
-  const renderStep = () => {
-    switch (step) {
-        case 'goals':
-            return <FormStep form={form} onNext={handleNextStep} />;
-        case 'confirmation':
-            return <ConfirmationStep data={form.getValues()} onBack={() => setStep('goals')} onConfirm={handleGeneratePlan} isGenerating={isGenerating} />;
-        case 'result':
-            if (generatedPlan) {
-                return <ResultStep plan={generatedPlan} onSave={handleSavePlan} onRegenerate={handleGeneratePlan} isSaving={isSaving} />;
-            }
-            return null; // ou um estado de erro
-        default:
-            return <FormStep form={form} onNext={handleNextStep} />;
-    }
+  const stepTitles = {
+      goals: { title: "Assistente de Plano IA", description: "Siga as etapas para que nossa IA crie o plano alimentar perfeito para você." },
+      confirmation: { title: "Confirme seus Dados", description: "Revise as informações antes de gerarmos seu plano." },
+      result: { title: "Plano Gerado pela IA", description: "Este é o plano que a IA criou. Você pode salvá-lo ou gerar um novo." },
   }
+
+  const currentStepInfo = stepTitles[step];
 
 
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-3 mb-3">
-                <Wand2 className="h-7 w-7" />
-            </div>
-            <h2 className="text-3xl font-bold text-foreground font-heading">Assistente de Plano IA</h2>
-            <p className="text-muted-foreground mt-1 max-w-2xl mx-auto">Siga as etapas para que nossa inteligência artificial crie o plano alimentar perfeito para você.</p>
-        </div>
-        {renderStep()}
+        <Card>
+            <CardHeader className="text-center">
+                <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-3 mb-3 mx-auto w-fit">
+                    <Wand2 className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-3xl font-bold font-heading">{currentStepInfo.title}</CardTitle>
+                <CardDescription className="max-w-2xl mx-auto">{currentStepInfo.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {step === 'goals' && <FormStep form={form} onNext={handleNextStep} />}
+                {step === 'confirmation' && <ConfirmationStep data={form.getValues()} />}
+                {step === 'result' && generatedPlan && <ResultStep plan={generatedPlan} isSaving={isSaving} />}
+            </CardContent>
+            <CardFooter className="flex justify-between items-center border-t pt-6">
+                <div>
+                   {step !== 'goals' && (
+                        <Button variant="outline" onClick={() => setStep(step === 'result' ? 'confirmation' : 'goals')} disabled={isGenerating || isSaving}>
+                             <ChevronsLeft className="mr-2 h-4 w-4" /> Voltar
+                        </Button>
+                   )}
+                </div>
+                <div>
+                    {step === 'goals' && <Button type="submit" form="plan-generator-form">Próximo <ChevronsRight className="ml-2 h-4 w-4" /></Button>}
+                    {step === 'confirmation' && (
+                        <Button onClick={handleGeneratePlan} disabled={isGenerating}>
+                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Gerar Plano com IA
+                        </Button>
+                    )}
+                    {step === 'result' && (
+                         <div className="flex gap-2">
+                             <Button variant="outline" onClick={() => setStep('confirmation')} disabled={isSaving}>Gerar Novamente</Button>
+                             <Button onClick={handleSavePlan} disabled={isSaving}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Salvar Plano
+                            </Button>
+                         </div>
+                    )}
+                </div>
+            </CardFooter>
+        </Card>
     </div>
   );
 }
