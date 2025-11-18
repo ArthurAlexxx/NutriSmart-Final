@@ -30,26 +30,54 @@ NÃO ESCREVA TEXTO ANTES OU DEPOIS.
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   const prompt = `
-    INSTRUÇÕES:
-    1. Analise a solicitação do usuário para extrair ingredientes, tipo de prato, número de porções (ex: "para 2 pessoas"), e metas calóricas (ex: "com 500 calorias").
-    2. Com base na análise, crie UMA receita. Use principalmente os ingredientes fornecidos, adicionando apenas itens básicos (sal, pimenta, azeite, etc.) se for essencial.
-    3. Se a solicitação não parecer ser sobre comida, retorne um JSON com um campo "error".
-    4. Estime calorias, proteínas, carboidratos e gorduras POR PORÇÃO.
-    5. Gere um título, descrição, tempos de preparo/cozimento, porções e passos de instrução numerados.
+    INSTRUÇÕES MESTRE:
+    Você é um Chef de Cozinha especialista e está criando uma receita para um livro digital. Sua resposta deve ser extremamente detalhada, clara e útil.
 
-    SOLICITAÇÃO DO USUÁRIO:
-    "${userInput}"
+    1.  **ANÁLISE DA SOLICITAÇÃO:**
+        *   Analise o pedido do usuário: "${userInput}".
+        *   Identifique os ingredientes principais, o número de porções desejado (ex: "para 2 pessoas"), metas calóricas (ex: "com 500 calorias") e qualquer outra preferência (ex: "low-carb", "vegetariano").
+        *   Adapte TODA a receita (quantidades, ingredientes, etc.) para atender a essas especificações.
 
-    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    2.  **CRIAÇÃO DA RECEITA (SEJA DETALHISTA):**
+        *   **Título:** Crie um nome atraente e descritivo.
+        *   **Descrição:** Escreva uma descrição curta e convidativa que desperte o interesse em preparar o prato.
+        *   **Ingredientes:** Liste TODOS os ingredientes com quantidades PRECISAS (ex: "200g de peito de frango", "1/2 cebola média picada", "1 colher de sopa de azeite de oliva extra virgem"). Não use descrições vagas como "um pouco de".
+        *   **Modo de Preparo:** Forneça um passo a passo NUMERADO e DETALHADO. Em vez de "Tempere o frango", escreva algo como "1. Seque os filés de frango com papel toalha e tempere ambos os lados com sal, pimenta do reino e páprica doce.".
+        *   **Informações Nutricionais:** Estime os valores totais POR PORÇÃO para calorias (kcal), proteínas (g), carboidratos (g) e gorduras (g).
+        *   **Dicas do Chef (Opcional, mas recomendado):** Adicione 1 ou 2 dicas úteis, como sugestões de acompanhamento, variações de ingredientes ou técnicas para melhorar o prato. Você pode adicionar isso no final da lista de instruções.
+
+    3.  **REGRAS DE SAÍDA:**
+        *   Se o pedido do usuário não parecer ser sobre comida, sua resposta JSON deve conter apenas um campo: \`{"error": "A solicitação não parece ser sobre comida."}\`.
+        *   Sua resposta final deve ser **APENAS O OBJETO JSON COMPLETO**. Não inclua nenhum texto antes ou depois do JSON.
+
+    EXEMPLO DE SAÍDA JSON VÁLIDA PARA "risoto de cogumelos para 2 pessoas":
     {
-      "title": "Frango Grelhado com Legumes",
-      "description": "Uma refeição saudável e rápida.",
-      "prepTime": "10 min",
-      "cookTime": "15 min",
+      "title": "Risoto Cremoso de Cogumelos Funghi",
+      "description": "Um risoto rico e aveludado, perfeito para um jantar especial. A combinação de cogumelos funghi secchi e parmesão fresco cria uma explosão de sabor umami.",
+      "prepTime": "15 min",
+      "cookTime": "30 min",
       "servings": "2",
-      "ingredients": ["2 filés de frango", "1 brócolis", "1 cenoura"],
-      "instructions": ["1. Tempere o frango.", "2. Grelhe o frango.", "3. Cozinhe os legumes."],
-      "nutrition": { "calories": "450", "protein": "40g", "carbs": "15g", "fat": "25g" }
+      "ingredients": [
+        "1 xícara (200g) de arroz arbóreo",
+        "20g de cogumelos funghi secchi",
+        "1/2 cebola média, bem picada",
+        "2 dentes de alho picados",
+        "1 litro de caldo de legumes quente",
+        "1/2 xícara de vinho branco seco",
+        "50g de queijo parmesão ralado na hora",
+        "2 colheres de sopa de manteiga sem sal",
+        "Azeite, sal e pimenta do reino a gosto"
+      ],
+      "instructions": [
+        "1. Hidrate o funghi em 1 xícara de água quente por 15 minutos. Coe (reserve a água) e pique os cogumelos.",
+        "2. Em uma panela, aqueça uma colher de manteiga com um fio de azeite. Refogue a cebola até ficar translúcida e adicione o alho, refogando por mais 1 minuto.",
+        "3. Adicione o arroz e mexa bem por 2 minutos ('tostar' o arroz). Despeje o vinho branco e mexa até evaporar.",
+        "4. Adicione a água do funghi reservada e os cogumelos picados. Comece a adicionar o caldo de legumes, uma concha por vez, mexendo sempre e esperando o líquido ser absorvido antes de adicionar a próxima.",
+        "5. Continue este processo por cerca de 18-20 minutos, até o arroz estar al dente. Desligue o fogo.",
+        "6. Finalize com o restante da manteiga e o queijo parmesão (mantecatura). Mexa vigorosamente para criar cremosidade. Ajuste o sal e a pimenta.",
+        "7. Sirva imediatamente. Dica do Chef: adicione um fio de azeite trufado ao finalizar para um toque extra de sofisticação."
+      ],
+      "nutrition": { "calories": "550", "protein": "15g", "carbs": "70g", "fat": "20g" }
     }
 
     AGORA, GERE SOMENTE O OBJETO JSON FINAL.
