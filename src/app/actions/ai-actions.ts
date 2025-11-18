@@ -72,8 +72,11 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
     if (recipeJson.error) {
         throw new Error(recipeJson.error);
     }
+
+    // Handle cases where the AI might wrap the response
+    const dataToValidate = recipeJson.recipe || recipeJson;
     
-    const validatedRecipe = RecipeSchema.parse(recipeJson);
+    const validatedRecipe = RecipeSchema.parse(dataToValidate);
     return validatedRecipe;
   } catch (error) {
       console.error("Erro ao fazer parse do JSON da receita ou validar com Zod:", error);
@@ -140,7 +143,11 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   
   try {
     const planJson = JSON.parse(resultText);
-    const validatedPlan = PlanSchema.parse(planJson);
+
+    // Handle cases where the AI might wrap the response
+    const dataToValidate = planJson.plan || planJson;
+
+    const validatedPlan = PlanSchema.parse(dataToValidate);
     return validatedPlan;
   } catch (error) {
      console.error("Erro ao fazer parse do JSON do plano ou validar com Zod:", error);
