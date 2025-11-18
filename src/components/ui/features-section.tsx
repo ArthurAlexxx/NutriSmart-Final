@@ -1,4 +1,5 @@
 
+
 'use client';
 import { BrainCircuit, ChefHat, BookCheck, Users, TrendingUp, BookCopy, ArrowRight, Plus, Flame, Rocket, Donut, Lock, Pencil, Target, Utensils, CheckSquare, Clock, Soup, ChevronDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -172,7 +173,7 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
     switch (featureId) {
         case 'diary':
             return (
-                 <Card className="shadow-lg shadow-primary/10 w-full">
+                 <Card className="shadow-lg shadow-primary/10 w-full h-[430px]">
                     <CardHeader>
                         <CardTitle>Adicionar Refeição</CardTitle>
                     </CardHeader>
