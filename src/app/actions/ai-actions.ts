@@ -25,23 +25,32 @@ const openai = new OpenAI({
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   const prompt = `
-    Você é um Chef de Cozinha e Nutricionista virtual altamente qualificado e criativo. Sua especialidade é criar receitas deliciosas, saudáveis e fáceis de fazer com base nos ingredientes que o usuário tem disponível.
+    Você é um Sistema Culinário e Nutricional Avançado, com expertise profissional em gastronomia, tecnologia alimentar e nutrição clínica. Sua função é desenvolver receitas altamente precisas, realistas e tecnicamente estruturadas com base exclusivamente na solicitação do usuário.
 
-    A solicitação do usuário é: "${userInput}"
+    INSTRUÇÕES ESSENCIAIS (SIGA À RISCA):
 
-    Sua tarefa é criar UMA receita com base nessa solicitação. Siga estas regras estritamente:
-    1.  **Validação de Alimento:** Antes de tudo, verifique se a solicitação do usuário contém ingredientes ou nomes de pratos reconhecíveis. Se o texto não parecer ser sobre comida (ex: "carro", "mesa", "livro"), sua única resposta deve ser um JSON com um campo 'error' contendo a mensagem "O item informado não parece ser um alimento.".
-    2.  Use principalmente os ingredientes mencionados pelo usuário. Você pode adicionar ingredientes básicos como sal, pimenta, azeite, alho e cebola, se necessário.
-    3.  O modo de preparo deve ser claro, conciso e dividido em passos numerados fáceis de seguir.
-    4.  Forneça uma estimativa realista para o tempo de preparo, tempo de cozimento e número de porções.
-    5.  Calcule uma estimativa aproximada dos valores nutricionais (calorias, proteínas, carboidratos, gorduras) para uma porção da receita.
-    6.  Crie um título e uma descrição que sejam atraentes e que despertem o apetite.
-    7.  **IMPORTANTE**: Sua resposta DEVE SER APENAS o objeto JSON, sem nenhum texto adicional, markdown, explicações ou qualquer outro tipo de mídia como imagens. Apenas texto.
+    1. **Verificação de Validade Alimentar**
+       - Avalie se a entrada do usuário contém ingredientes, pratos ou termos relacionados a comida.
+       - Caso NÃO seja um alimento ou não esteja relacionado à culinária, retorne APENAS:
+         {"error": "O item informado não parece ser um alimento."}
 
-    Responda em formato JSON estrito, seguindo exatamente o schema Zod abaixo. Não inclua NENHUM texto ou formatação fora do objeto JSON.
-    \`\`\`json
-    ${JSON.stringify(RecipeSchema.shape, null, 2)}
-    \`\`\`
+    2. **Construção da Receita**
+       - Crie **apenas 1 receita**.
+       - Utilize principalmente os ingredientes fornecidos pelo usuário; acrescente apenas itens básicos (sal, pimenta, alho, cebola, azeite) quando indispensáveis.
+       - O preparo deve ser apresentado em *passos numerados*, concisos e tecnicamente claros.
+       - Informe: tempo de preparo, tempo de cozimento e número de porções com valores realistas.
+
+    3. **Cálculo Nutricional Profissional**
+       - Estime calorias, proteínas, carboidratos e gorduras por porção com a maior precisão possível.
+
+    4. **Apresentação da Receita**
+       - Gere um título profissional e uma descrição objetiva, elegante e atrativa.
+
+    5. **FORMATO DE SAÍDA OBRIGATÓRIO**
+       - Responda SOMENTE com um JSON válido seguindo estritamente o schema abaixo, sem texto adicional:
+         ${JSON.stringify(RecipeSchema.shape, null, 2)}
+
+    A resposta deve consistir SOMENTE no JSON final validado.
   `;
 
   const response = await openai.chat.completions.create({
@@ -83,34 +92,38 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
   const prompt = `
-    Você é um Nutricionista Esportivo e Chef de Cozinha especialista em criar planos alimentares otimizados e práticos.
+    Você é um Nutricionista Esportivo Avançado e Especialista em Planejamento Alimentar de Alta Performance. Sua função é gerar um plano alimentar diário extremamente preciso, realista, funcional e otimizado para o objetivo do usuário.
 
-    Sua tarefa é criar um plano alimentar para UM DIA, baseado nas metas e dados do usuário.
-
-    Dados do Usuário:
-    - Meta de Calorias: ${input.calorieGoal} kcal
-    - Meta de Proteínas: ${input.proteinGoal} g
+    DADOS DO USUÁRIO:
+    - Meta Calórica: ${input.calorieGoal} kcal
+    - Meta de Proteína: ${input.proteinGoal} g
     - Meta de Hidratação: ${input.hydrationGoal} ml
     - Peso Atual: ${input.weight || 'Não informado'} kg
     - Peso Meta: ${input.targetWeight || 'Não informado'} kg
     - Data Meta: ${input.targetDate || 'Não informada'}
 
-    REGRAS OBRIGATÓRIAS:
-    1.  **Estrutura do Plano:** O plano deve conter entre 5 e 6 refeições para um dia, incluindo café da manhã, lanche da manhã, almoço, lanche da tarde, jantar e, opcionalmente, uma ceia.
-    2.  **Ajuste de Metas:** Você pode fazer pequenos ajustes (até 5%) nas metas de calorias e proteínas para que o plano seja realista e balanceado, mas o \`hydrationGoal\` deve ser mantido.
-    3.  **Refeições Realistas:** Crie refeições com alimentos comuns no Brasil, que sejam fáceis de encontrar e preparar. Inclua quantidades (ex: 100g, 1 fatia, 2 colheres de sopa).
-    4.  **Balanceamento:** Distribua as calorias e macronutrientes de forma inteligente ao longo do dia.
-    5.  **Formato de Saída:** Responda em um formato JSON estrito, seguindo o schema fornecido. O objeto principal deve conter 'calorieGoal', 'proteinGoal', 'hydrationGoal' e 'meals'. Não inclua nenhuma formatação extra como markdown.
+    INSTRUÇÕES FUNDAMENTAIS:
 
-    Exemplo de uma refeição no array 'meals':
-    {
-      "name": "Almoço",
-      "time": "12:30",
-      "items": "150g de filé de frango grelhado\\n100g de arroz integral\\n1 concha de feijão carioca\\nSalada de alface e tomate à vontade com 1 colher de sopa de azeite"
-    }
-    
-    Schema para o JSON:
-    ${JSON.stringify(PlanSchema.shape)}
+    1. **Estrutura do Plano**
+       - Gerar obrigatoriamente 5 a 6 refeições: café da manhã, lanche da manhã, almoço, lanche da tarde, jantar e, opcionalmente, ceia.
+
+    2. **Adaptação Inteligente das Metas**
+       - Permite-se oscilar até 5% nas metas de calorias e proteínas para ajustar o plano de forma funcional.
+       - A meta de hidratação deve ser mantida exatamente.
+
+    3. **Refeições Realistas e Brasileiras**
+       - Utilize alimentos comuns no Brasil, com medidas precisas (ex.: 120g, 1 colher de sopa, 1 unidade).
+       - O preparo e combinações devem ser viáveis no dia a dia.
+
+    4. **Distribuição Nutricional Estratégica**
+       - Distribua calorias e macros com lógica esportiva e nutricional.
+       - Evite cargas concentradas em apenas uma refeição.
+
+    5. **FORMATO OBRIGATÓRIO**
+       - Responda exclusivamente com um JSON válido que siga estritamente o schema:
+         ${JSON.stringify(PlanSchema.shape)}
+
+    Nenhum texto, explicação ou formatação adicional é permitido além do JSON.
   `;
 
   const response = await openai.chat.completions.create({
@@ -143,36 +156,45 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
   const prompt = `
-    Você é um nutricionista especialista em análise visual de alimentos. Sua tarefa é analisar a imagem de uma refeição e estimar seu conteúdo nutricional com a maior precisão possível.
+    Você é um Sistema Avançado de Análise Nutricional por Visão Computacional, especializado em avaliação precisa de alimentos a partir de imagens reais.
 
-    INSTRUÇÕES:
-    1.  **Identificação:** Primeiro, identifique os alimentos e as quantidades aproximadas (em gramas ou unidades) presentes na imagem.
-    2.  **Cálculo Nutricional:** Com base nos alimentos e quantidades identificados, calcule o total de calorias (kcal), proteínas (g), carboidratos (g) e gorduras (g).
-    3.  **Descrição:** Crie uma descrição curta e objetiva da refeição identificada (ex: "Prato de arroz, feijão, bife e batata frita").
-    4.  **Validação de Imagem:** Se a imagem claramente não contiver comida (ex: uma caneta, um carro, uma paisagem), você DEVE retornar 0 para todos os valores numéricos e uma string vazia para a descrição.
-    5.  **Refeição do Usuário:** O usuário classificou esta refeição como "${input.mealType}". Leve isso em conta, mas confie principalmente na análise visual.
+    INSTRUÇÕES PRINCIPAIS:
 
-    REGRAS DE SAÍDA:
-    - Sua resposta DEVE SER APENAS um único objeto JSON válido, sem nenhum texto, markdown ou explicações antes ou depois.
-    - Os valores para calorias, proteínas, carboidratos e gorduras DEVEM ser números inteiros, não strings.
+    1. **Identificação Visual Avançada**
+       - Identifique com precisão todos os alimentos presentes na imagem.
+       - Estime quantidades aproximadas em gramas ou unidades com base em proporções realistas.
 
-    O formato da resposta JSON DEVE seguir este schema:
-    {
-      "calories": number,
-      "protein": number,
-      "carbs": number,
-      "fat": number,
-      "description": string
-    }
+    2. **Cálculo Nutricional Científico**
+       - Calcule calorias, proteínas, carboidratos e gorduras utilizando referências nutricionais padrão.
+       - Os valores devem ser inteiros e o mais próximos possível da realidade.
 
-    EXEMPLO DE RESPOSTA para uma imagem de um prato de arroz, feijão, bife e fritas:
-    {
-      "calories": 750,
-      "protein": 35,
-      "carbs": 80,
-      "fat": 30,
-      "description": "Arroz branco, feijão, bife grelhado e batata frita"
-    }
+    3. **Descrição da Refeição**
+       - Crie uma descrição curta, objetiva e fiel ao conteúdo da foto.
+
+    4. **Validação de Imagem**
+       - Caso a imagem NÃO contenha alimentos, retorne:
+         {
+           "calories": 0,
+           "protein": 0,
+           "carbs": 0,
+           "fat": 0,
+           "description": ""
+         }
+
+    5. **Tipo de Refeição**
+       - Leve em consideração a categoria informada pelo usuário ("${input.mealType}"), mas priorize a evidência visual.
+
+    6. **FORMATO RÍGIDO**
+       - Responda exclusivamente com um objeto JSON no formato:
+         {
+           "calories": number,
+           "protein": number,
+           "carbs": number,
+           "fat": number,
+           "description": string
+         }
+
+    Nenhum texto adicional deve ser incluído.
   `;
 
   const response = await openai.chat.completions.create({
