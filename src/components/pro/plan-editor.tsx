@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { type UserProfile, type ActivePlan } from '@/types/user';
+import { type UserProfile } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import { GeneratedPlan, GeneratePlanInputSchema } from '@/lib/ai-schemas';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
+import type { ActivePlan } from '@/types/user';
 
 type Step = 'goals' | 'confirmation' | 'result';
 
@@ -114,8 +115,8 @@ const FormStep = ({ form, onNext }: { form: any, onNext: () => void }) => {
                 <section>
                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Restrições e Preferências</h3>
                      <div className="space-y-6">
-                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="preferences" render={({ field }) => (<FormItem><FormLabel>Preferências ou Aversões</FormLabel><FormControl><Textarea placeholder="Ex: 'Não gosto de coentro', 'Prefiro peixe a carne vermelha', 'Gostaria de opções de café da manhã rápidas'" {...field} /></FormControl><FormMessage /></FormItem>)} />
                      </div>
                 </section>
@@ -179,7 +180,7 @@ const ResultStep = ({ plan }: { plan: GeneratedPlan }) => {
 };
 
 
-export default function PlanEditor({ userProfile, activePlan, onPlanSaved }: { userProfile: UserProfile; activePlan: ActivePlan | null; onPlanSaved?: () => void; }) {
+export default function PlanEditor({ userProfile, onPlanSaved }: { userProfile: UserProfile; onPlanSaved?: () => void; }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [step, setStep] = useState<Step>('goals');
@@ -244,11 +245,9 @@ export default function PlanEditor({ userProfile, activePlan, onPlanSaved }: { u
       const userRef = doc(firestore, 'users', userProfile.id);
       const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
       
-      // First, update the user's profile with the goals/preferences used for generation
       const profileData = form.getValues();
       await updateDoc(userRef, { ...profileData });
       
-      // Then, save the generated plan to the subcollection
       const newActivePlan: ActivePlan = {
           name: 'Plano Gerado por IA',
           ...generatedPlan,

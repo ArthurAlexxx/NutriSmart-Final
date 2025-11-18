@@ -4,7 +4,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { type ActivePlan, type MealPlanItem } from '@/types/user';
-import { Droplet, Flame, Utensils, Target, Soup, Clock, Rocket } from 'lucide-react';
+import { Droplet, Flame, Utensils, Target, Soup, Clock, Rocket, Trash2, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Button } from './ui/button';
 
 const PlanMealItem = ({ meal }: { meal: MealPlanItem }) => (
     <div className="rounded-2xl border p-4 space-y-4 relative bg-card shadow-sm">
@@ -45,7 +47,7 @@ const EmptyPlanState = () => (
             <Soup className="h-12 w-12 text-primary mx-auto mb-4" />
             <CardTitle className="text-2xl">Nenhum Plano Alimentar Ativo</CardTitle>
             <CardDescription className="mt-2 max-w-md mx-auto">
-                No momento, você não tem um plano alimentar ativo. Use o assistente de IA para gerar um.
+                Use o assistente de IA para gerar um plano personalizado ou aguarde seu nutricionista criar um para você.
             </CardDescription>
         </CardHeader>
     </Card>
@@ -53,9 +55,10 @@ const EmptyPlanState = () => (
 
 interface MealPlanViewProps {
   plan: ActivePlan | null;
+  onPlanDelete?: () => void;
 }
 
-export default function MealPlanView({ plan }: MealPlanViewProps) {
+export default function MealPlanView({ plan, onPlanDelete }: MealPlanViewProps) {
   
   if (!plan || !plan.calorieGoal) {
     return <EmptyPlanState />;
@@ -66,7 +69,33 @@ export default function MealPlanView({ plan }: MealPlanViewProps) {
   return (
     <div className='animate-fade-in space-y-8 max-w-4xl mx-auto'>
         <section>
-            <h2 className='text-2xl font-bold text-foreground mb-2 flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias do Plano Ativo</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-2">
+                <h2 className='text-2xl font-bold text-foreground flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias</h2>
+                 {onPlanDelete && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir Plano
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação removerá permanentemente seu plano alimentar ativo. Você poderá gerar um novo a qualquer momento. Deseja continuar?
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={onPlanDelete} className="bg-destructive hover:bg-destructive/90">
+                                Confirmar Exclusão
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 )}
+            </div>
             <p className='text-muted-foreground mb-4'>Estas são as metas definidas para o plano que está ativo no momento.</p>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <InfoCard icon={Flame} title="Calorias" value={plan.calorieGoal} unit="kcal" color="bg-orange-400" />

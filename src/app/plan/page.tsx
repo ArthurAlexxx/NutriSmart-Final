@@ -2,8 +2,8 @@
 // src/app/plan/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { doc, onSnapshot, Unsubscribe, collection, query, where } from 'firebase/firestore';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { doc, onSnapshot, Unsubscribe, collection, query, where, deleteDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
 import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown } from 'lucide-react';
@@ -30,7 +30,6 @@ export default function PlanPage() {
   
   const isUnderProfessionalCare = !!userProfile?.patientRoomId;
 
-  // Hook to fetch the user's active plan from the subcollection
   const activePlanRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid, 'plans', 'active');
@@ -55,7 +54,7 @@ export default function PlanPage() {
         } else {
           setRoom(null);
         }
-        setLoading(false); // End loading after fetching room data
+        setLoading(false);
       }, (error) => {
         console.error("Error fetching room data:", error);
         toast({ title: "Erro ao carregar plano", description: "Não foi possível buscar os dados do seu nutricionista.", variant: "destructive" });
@@ -65,8 +64,22 @@ export default function PlanPage() {
     } else {
       setLoading(isOverallLoading);
     }
-  }, [user, isUserLoading, isPlanLoading, userProfile, firestore, toast]);
+  }, [isUserLoading, isPlanLoading, userProfile, firestore, toast]);
   
+
+  const handlePlanDelete = useCallback(async () => {
+    if (!activePlanRef) {
+        toast({ title: "Erro", description: "Referência do plano não encontrada.", variant: "destructive" });
+        return;
+    }
+    try {
+        await deleteDoc(activePlanRef);
+        toast({ title: "Plano Removido", description: "Seu plano alimentar ativo foi removido com sucesso." });
+    } catch (error) {
+        console.error("Error deleting plan:", error);
+        toast({ title: "Erro ao Remover", description: "Não foi possível remover o plano.", variant: "destructive" });
+    }
+  }, [activePlanRef, toast]);
 
   if (loading) {
     return (
@@ -79,9 +92,7 @@ export default function PlanPage() {
     );
   }
   
-  // Determine which plan to display in the "Pro Plan" tab
   const proPlan = room?.activePlan;
-  // The user's personal plan is always `activePlan` from the subcollection
   const myPlan = activePlan;
 
   return (
@@ -116,7 +127,6 @@ export default function PlanPage() {
         </div>
 
         <TabsContent value="pro-plan">
-          {/* Always pass the professional's plan to this view */}
           <MealPlanView plan={proPlan} />
         </TabsContent>
         <TabsContent value="my-plan" className="flex flex-col gap-8">
@@ -128,11 +138,11 @@ export default function PlanPage() {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-8">
-                  {userProfile && <PlanEditor userProfile={userProfile} activePlan={myPlan} onPlanSaved={() => setIsEditorOpen(false)} />}
+                  {userProfile && <PlanEditor userProfile={userProfile} onPlanSaved={() => setIsEditorOpen(false)} />}
               </CollapsibleContent>
             </Collapsible>
             
-            <MealPlanView plan={myPlan} />
+            <MealPlanView plan={myPlan} onPlanDelete={handlePlanDelete} />
         </TabsContent>
       </Tabs>
     </AppLayout>
