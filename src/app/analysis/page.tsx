@@ -211,12 +211,12 @@ export default function AnalysisPage() {
           <p className="text-xs text-muted-foreground text-center -mt-2">
             Médias calculadas para o período de {period} dias.
           </p>
-          <ChartsView
-            caloriesData={chartData}
-            hydrationData={chartData}
-            weightData={weightChartData}
-          />
         </div>
+        <ChartsView
+          caloriesData={chartData}
+          hydrationData={chartData}
+          weightData={weightChartData}
+        />
       </div>
     );
   }

@@ -1,10 +1,9 @@
+
 // src/components/analysis/charts-view.tsx
 'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DashboardCharts } from '@/components/dashboard-charts';
-import { TrendingUp, GlassWater, Weight, ChevronDown } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { cn } from '@/lib/utils';
+import { TrendingUp, GlassWater, Weight } from 'lucide-react';
 
 interface ChartData {
   caloriesData: any[];
@@ -28,29 +27,25 @@ export default function ChartsView({ caloriesData, hydrationData, weightData }: 
   };
 
   return (
-    <Accordion type="single" collapsible className="w-full space-y-4">
-      {chartOptions.map((option) => (
-        <AccordionItem value={option.value} key={option.value} className="border-none">
-           <Card className="shadow-sm rounded-2xl w-full overflow-hidden">
-                <AccordionTrigger className="p-6 hover:no-underline text-left">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 text-primary p-3 rounded-full">
-                            <option.Icon className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground">{option.label}</h3>
-                            <p className="text-sm text-muted-foreground">{option.description}</p>
-                        </div>
+    <div className="grid grid-cols-1 gap-6">
+      {chartOptions.map((option, index) => (
+        <Card key={option.value} className="shadow-sm rounded-2xl w-full overflow-hidden animate-fade-in" style={{ animationDelay: `${index * 150}ms`}}>
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 text-primary p-3 rounded-full">
+                        <option.Icon className="h-6 w-6" />
                     </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <div className="pt-0 p-6">
-                        <DashboardCharts chartType={option.value} data={chartDataMap[option.value]} />
+                    <div>
+                        <CardTitle className="text-lg font-semibold text-foreground">{option.label}</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">{option.description}</CardDescription>
                     </div>
-                </AccordionContent>
-            </Card>
-        </AccordionItem>
+                </div>
+            </CardHeader>
+            <CardContent className="pt-0 pl-2 pr-4 sm:pl-4">
+                <DashboardCharts chartType={option.value} data={chartDataMap[option.value]} />
+            </CardContent>
+        </Card>
       ))}
-    </Accordion>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+
 // src/components/dashboard-charts.tsx
 'use client';
 
@@ -79,7 +80,7 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
       >
         <LineChart
           data={data}
-          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
         >
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
@@ -110,7 +111,7 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
             dataKey="calories"
             type="monotone"
             stroke="var(--color-calories)"
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={{
               r: 4,
               fill: 'var(--color-calories)',
@@ -132,7 +133,7 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
     return (
       <ChartContainer config={hydrationChartConfig} className="min-h-[250px] w-full">
         <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
+            <BarChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3"/>
                 <XAxis dataKey="day" tickLine={false} tickMargin={8} axisLine={false} stroke="#888888" fontSize={12} tickFormatter={(value) => value.slice(0, 5)} />
                 <YAxis tickLine={false} axisLine={false} tickMargin={8} stroke="#888888" fontSize={12} unit="ml" domain={[0, Math.max(...hydrationTicks)]} ticks={hydrationTicks} />
@@ -158,7 +159,7 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
       >
         <LineChart
           data={data}
-          margin={{ top: 10, right: 20, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
         >
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
           <XAxis
