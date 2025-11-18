@@ -44,14 +44,14 @@ const MealPlanItemSchema = z.object({
   items: z.string().describe("Descrição dos alimentos e quantidades para a refeição."),
 });
 
-export const PlanSchema = z.object({
+export const GeneratedPlan = z.object({
   calorieGoal: z.coerce.number().describe("A meta de calorias diária recalculada para o plano."),
   proteinGoal: z.coerce.number().describe("A meta de proteínas diária recalculada para o plano."),
   hydrationGoal: z.coerce.number().describe("A meta de hidratação diária recalculada para o plano."),
   meals: z.array(MealPlanItemSchema).describe("Uma lista de refeições para um dia, totalizando 5 a 6 refeições (incluindo lanches)."),
 });
 
-export type GeneratedPlan = z.infer<typeof PlanSchema>;
+export type GeneratedPlan = z.infer<typeof GeneratedPlan>;
 
 export interface GeneratePlanInput {
     calorieGoal: number;
