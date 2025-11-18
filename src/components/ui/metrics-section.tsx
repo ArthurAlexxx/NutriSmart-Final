@@ -1,7 +1,15 @@
 // src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
-import CountUp from 'react-countup';
+import dynamic from 'next/dynamic';
+import { Skeleton } from './skeleton';
+
+// Dynamic import for CountUp to ensure it only runs on the client side
+const CountUp = dynamic(() => import('react-countup'), {
+    ssr: false,
+    loading: () => <span className="text-4xl md:text-5xl font-bold text-primary">0</span>,
+});
+
 
 const metrics = [
     {
