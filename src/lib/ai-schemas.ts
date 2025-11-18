@@ -1,4 +1,3 @@
-
 // src/lib/ai-schemas.ts
 import { z } from 'zod';
 
@@ -24,12 +23,13 @@ export type Recipe = z.infer<typeof RecipeSchema>;
 
 // Schema for meal analysis from a photo
 export const AnalyzeMealOutputSchema = z.object({
-  calories: z.number().describe('Estimativa de calorias totais (kcal).'),
-  protein: z.number().describe('Estimativa de proteína total (g).'),
-  carbs: z.number().describe('Estimativa de carboidratos totais (g).'),
-  fat: z.number().describe('Estimativa de gordura total (g).'),
-  description: z.string().describe('Descrição curta da refeição identificada.'),
+  calories: z.coerce.number().catch(0).describe('Estimativa de calorias totais (kcal).'),
+  protein: z.coerce.number().catch(0).describe('Estimativa de proteína total (g).'),
+  carbs: z.coerce.number().catch(0).describe('Estimativa de carboidratos totais (g).'),
+  fat: z.coerce.number().catch(0).describe('Estimativa de gordura total (g).'),
+  description: z.string().catch('').describe('Descrição curta da refeição identificada.'),
 });
+
 export type AnalyzeMealOutput = z.infer<typeof AnalyzeMealOutputSchema>;
 
 export interface AnalyzeMealInput {

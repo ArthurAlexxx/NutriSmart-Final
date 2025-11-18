@@ -143,13 +143,26 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
   const prompt = `Analise a imagem da refeição e estime o conteúdo nutricional. O usuário marcou esta refeição como '${input.mealType}'.
-Responda APENAS com um objeto JSON válido, aderindo estritamente ao schema.
-Se não for comida, retorne 0 para todos os valores numéricos.
+Responda APENAS com um objeto JSON válido.
+Se não for uma imagem de comida, retorne 0 para todos os valores numéricos e uma string vazia para a descrição.
 
-Schema:
-\`\`\`json
-${JSON.stringify(AnalyzeMealOutputSchema.shape)}
-\`\`\`
+O formato da resposta JSON DEVE ser:
+{
+  "calories": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number,
+  "description": string
+}
+
+Exemplo de resposta para uma imagem de salada de frango:
+{
+  "calories": 350,
+  "protein": 30,
+  "carbs": 10,
+  "fat": 20,
+  "description": "Salada de frango com folhas verdes e tomate"
+}
 `;
 
   const response = await openai.chat.completions.create({
@@ -169,7 +182,7 @@ ${JSON.stringify(AnalyzeMealOutputSchema.shape)}
       },
     ],
     response_format: { type: "json_object" },
-    max_tokens: 300,
+    max_tokens: 400,
   });
 
   const resultText = response.choices[0].message.content;
