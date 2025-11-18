@@ -17,7 +17,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const SYSTEM_PROMPT_JSON_ONLY = "Você é uma engine de software e deve SEMPRE responder apenas com um objeto JSON válido, sem nenhum texto, explicação ou formatação adicional.";
+const SYSTEM_PROMPT_JSON_ONLY = `
+VOCÊ DEVE RESPONDER APENAS COM UM OBJETO JSON VÁLIDO.
+NÃO ESCREVA NADA FORA DO JSON.
+NÃO ESCREVA TEXTO ANTES OU DEPOIS.
+`;
 
 /**
  * Gera uma receita usando a API da OpenAI.
@@ -26,18 +30,29 @@ const SYSTEM_PROMPT_JSON_ONLY = "Você é uma engine de software e deve SEMPRE r
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   const prompt = `
-    CONTEXTO DO USUÁRIO:
+    INSTRUÇÕES:
+    1. Analise a solicitação do usuário para extrair ingredientes, tipo de prato, número de porções (ex: "para 2 pessoas"), e metas calóricas (ex: "com 500 calorias").
+    2. Com base na análise, crie UMA receita. Use principalmente os ingredientes fornecidos, adicionando apenas itens básicos (sal, pimenta, azeite, etc.) se for essencial.
+    3. Se a solicitação não parecer ser sobre comida, retorne um JSON com um campo "error".
+    4. Estime calorias, proteínas, carboidratos e gorduras POR PORÇÃO.
+    5. Gere um título, descrição, tempos de preparo/cozimento, porções e passos de instrução numerados.
+
+    SOLICITAÇÃO DO USUÁRIO:
     "${userInput}"
 
-    INSTRUÇÕES:
-    1. **Análise Inteligente**: Analise a solicitação para extrair ingredientes, tipo de prato, número de porções (ex: "para 2 pessoas"), metas calóricas (ex: "com 500 calorias") ou outras preferências.
-    2. **Validação de Validade Alimentar**: Se o input não contiver nenhum termo relacionado à culinária, retorne APENAS: {"error": "O item informado não parece ser um alimento."}.
-    3. **Construção da Receita**: Crie **apenas 1 receita** que atenda à solicitação. Use principalmente os ingredientes fornecidos. Adicione apenas itens básicos (sal, pimenta, azeite) se indispensável.
-    4. **Cálculo Nutricional**: Estime calorias, proteínas, carboidratos e gorduras **por porção**.
-    5. **Apresentação**: Gere um título profissional, uma descrição curta e um modo de preparo em passos numerados. Os tempos e porções devem ser realistas.
+    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    {
+      "title": "Frango Grelhado com Legumes",
+      "description": "Uma refeição saudável e rápida.",
+      "prepTime": "10 min",
+      "cookTime": "15 min",
+      "servings": "2",
+      "ingredients": ["2 filés de frango", "1 brócolis", "1 cenoura"],
+      "instructions": ["1. Tempere o frango.", "2. Grelhe o frango.", "3. Cozinhe os legumes."],
+      "nutrition": { "calories": "450", "protein": "40g", "carbs": "15g", "fat": "25g" }
+    }
 
-    FORMATO DE SAÍDA ESPERADO:
-    Sua resposta DEVE ser um objeto JSON com a seguinte estrutura: { title, description, prepTime, cookTime, servings, ingredients, instructions, nutrition: { calories, protein, carbs, fat } }.
+    AGORA, GERE SOMENTE O OBJETO JSON FINAL.
   `;
 
   const response = await openai.chat.completions.create({
@@ -47,7 +62,7 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
         { role: "user", content: prompt }
     ],
     response_format: { type: "json_object" },
-    temperature: 0.7,
+    temperature: 0.3,
   });
 
   const resultText = response.choices[0].message.content;
@@ -58,18 +73,15 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   try {
     const recipeJson = JSON.parse(resultText);
     
-    // Check for custom error from the AI
     if (recipeJson.error) {
         throw new Error(recipeJson.error);
     }
 
-    // Attempt to validate the root object first
     const rootValidation = RecipeSchema.safeParse(recipeJson);
     if (rootValidation.success) {
       return rootValidation.data;
     }
 
-    // If root fails, check for a nested 'recipe' object
     if (recipeJson.recipe) {
       const nestedValidation = RecipeSchema.safeParse(recipeJson.recipe);
       if (nestedValidation.success) {
@@ -77,10 +89,7 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
       }
     }
     
-    console.error("Zod validation failed for both root and nested 'recipe' objects.", {
-        rootError: (rootValidation as any).error,
-        nestedError: recipeJson.recipe ? (RecipeSchema.safeParse(recipeJson.recipe) as any).error : "No nested object"
-    });
+    console.error("Zod validation failed for both root and nested 'recipe' objects.");
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
 
@@ -101,7 +110,12 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
  * @returns Um objeto de plano alimentar validado.
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
-  const prompt = `
+    const prompt = `
+    INSTRUÇÕES:
+    1. Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, com quantidades precisas (ex: 120g).
+    2. Os valores de 'calorieGoal' e 'proteinGoal' no JSON final podem variar até 5% das metas para se adequar ao plano. 'hydrationGoal' deve ser mantido.
+    3. Use nomes padrão para as refeições (ex: 'Café da Manhã') e atribua horários lógicos ("HH:MM").
+    
     DADOS DO USUÁRIO PARA O PLANO:
     - Meta Calórica Diária: ${input.calorieGoal} kcal
     - Meta de Proteína Diária: ${input.proteinGoal} g
@@ -110,11 +124,6 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
     - Peso Meta: ${input.targetWeight || 'Não informado'} kg
     - Data Meta: ${input.targetDate || 'Não informada'}
 
-    REGRAS DE PROCESSAMENTO:
-    1.  **CRIAR PLANO:** Gere um plano com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil. Quantidades devem ser precisas (ex: 120g).
-    2.  **AJUSTAR METAS:** Os valores 'calorieGoal' e 'proteinGoal' no JSON podem variar até 5% para mais ou para menos. 'hydrationGoal' deve ser mantido.
-    3.  **NOME E HORÁRIOS:** Use nomes padrão ('Café da Manhã', etc.) e atribua horários lógicos ("HH:MM").
-    
     EXEMPLO DE SAÍDA JSON VÁLIDA:
     {
       "calorieGoal": 1985,
@@ -125,6 +134,8 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
         { "name": "Almoço", "time": "13:00", "items": "150g de peito de frango grelhado, 100g de arroz integral, salada de folhas." }
       ]
     }
+
+    AGORA, GERE SOMENTE O OBJETO JSON FINAL.
   `;
 
   const response = await openai.chat.completions.create({
@@ -134,7 +145,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
         { role: "user", content: prompt }
     ],
     response_format: { type: "json_object" },
-    temperature: 0.7,
+    temperature: 0.3,
   });
 
   const resultText = response.choices[0].message.content;
@@ -145,13 +156,11 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   try {
     const planJson = JSON.parse(resultText);
 
-    // Attempt to validate the root object first
     const rootValidation = GeneratedPlan.safeParse(planJson);
     if (rootValidation.success) {
         return rootValidation.data;
     }
 
-    // If root fails, check for a nested 'plan' object
     if (planJson.plan) {
         const nestedValidation = GeneratedPlan.safeParse(planJson.plan);
         if (nestedValidation.success) {
@@ -159,10 +168,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
         }
     }
 
-    console.error("Zod validation failed for both root and nested 'plan' objects.", {
-        rootError: (rootValidation as any).error,
-        nestedError: planJson.plan ? (GeneratedPlan.safeParse(planJson.plan) as any).error : "No nested object"
-    });
+    console.error("Zod validation failed for both root and nested 'plan' objects.");
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
 
@@ -186,20 +192,21 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
   const prompt = `
-    INSTRUÇÕES PRINCIPAIS:
+    INSTRUÇÕES:
+    1.  Identifique os alimentos na imagem e estime as quantidades em gramas ou unidades.
+    2.  Calcule o total de **calorias (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)**. Os valores podem ser decimais para precisão.
+    3.  Crie uma descrição curta dos itens (ex: "Bife grelhado com arroz branco e feijão.").
+    4.  Se a imagem **NÃO CONTÉM COMIDA**, retorne um JSON com todos os valores numéricos zerados e a descrição vazia.
+    5.  Use o tipo de refeição ("${input.mealType}") como contexto, mas baseie sua análise na imagem.
 
-    1.  **Identificação Visual Avançada**: Identifique com precisão todos os alimentos e bebidas visíveis na imagem. Estime as quantidades de cada item (em gramas ou unidades) com base em proporções realistas.
-    2.  **Cálculo Nutricional Preciso**: Calcule o total de **calorias (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)**. Os valores devem ser numéricos e podem ser decimais para máxima precisão (ex: 125.5).
-    3.  **Descrição Objetiva**: Crie uma descrição curta listando os principais itens identificados (ex: "Bife grelhado com arroz branco, feijão e salada de alface.").
-    4.  **Validação de Imagem (Regra Crítica)**: Se a imagem fornecida claramente **NÃO CONTÉM COMIDA**, retorne o seguinte JSON com valores zerados: { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "description": "" }.
-    5.  **Contexto**: Use o tipo de refeição ("${input.mealType}") como contexto, mas baseie sua análise na imagem.
-
-    FORMATO DE SAÍDA JSON ESPERADO:
-    { "calories": number, "protein": number, "carbs": number, "fat": number, "description": string }
+    EXEMPLO DE SAÍDA JSON:
+    { "calories": 550.5, "protein": 45.2, "carbs": 60.0, "fat": 15.8, "description": "Bife grelhado, arroz, feijão e salada." }
+    
+    AGORA, ANALISE A IMAGEM E GERE SOMENTE O OBJETO JSON FINAL.
   `;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o", // Using the more powerful model for vision
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
@@ -221,6 +228,7 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
     ],
     response_format: { type: "json_object" },
     max_tokens: 400,
+    temperature: 0.3,
   });
 
   const resultText = response.choices[0].message.content;
@@ -238,4 +246,5 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
+
     
