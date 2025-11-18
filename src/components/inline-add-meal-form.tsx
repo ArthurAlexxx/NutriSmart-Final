@@ -85,15 +85,6 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     control: manualForm.control,
     name: 'foods',
   });
-  
-  useEffect(() => {
-    // Disable/enable form based on feature availability
-    if (isPhotoFeatureAvailable) {
-      photoForm.formState.isSubmitting = false;
-    } else {
-      photoForm.formState.isSubmitting = true;
-    }
-  }, [isPhotoFeatureAvailable, photoForm]);
 
   const handleManualSubmit = async (data: ManualMealFormValues) => {
     setIsProcessing(true);
