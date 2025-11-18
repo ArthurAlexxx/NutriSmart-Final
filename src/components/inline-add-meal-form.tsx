@@ -67,7 +67,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     resolver: zodResolver(manualFormSchema),
     defaultValues: {
       mealType: '',
-      foods: [{ name: '', portion: 100, unit: 'g' }],
+      foods: [{ name: '', portion: NaN, unit: '' }],
     },
     disabled: disabled
   });
@@ -102,7 +102,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
       }
       
       await saveMeal(data.mealType, mealData);
-      manualForm.reset({ mealType: '', foods: [{ name: '', portion: 100, unit: 'g' }] });
+      manualForm.reset({ mealType: '', foods: [{ name: '', portion: NaN, unit: '' }] });
       onMealAdded();
 
     } catch (error: any) {
@@ -265,7 +265,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Alimentos *</h3>
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: 100, unit: 'g' })} disabled={disabled}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })} disabled={disabled}>
                     <Plus className="mr-2 h-4 w-4" /> Adicionar
                   </Button>
                 </div>

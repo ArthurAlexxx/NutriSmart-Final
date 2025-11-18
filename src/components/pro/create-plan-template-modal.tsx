@@ -56,8 +56,8 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
     defaultValues: {
       name: '',
       description: '',
-      calorieGoal: 2000,
-      hydrationGoal: 2000,
+      calorieGoal: NaN,
+      hydrationGoal: NaN,
       meals: [defaultMealValues],
     },
   });
@@ -126,14 +126,14 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
                         <FormField control={form.control} name="calorieGoal" render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="flex items-center gap-2"><Flame className="h-4 w-4" /> Meta de Calorias (kcal) *</FormLabel>
-                                <FormControl><Input type="number" {...field} /></FormControl>
+                                <FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="flex items-center gap-2"><Droplet className="h-4 w-4" /> Meta de Hidratação (ml) *</FormLabel>
-                                <FormControl><Input type="number" {...field} /></FormControl>
+                                <FormControl><Input type="number" placeholder="Ex: 2500" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}/>

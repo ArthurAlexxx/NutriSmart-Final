@@ -44,7 +44,7 @@ export default function AddMealForm({ onTotalsChange, onFoodsChange, onMealTypeC
     resolver: zodResolver(formSchema),
     defaultValues: {
       mealType: '',
-      foods: [{ name: '', portion: 100, unit: 'g' }],
+      foods: [{ name: '', portion: NaN, unit: '' }],
     },
   });
 
@@ -110,7 +110,7 @@ export default function AddMealForm({ onTotalsChange, onFoodsChange, onMealTypeC
                 <h3 className="text-lg font-semibold">Alimentos *</h3>
                  <div className='flex items-center gap-2'>
                     {isProcessing && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: 100, unit: 'g' })}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })}>
                         <Plus className="mr-2 h-4 w-4" /> Adicionar
                     </Button>
                  </div>
