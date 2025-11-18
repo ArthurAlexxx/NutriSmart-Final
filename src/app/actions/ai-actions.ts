@@ -143,13 +143,21 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   
   try {
     const planJson = JSON.parse(resultText);
-
-    // Handle cases where the AI might wrap the response
     const dataToValidate = planJson.plan || planJson;
     
-    // Use the correct, more comprehensive schema for validation
-    const validatedPlan = PlanSchema.parse(dataToValidate);
-    return validatedPlan;
+    // Correctly use the comprehensive GeneratedPlan schema for validation
+    const validatedPlan = z.object({
+      calorieGoal: z.number(),
+      proteinGoal: z.number(),
+      hydrationGoal: z.number(),
+      meals: z.array(z.object({
+        name: z.string(),
+        time: z.string(),
+        items: z.string(),
+      })),
+    }).parse(dataToValidate);
+
+    return validatedPlan as GeneratedPlan;
   } catch (error) {
      console.error("Erro ao fazer parse do JSON do plano ou validar com Zod:", error);
      console.error("JSON recebido da OpenAI:", resultText);
