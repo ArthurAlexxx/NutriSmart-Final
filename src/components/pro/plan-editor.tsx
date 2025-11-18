@@ -1,3 +1,4 @@
+
 // src/components/pro/plan-editor.tsx
 'use client';
 
@@ -7,7 +8,7 @@ import * as z from 'zod';
 import { type Room } from '@/types/room';
 import { type UserProfile, type ActivePlan } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
