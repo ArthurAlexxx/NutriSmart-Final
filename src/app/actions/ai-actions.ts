@@ -105,19 +105,12 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
         throw new Error(recipeJson.error);
     }
 
-    const rootValidation = RecipeSchema.safeParse(recipeJson);
-    if (rootValidation.success) {
-      return rootValidation.data;
-    }
-
-    if (recipeJson.recipe) {
-      const nestedValidation = RecipeSchema.safeParse(recipeJson.recipe);
-      if (nestedValidation.success) {
-        return nestedValidation.data;
-      }
+    const validationResult = RecipeSchema.safeParse(recipeJson);
+    if (validationResult.success) {
+      return validationResult.data;
     }
     
-    console.error("Zod validation failed for both root and nested 'recipe' objects.");
+    console.error("Zod validation failed for recipe object.");
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
 
@@ -188,19 +181,12 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   try {
     const planJson = JSON.parse(resultText);
 
-    const rootValidation = GeneratedPlan.safeParse(planJson);
-    if (rootValidation.success) {
-        return rootValidation.data;
+    const validationResult = GeneratedPlan.safeParse(planJson);
+    if (validationResult.success) {
+        return validationResult.data;
     }
 
-    if (planJson.plan) {
-        const nestedValidation = GeneratedPlan.safeParse(planJson.plan);
-        if (nestedValidation.success) {
-            return nestedValidation.data;
-        }
-    }
-
-    console.error("Zod validation failed for both root and nested 'plan' objects.");
+    console.error("Zod validation failed:", validationResult.error);
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
 
@@ -291,5 +277,4 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
-
     
