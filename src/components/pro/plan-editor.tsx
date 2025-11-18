@@ -15,18 +15,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, Rocket, Target, Weight, CalendarIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useFirestore } from '@/firebase';
-import { doc, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, runTransaction, writeBatch } from 'firebase/firestore';
+import { doc, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, runTransaction } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import AIPlanConfirmationModal from '../ai-plan-confirmation-modal';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { ptBR } from 'date-fns/locale';
-import { generateMealPlanAction } from '@/app/actions/ai-actions';
+import { generateMealPlanAction, type GeneratedPlan } from '@/app/actions/ai-actions';
 
 const mealPlanItemSchema = z.object({
   id: z.string().optional(),
@@ -42,10 +41,9 @@ const formSchema = z.object({
   weight: z.coerce.number().min(1, 'O peso deve ser maior que 0.').optional().or(z.literal(NaN)),
   targetWeight: z.coerce.number().min(1, 'A meta de peso deve ser maior que 0.').optional().or(z.literal(NaN)),
   targetDate: z.date().optional(),
-  meals: z.array(mealPlanItemSchema).min(0, 'Adicione pelo menos uma refeição ao plano.'),
 });
 
-type PlanEditorFormValues = z.infer<typeof formSchema>;
+type PlanGoalsFormValues = z.infer<typeof formSchema>;
 
 interface PlanEditorProps {
   room?: Room;
@@ -68,10 +66,12 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
   const firestore = useFirestore();
   const isProfessionalMode = !!room;
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isAIModalOpen, setAIModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('goals');
+  
+  const [currentPlan, setCurrentPlan] = useState<GeneratedPlan | null>(null);
 
-  const activePlan = isProfessionalMode ? room.activePlan : userProfile?.activePlan;
+  const activePlan = isProfessionalMode ? room.activePlan : (currentPlan || userProfile?.activePlan);
   
   const calculatedProteinGoal = (calories: number) => Math.round((calories * 0.35) / 4);
 
@@ -83,43 +83,41 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
     return undefined;
   }
 
-  const initialGoals = {
-    calorieGoal: activePlan?.calorieGoal || userProfile?.calorieGoal || 2000,
-    proteinGoal: activePlan?.proteinGoal || userProfile?.proteinGoal || calculatedProteinGoal(activePlan?.calorieGoal || userProfile?.calorieGoal || 2000),
-    hydrationGoal: activePlan?.hydrationGoal || userProfile?.waterGoal || 2000,
-    weight: (isProfessionalMode ? room?.patientInfo?.weight : userProfile?.weight) || NaN,
-    targetWeight: (isProfessionalMode ? room?.patientInfo?.targetWeight : userProfile?.targetWeight) || NaN,
-    targetDate: getTargetDate(),
-  };
-
-
-  const form = useForm<PlanEditorFormValues>({
+  const form = useForm<PlanGoalsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ...initialGoals,
-      meals: activePlan?.meals && activePlan.meals.length > 0 ? activePlan.meals : [],
+      calorieGoal: userProfile?.calorieGoal || 2000,
+      proteinGoal: userProfile?.proteinGoal || calculatedProteinGoal(userProfile?.calorieGoal || 2000),
+      hydrationGoal: userProfile?.waterGoal || 2000,
+      weight: userProfile?.weight || NaN,
+      targetWeight: userProfile?.targetWeight || NaN,
+      targetDate: getTargetDate(),
     },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'meals',
   });
   
   useEffect(() => {
-    if (activePlan) {
-        const targetDate = getTargetDate();
+    if (userProfile) {
         form.reset({
-            calorieGoal: activePlan.calorieGoal,
-            proteinGoal: activePlan.proteinGoal || calculatedProteinGoal(activePlan.calorieGoal),
-            hydrationGoal: activePlan.hydrationGoal,
-            weight: (isProfessionalMode ? room?.patientInfo?.weight : userProfile?.weight) || NaN,
-            targetWeight: (isProfessionalMode ? room?.patientInfo?.targetWeight : userProfile?.targetWeight) || NaN,
-            targetDate,
-            meals: activePlan.meals || [],
+            calorieGoal: userProfile.calorieGoal || 2000,
+            proteinGoal: userProfile.proteinGoal || calculatedProteinGoal(userProfile.calorieGoal || 2000),
+            hydrationGoal: userProfile.waterGoal || 2000,
+            weight: userProfile.weight || NaN,
+            targetWeight: userProfile.targetWeight || NaN,
+            targetDate: getTargetDate(),
         });
     }
-  }, [activePlan, form, isProfessionalMode, room, userProfile]);
+  }, [userProfile, form]);
+  
+  useEffect(() => {
+      if(activePlan && activePlan.meals.length > 0) {
+          setCurrentPlan({
+              calorieGoal: activePlan.calorieGoal,
+              proteinGoal: activePlan.proteinGoal,
+              hydrationGoal: activePlan.hydrationGoal,
+              meals: activePlan.meals,
+          });
+      }
+  }, [activePlan])
 
 
   const watchedCalorieGoal = form.watch('calorieGoal');
@@ -134,7 +132,15 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
 
   const { isSubmitting, isDirty } = form.formState;
 
-  const onSubmit = async (data: PlanEditorFormValues) => {
+  const onSavePlan = async () => {
+    if (!currentPlan) {
+        toast({title: "Nenhum plano para salvar", variant: "destructive"});
+        return;
+    }
+    await handleSaveSubmit(currentPlan);
+  };
+
+  const handleSaveSubmit = async (data: GeneratedPlan) => {
     if (isProfessionalMode && room) {
         await handleProfessionalSubmit(data);
     } else if (userProfile) {
@@ -142,8 +148,9 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
     }
   };
 
-  const handlePatientSubmit = async (data: PlanEditorFormValues) => {
+  const handlePatientSubmit = async (data: GeneratedPlan) => {
     if (!userProfile?.id || !firestore) return;
+    setIsSaving(true);
     
     try {
         const userRef = doc(firestore, 'users', userProfile.id);
@@ -160,16 +167,12 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
             calorieGoal: data.calorieGoal,
             proteinGoal: data.proteinGoal,
             waterGoal: data.hydrationGoal,
-            weight: data.weight,
-            targetWeight: data.targetWeight,
-            targetDate: data.targetDate,
         });
 
         toast({
             title: "Plano Salvo!",
             description: `Seu plano alimentar pessoal foi salvo com sucesso.`,
         });
-        form.reset(data);
 
     } catch (error: any) {
          toast({
@@ -177,11 +180,14 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
             description: error.message || "Não foi possível salvar seu plano.",
             variant: "destructive",
         });
+    } finally {
+        setIsSaving(false);
     }
   }
   
-  const handleProfessionalSubmit = async (data: PlanEditorFormValues) => {
+  const handleProfessionalSubmit = async (data: GeneratedPlan) => {
      if(!room || !firestore) return;
+     setIsSaving(true);
      try {
         await runTransaction(firestore, async (transaction) => {
             const roomRef = doc(firestore, 'rooms', room.id);
@@ -200,17 +206,9 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                 createdAt: serverTimestamp(),
             };
 
-            const updatedPatientInfo = {
-                ...roomData.patientInfo,
-                weight: data.weight,
-                targetWeight: data.targetWeight,
-                targetDate: data.targetDate ? Timestamp.fromDate(data.targetDate) : null,
-            };
-
             transaction.update(roomRef, {
                 activePlan: updatedActivePlan,
                 planHistory: arrayUnion(oldPlan),
-                patientInfo: updatedPatientInfo,
             });
         });
 
@@ -218,69 +216,18 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
             title: "Plano Atualizado!",
             description: `O plano de ${room.patientInfo.name} foi salvo com sucesso.`,
         });
-        form.reset(data);
     } catch(error: any) {
         toast({
             title: "Erro ao atualizar",
             description: error.message || "Não foi possível salvar o plano.",
             variant: "destructive",
         });
-    }
-  };
-  
-  const handleRemoveMeal = (index: number) => {
-    remove(index);
-  };
-
-  const handleClearPlan = async () => {
-    if (!isProfessionalMode || !room || !firestore) return;
-    try {
-        const roomRef = doc(firestore, 'rooms', room.id);
-        const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("Sala não encontrada.");
-
-        const roomData = roomDoc.data();
-        const oldPlan = roomData.activePlan;
-        
-        const patientRef = doc(firestore, 'users', roomData.patientId);
-        const patientDoc = await getDoc(patientRef);
-        const patientData = patientDoc.exists() ? patientDoc.data() : {};
-
-        const newActivePlan = {
-          meals: [],
-          calorieGoal: patientData?.calorieGoal || 2000,
-          proteinGoal: patientData?.proteinGoal || 140,
-          hydrationGoal: patientData?.waterGoal || 2000,
-          createdAt: serverTimestamp(),
-        };
-
-        await updateDoc(roomRef, {
-            activePlan: newActivePlan,
-            planHistory: arrayUnion(oldPlan),
-        });
-        
-        form.reset({
-            calorieGoal: newActivePlan.calorieGoal,
-            proteinGoal: newActivePlan.proteinGoal,
-            hydrationGoal: newActivePlan.hydrationGoal,
-            meals: [],
-        });
-
-        toast({
-            title: "Plano Limpo!",
-            description: "O plano alimentar foi removido. O paciente voltará a usar suas metas pessoais.",
-        });
-
-    } catch (error: any) {
-        toast({
-            title: "Erro ao Limpar Plano",
-            description: error.message || "Não foi possível remover o plano.",
-            variant: "destructive",
-        });
+    } finally {
+        setIsSaving(false);
     }
   };
 
-  const handleConfirmAIPlan = async () => {
+  const handleConfirmAIPlan = async (goalsData: PlanGoalsFormValues) => {
     setAIModalOpen(false);
     setIsGenerating(true);
     toast({
@@ -289,40 +236,23 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
     });
     
     try {
-        const formValues = form.getValues();
-        
         const payload = {
-            calorieGoal: formValues.calorieGoal,
-            proteinGoal: formValues.proteinGoal,
-            hydrationGoal: formValues.hydrationGoal,
-            weight: formValues.weight,
-            targetWeight: formValues.targetWeight,
-            targetDate: formValues.targetDate ? formValues.targetDate.toISOString().split('T')[0] : undefined,
+            calorieGoal: goalsData.calorieGoal,
+            proteinGoal: goalsData.proteinGoal,
+            hydrationGoal: goalsData.hydrationGoal,
+            weight: goalsData.weight,
+            targetWeight: goalsData.targetWeight,
+            targetDate: goalsData.targetDate ? goalsData.targetDate.toISOString().split('T')[0] : undefined,
         };
 
         const generatedPlan = await generateMealPlanAction(payload);
         
-        const parsedPlan = formSchema.safeParse(generatedPlan);
-
-        if (parsedPlan.success) {
-            const data = parsedPlan.data;
-            // Update form with AI generated data before submitting
-            form.setValue('calorieGoal', data.calorieGoal, { shouldDirty: true });
-            form.setValue('proteinGoal', data.proteinGoal, { shouldDirty: true });
-            form.setValue('hydrationGoal', data.hydrationGoal, { shouldDirty: true });
-            form.setValue('meals', data.meals, { shouldDirty: true });
-            
-            await onSubmit(data);
-
-            toast({
-                title: "Plano Gerado e Salvo!",
-                description: "O novo plano foi criado e salvo.",
-            });
-            setActiveTab('meals'); // Switch to meals tab
-        } else {
-             console.error("Zod validation error:", parsedPlan.error);
-             throw new Error('Os dados retornados pela IA não estão no formato correto.');
-        }
+        setCurrentPlan(generatedPlan);
+        
+        toast({
+            title: "Plano Gerado pela IA!",
+            description: "Revise o plano à direita. Se estiver tudo certo, clique em 'Salvar Plano'.",
+        });
 
     } catch (error: any) {
         console.error("Erro ao gerar plano com IA:", error);
@@ -338,151 +268,107 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
 
   return (
     <>
-    <div className="animate-fade-in max-w-4xl mx-auto">
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="goals"><Target className="mr-2 h-4 w-4"/>Metas e IA</TabsTrigger>
-                        <TabsTrigger value="meals"><Utensils className="mr-2 h-4 w-4"/>Refeições</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="goals">
-                        <Card className="shadow-sm rounded-2xl">
-                            <CardHeader>
-                                <CardTitle>Definição de Metas</CardTitle>
-                                <CardDescription>Ajuste as metas diárias e de peso. Estes dados serão usados para gerar planos com a IA.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <h4 className='font-semibold text-foreground flex items-center gap-2'><Weight className='h-5 w-5' /> Acompanhamento de Peso</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="weight" render={({ field }) => (
-                                        <FormItem><FormLabel>Peso Atual (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 75.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="targetWeight" render={({ field }) => (
-                                        <FormItem><FormLabel>Peso Meta (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 70" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                </div>
-                                <FormField control={form.control} name="targetDate" render={({ field }) => (
-                                    <FormItem className='flex flex-col py-1'><FormLabel>Data para Atingir a Meta</FormLabel>
-                                    <Popover><PopoverTrigger asChild><FormControl>
-                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
-                                            {field.value ? (format(field.value, "PPP", { locale: ptBR })) : (<span>Escolha uma data</span>)}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date() || date < new Date("1900-01-01")} initialFocus/>
-                                    </PopoverContent></Popover><FormMessage /></FormItem>
+    <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Coluna da Esquerda: Metas */}
+        <div className='w-full space-y-6'>
+            <Card className="shadow-sm rounded-2xl">
+                <CardHeader>
+                    <CardTitle>Definição de Metas</CardTitle>
+                    <CardDescription>Ajuste as metas diárias e de peso. Estes dados serão usados para gerar planos com a IA.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleConfirmAIPlan)} id="goals-form" className="space-y-6">
+                            <h4 className='font-semibold text-foreground flex items-center gap-2'><Weight className='h-5 w-5' /> Acompanhamento de Peso</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="weight" render={({ field }) => (
+                                    <FormItem><FormLabel>Peso Atual (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 75.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <Separator />
-                                <h4 className='font-semibold text-foreground pt-2 flex items-center gap-2'><Target className='h-5 w-5' /> Metas Diárias de Consumo</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <FormField control={form.control} name="calorieGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="proteinGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Droplet className='h-4 w-4 w-4 text-sky-500'/>Água (ml)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                </div>
-                            </CardContent>
-                        </Card>
-                         <div className='flex justify-end pt-6'>
-                            <Button type="button" onClick={() => setAIModalOpen(true)} disabled={isGenerating}>
-                                {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
-                                Gerar Refeições com IA
-                            </Button>
+                                <FormField control={form.control} name="targetWeight" render={({ field }) => (
+                                    <FormItem><FormLabel>Peso Meta (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 70" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                            <FormField control={form.control} name="targetDate" render={({ field }) => (
+                                <FormItem className='flex flex-col py-1'><FormLabel>Data para Atingir a Meta</FormLabel>
+                                <Popover><PopoverTrigger asChild><FormControl>
+                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                        {field.value ? (format(field.value, "PPP", { locale: ptBR })) : (<span>Escolha uma data</span>)}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date() || date < new Date("1900-01-01")} initialFocus/>
+                                </PopoverContent></Popover><FormMessage /></FormItem>
+                            )}/>
+                            <Separator />
+                            <h4 className='font-semibold text-foreground pt-2 flex items-center gap-2'><Target className='h-5 w-5' /> Metas Diárias de Consumo</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FormField control={form.control} name="calorieGoal" render={({ field }) => (
+                                    <FormItem><FormLabel className='flex items-center gap-1.5'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="proteinGoal" render={({ field }) => (
+                                    <FormItem><FormLabel className='flex items-center gap-1.5'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
+                                    <FormItem><FormLabel className='flex items-center gap-1.5'><Droplet className='h-4 w-4 text-sky-500'/>Água (ml)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
+            <div className='flex justify-end'>
+                <Button type="submit" form="goals-form" disabled={isGenerating}>
+                    {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
+                    Gerar Plano com IA
+                </Button>
+            </div>
+        </div>
+        
+        {/* Coluna da Direita: Plano Gerado */}
+        <div className='w-full space-y-6'>
+             <Card className="shadow-sm rounded-2xl">
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <CardTitle>Plano Alimentar Gerado</CardTitle>
+                            <CardDescription>Revise o plano gerado pela IA. Se estiver bom, salve-o.</CardDescription>
                         </div>
-                    </TabsContent>
-
-                    <TabsContent value="meals">
-                        <Card className="shadow-sm rounded-2xl">
-                             <CardHeader>
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <CardTitle>Editor de Refeições</CardTitle>
-                                        <CardDescription>Adicione, edite ou remova as refeições do plano.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {isGenerating ? (
+                         <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed min-h-[200px] flex flex-col justify-center items-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                            <p className="font-medium text-muted-foreground">Gerando plano alimentar...</p>
+                        </div>
+                    ) : currentPlan && currentPlan.meals.length > 0 ? (
+                        <div className="space-y-4">
+                            {currentPlan.meals.map((meal, index) => (
+                                <div key={index} className="rounded-2xl border p-4 space-y-4 relative bg-background shadow-sm">
+                                    <div className='flex justify-between items-start'>
+                                        <h4 className='font-semibold text-foreground'>{meal.name}</h4>
+                                        <p className='text-sm text-muted-foreground'>{meal.time}</p>
                                     </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => append(defaultMealValues)}><Plus className="mr-2 h-4 w-4" /> Nova Refeição</Button>
+                                    <p className="text-base text-muted-foreground whitespace-pre-line">{meal.items}</p>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                {fields.length === 0 ? (
-                                    <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed min-h-[200px] flex flex-col justify-center items-center">
-                                        <p className="font-medium text-muted-foreground">Nenhuma refeição adicionada.</p>
-                                        <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Refeição" ou use a IA na aba "Metas" para começar.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {fields.map((field, index) => (
-                                            <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-background shadow-sm">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <FormField control={form.control} name={`meals.${index}.name`} render={({ field }) => (
-                                                        <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um tipo" /></SelectTrigger></FormControl><SelectContent>{mealTypeOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                                                    )}/>
-                                                    <FormField control={form.control} name={`meals.${index}.time`} render={({ field }) => (
-                                                        <FormItem><FormLabel>Horário</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )}/>
-                                                </div>
-                                                <FormField control={form.control} name={`meals.${index}.items`} render={({ field }) => (
-                                                    <FormItem><FormLabel>Itens da Refeição</FormLabel><FormControl><Textarea placeholder="Ex: 2 ovos, 1 fatia de pão integral com abacate..." {...field} rows={3} /></FormControl><FormMessage /></FormItem>
-                                                )}/>
-                                                {fields.length > 0 && (
-                                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveMeal(index)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {form.formState.errors.meals?.root && <FormMessage>{form.formState.errors.meals.root.message}</FormMessage>}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                 </Tabs>
-
-                <div className='flex flex-col-reverse sm:flex-row sm:justify-end sm:items-center gap-4 mt-8 mb-8'>
-                    {isProfessionalMode && (
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                 <Button type="button" variant="destructive" className="mr-auto">
-                                    <RotateCcw className="mr-2 h-4 w-4" /> Limpar Plano
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação removerá todas as refeições do plano ativo e reverterá as metas de calorias e hidratação para as definidas pelo paciente. O plano atual será salvo no histórico.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleClearPlan} className="bg-destructive hover:bg-destructive/90">Confirmar Limpeza</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed min-h-[200px] flex flex-col justify-center items-center">
+                            <p className="font-medium text-muted-foreground">Seu plano aparecerá aqui.</p>
+                            <p className="text-sm text-muted-foreground mt-1">Defina suas metas e clique em "Gerar Plano com IA".</p>
+                        </div>
                     )}
-                    
-                    <Button type="submit" disabled={isSubmitting || !isDirty}>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Salvar Alterações
-                    </Button>
-                </div>
-            </form>
-        </Form>
+                </CardContent>
+            </Card>
+            <div className='flex justify-end'>
+                 <Button type="button" onClick={onSavePlan} disabled={isSaving || !currentPlan || isGenerating}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar Plano
+                </Button>
+            </div>
+        </div>
     </div>
-    <AIPlanConfirmationModal
-        isOpen={isAIModalOpen}
-        onOpenChange={setAIModalOpen}
-        onConfirm={handleConfirmAIPlan}
-        data={form.getValues()}
-        isLoading={isGenerating}
-        form={form}
-    />
     </>
   );
 }

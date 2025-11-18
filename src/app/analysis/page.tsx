@@ -7,7 +7,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Download, Database, Trash2 } from 'lucide-react';
+import { Loader2, Database, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { subDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import AppLayout from '@/components/app-layout';
@@ -78,8 +78,8 @@ export default function AnalysisPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (!user || !firestore) {
-      setLoading(false);
+    if (isUserLoading || !user || !firestore) {
+      setLoading(isUserLoading);
       return;
     };
 
@@ -111,7 +111,7 @@ export default function AnalysisPage() {
       if (unsubHydration) unsubHydration();
       if (unsubWeight) unsubWeight();
     };
-  }, [user, firestore, handleError]);
+  }, [user, isUserLoading, firestore, handleError]);
 
   
   const getDateFilteredData = useCallback((entries: {date: string}[], period: number) => {
@@ -190,7 +190,7 @@ export default function AnalysisPage() {
 
 
   const mainContent = () => {
-    if (loading || isUserLoading || !user) {
+    if (loading || isUserLoading) {
       return (
         <div className="flex min-h-[50vh] w-full flex-col bg-background items-center justify-center">
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -246,10 +246,6 @@ export default function AnalysisPage() {
                             </Button>
                         ))}
                     </div>
-                    <Button variant="outline" onClick={() => window.print()} className="w-full sm:w-auto">
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar
-                    </Button>
                 </div>
             </div>
             

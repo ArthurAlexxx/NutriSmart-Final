@@ -33,8 +33,8 @@ export default function PlanPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (!user) {
-        setLoading(false);
+    if (isUserLoading || !user) {
+        setLoading(isUserLoading);
         return;
     }
 
@@ -67,10 +67,10 @@ export default function PlanPage() {
       if (unsubRoom) unsubRoom();
     };
 
-  }, [user, userProfile, firestore, toast]);
+  }, [user, isUserLoading, userProfile, firestore, toast]);
   
 
-  if (isUserLoading || loading || !user) {
+  if (isUserLoading || loading) {
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="flex min-h-[calc(100vh-150px)] w-full flex-col items-center justify-center">
