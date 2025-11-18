@@ -38,6 +38,12 @@ export default function LoginPage() {
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
+    if (!auth) {
+      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       

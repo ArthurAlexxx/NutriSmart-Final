@@ -1,4 +1,3 @@
-
 // src/app/register/page.tsx
 'use client';
 
@@ -97,7 +96,7 @@ function RegisterForm() {
           title: "Bem-vindo(a)! 🎉",
           description: "Sua conta foi criada com sucesso.",
       });
-      router.push(data.profileType === 'professional' ? '/pro/dashboard' : '/dashboard');
+      router.push(data.profileType === 'professional' ? '/pro/patients' : '/dashboard');
 
     } catch (error: any) {
         let description = 'Ocorreu um erro desconhecido. Por favor, tente novamente.';
