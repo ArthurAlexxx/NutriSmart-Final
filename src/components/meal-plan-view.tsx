@@ -69,17 +69,17 @@ export default function MealPlanView({ plan, onPlanDelete }: MealPlanViewProps) 
   return (
     <div className='animate-fade-in space-y-8 max-w-4xl mx-auto'>
         <section>
-            <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
-                <div>
+            <div className="flex justify-between items-center mb-2">
+                <div className='flex-1'>
                     <h2 className='text-2xl font-bold text-foreground flex items-center gap-2 font-heading'><Target className='h-6 w-6 text-primary' /> Metas Diárias</h2>
                     <p className='text-muted-foreground mt-1'>Estas são as metas definidas para o plano que está ativo no momento.</p>
                 </div>
                  {onPlanDelete && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="mt-2 sm:mt-0">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir Plano
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-5 w-5" />
+                                <span className='sr-only'>Excluir Plano</span>
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
