@@ -361,7 +361,7 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                     )}
                 </CardContent>
             </Card>
-            <div className='flex justify-end'>
+            <div className='flex justify-end mb-8'>
                  <Button type="button" onClick={onSavePlan} disabled={isSaving || !currentPlan || isGenerating}>
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Salvar Plano
