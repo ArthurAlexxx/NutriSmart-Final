@@ -9,8 +9,7 @@ import {
   AnalyzeMealOutputSchema,
   type AnalyzeMealOutput,
   type AnalyzeMealInput,
-  PlanSchema,
-  type GeneratedPlan,
+  GeneratedPlan,
   type GeneratePlanInput,
 } from '@/lib/ai-schemas';
 
