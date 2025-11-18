@@ -132,18 +132,31 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
     const prompt = `
-    INSTRUÇÕES:
-    1. Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, com quantidades precisas (ex: 120g).
-    2. Os valores de 'calorieGoal' e 'proteinGoal' no JSON final podem variar até 5% das metas para se adequar ao plano. 'hydrationGoal' deve ser mantido.
-    3. Use nomes padrão para as refeições (ex: 'Café da Manhã') e atribua horários lógicos ("HH:MM").
-    
+    VOCÊ É UM NUTRICIONISTA ESPECIALISTA em software e sua única função é gerar um plano alimentar diário em formato JSON.
+
+    OBJETIVO: Criar um plano alimentar seguro, realista e eficaz com base nos dados do usuário.
+
     DADOS DO USUÁRIO PARA O PLANO:
-    - Meta Calórica Diária: ${input.calorieGoal} kcal
-    - Meta de Proteína Diária: ${input.proteinGoal} g
-    - Meta de Hidratação Diária: ${input.hydrationGoal} ml
     - Peso Atual: ${input.weight || 'Não informado'} kg
-    - Peso Meta: ${input.targetWeight || 'Não informado'} kg
-    - Data Meta: ${input.targetDate || 'Não informada'}
+    - Altura: ${input.height || 'Não informada'} cm
+    - Idade: ${input.age || 'Não informada'} anos
+    - Gênero: ${input.gender || 'Não informado'}
+    - Meta de Peso: ${input.targetWeight || 'Não informada'} kg
+    - Nível de Atividade: ${input.activityLevel || 'moderado'}
+    - Restrições Alimentares: ${input.dietaryRestrictions?.join(', ') || 'Nenhuma'}
+    - Preferências/Aversões: ${input.preferences || 'Nenhuma'}
+    - Orçamento: ${input.budget || 'moderado'}
+
+    REGRAS DE PROCESSAMENTO (SIGA ESTRITAMENTE):
+    1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Crie um déficit calórico seguro (se a meta for perder peso) ou um superávit (se for ganhar peso).
+    2.  **Distribuição de Macros:** Distribua os macronutrientes de forma equilibrada (ex: 40% carboidratos, 30% proteínas, 30% gorduras), ajustando conforme o objetivo.
+    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, respeitando o orçamento e as restrições/preferências.
+    4.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
+    5.  **Hidratação:** Defina uma meta de hidratação razoável, geralmente entre 2000-3000ml.
+
+    REGRAS DE SAÍDA (CRÍTICO):
+    - Sua resposta DEVE SER APENAS o objeto JSON final, sem nenhum texto antes ou depois.
+    - O JSON deve ser estritamente validado pelo schema abaixo.
 
     EXEMPLO DE SAÍDA JSON VÁLIDA:
     {
@@ -151,12 +164,12 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
       "proteinGoal": 155,
       "hydrationGoal": 2500,
       "meals": [
-        { "name": "Café da Manhã", "time": "07:30", "items": "2 ovos mexidos, 1 fatia de pão integral com abacate." },
-        { "name": "Lanche da Manhã", "time": "10:00", "items": "1 maçã com um punhado de castanhas." },
-        { "name": "Almoço", "time": "13:00", "items": "150g de peito de frango grelhado, 100g de arroz integral, salada de folhas verdes com tomate e pepino." },
-        { "name": "Lanche da Tarde", "time": "16:00", "items": "1 pote de iogurte natural com 1 colher de mel." },
-        { "name": "Jantar", "time": "19:30", "items": "Sopa de legumes com pedaços de carne magra." },
-        { "name": "Ceia", "time": "22:00", "items": "1 xícara de chá de camomila." }
+        { "name": "Café da Manhã", "time": "07:30", "items": "- 3 ovos mexidos com tomate e orégano\\n- 1 fatia de pão integral (40g)\\n- 1/2 abacate (60g)" },
+        { "name": "Lanche da Manhã", "time": "10:30", "items": "- 1 maçã média (150g)\\n- 20g de amêndoas" },
+        { "name": "Almoço", "time": "13:00", "items": "- 150g de peito de frango grelhado\\n- 100g de arroz integral cozido\\n- 1 concha de feijão preto\\n- Salada de folhas verdes à vontade com azeite" },
+        { "name": "Lanche da Tarde", "time": "16:30", "items": "- 1 pote de iogurte natural desnatado (170g)\\n- 1 colher de sopa de mel (15g)" },
+        { "name": "Jantar", "time": "19:30", "items": "- 120g de filé de tilápia assado\\n- 150g de batata doce cozida\\n- Brócolis no vapor à vontade" },
+        { "name": "Ceia", "time": "22:00", "items": "- 1 xícara de chá de camomila sem açúcar" }
       ]
     }
 
@@ -164,13 +177,13 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   `;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     messages: [
         { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
         { role: "user", content: prompt }
     ],
     response_format: { type: "json_object" },
-    temperature: 0.3,
+    temperature: 0.4,
   });
 
   const resultText = response.choices[0].message.content;

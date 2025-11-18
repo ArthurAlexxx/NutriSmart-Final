@@ -46,7 +46,6 @@ export default function PlanPage() {
         if (doc.exists()) {
           setRoom({ id: doc.id, ...doc.data() } as Room);
         } else {
-          // The room was deleted, so we should nullify the patient's roomId
           if (user) {
             const userRef = doc(firestore, 'users', user.uid);
             updateDoc(userRef, { patientRoomId: null });
@@ -60,6 +59,7 @@ export default function PlanPage() {
         setLoading(false);
       });
     } else {
+      // If user is not under professional care, we're done loading.
       setLoading(false);
     }
     
@@ -96,7 +96,7 @@ export default function PlanPage() {
               <p className='text-muted-foreground mt-1 max-w-2xl mx-auto sm:mx-0'>
                   {isUnderProfessionalCare
                       ? "Alterne entre o plano do seu nutricionista e o seu plano pessoal gerado por IA."
-                      : "Ajuste suas metas e use a IA para gerar um plano alimentar sob medida."
+                      : "Use nosso assistente de IA para gerar um plano alimentar sob medida."
                   }
               </p>
           </div>
