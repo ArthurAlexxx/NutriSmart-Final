@@ -73,15 +73,18 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
   try {
     const recipeJson = JSON.parse(resultText);
     
+    // Check for explicit error from AI
     if (recipeJson.error) {
         throw new Error(recipeJson.error);
     }
 
+    // Attempt 1: Validate the root object
     const rootValidation = RecipeSchema.safeParse(recipeJson);
     if (rootValidation.success) {
       return rootValidation.data;
     }
 
+    // Attempt 2: Validate a nested "recipe" object
     if (recipeJson.recipe) {
       const nestedValidation = RecipeSchema.safeParse(recipeJson.recipe);
       if (nestedValidation.success) {
@@ -89,6 +92,7 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
       }
     }
     
+    // If both fail, throw a specific error
     console.error("Zod validation failed for both root and nested 'recipe' objects.");
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
@@ -156,11 +160,13 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   try {
     const planJson = JSON.parse(resultText);
 
+    // Attempt 1: Validate the root object against the full plan schema
     const rootValidation = GeneratedPlan.safeParse(planJson);
     if (rootValidation.success) {
         return rootValidation.data;
     }
 
+    // Attempt 2: Validate a nested "plan" object
     if (planJson.plan) {
         const nestedValidation = GeneratedPlan.safeParse(planJson.plan);
         if (nestedValidation.success) {
@@ -168,6 +174,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
         }
     }
 
+    // If both fail, throw a specific error
     console.error("Zod validation failed for both root and nested 'plan' objects.");
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
@@ -176,6 +183,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
      if (error instanceof z.ZodError) {
         console.error("Zod validation error in generateMealPlanAction:", error.errors);
      } else if (error.message.includes('formato de plano')) {
+        // Re-throw specific errors to be shown to the user
         throw error;
      } else {
         console.error("Error parsing or validating plan JSON:", error);
@@ -238,13 +246,26 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
 
   try {
     const analysisJson = JSON.parse(resultText);
-    const validatedAnalysis = AnalyzeMealOutputSchema.parse(analysisJson);
-    return validatedAnalysis;
+    
+    // Using safeParse for robust validation
+    const validationResult = AnalyzeMealOutputSchema.safeParse(analysisJson);
+
+    if (validationResult.success) {
+        return validationResult.data;
+    } else {
+        // Log the detailed error from Zod for debugging
+        console.error("Zod validation error in analyzeMealFromPhotoAction:", validationResult.error.errors);
+        console.error("Received JSON:", resultText);
+        throw new Error("A resposta da IA não estava no formato de análise esperado.");
+    }
+
   } catch(error) {
-     console.error("Erro ao fazer parse do JSON da análise ou validar com Zod:", error);
+     if (error instanceof z.ZodError) {
+        console.error("Zod validation error during parse:", error.errors);
+     } else {
+        console.error("Erro ao fazer parse do JSON da análise ou validar com Zod:", error);
+     }
      console.error("JSON recebido da OpenAI:", resultText);
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
   }
 }
-
-    
