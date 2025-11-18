@@ -1,3 +1,4 @@
+
 // src/app/pro/patients/page.tsx
 'use client';
 
@@ -26,53 +27,45 @@ export default function ProPatientsPage() {
   const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading) {
-        setLoading(true);
-        return;
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
       return;
     }
+    if (!isUserLoading && user && userProfile && userProfile.profileType !== 'professional') {
+        router.push('/dashboard');
+        return;
+    }
+  }, [user, isUserLoading, userProfile, router]);
 
+  useEffect(() => {
+    if (!user || !userProfile || !firestore || userProfile.profileType !== 'professional') {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     let unsubRooms: Unsubscribe | undefined;
 
-    if (userProfile) {
-        if (userProfile.profileType !== 'professional') {
-            router.push('/dashboard');
-            return;
-        }
+    const roomsRef = collection(firestore, 'rooms');
+    const q = query(roomsRef, where('professionalId', '==', user.uid));
 
-        if (firestore) {
-            setLoading(true);
-            const roomsRef = collection(firestore, 'rooms');
-            const q = query(roomsRef, where('professionalId', '==', user.uid));
-
-            unsubRooms = onSnapshot(q, (snapshot) => {
-                const fetchedRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
-                setRooms(fetchedRooms);
-                setLoading(false);
-            }, (error) => {
-                console.error("Error fetching rooms:", error);
-                toast({ title: 'Erro ao carregar salas', variant: 'destructive' });
-                setLoading(false);
-            });
-        } else {
-            setRooms([]);
-            setLoading(false);
-        }
-    } else if (!isUserLoading) {
-        // If profile is still loading, wait, but if it finished and is null, stop loading.
+    unsubRooms = onSnapshot(q, (snapshot) => {
+        const fetchedRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
+        setRooms(fetchedRooms);
         setLoading(false);
-    }
+    }, (error) => {
+        console.error("Error fetching rooms:", error);
+        toast({ title: 'Erro ao carregar salas', variant: 'destructive' });
+        setLoading(false);
+    });
 
     return () => {
       if (unsubRooms) unsubRooms();
     };
 
-  }, [user, userProfile, isUserLoading, router, firestore, toast]);
+  }, [user, userProfile, firestore, toast]);
 
-  if (loading || isUserLoading) {
+  if (isUserLoading || loading || !userProfile) {
     return (
        <AppLayout
         user={user}

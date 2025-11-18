@@ -40,46 +40,42 @@ export default function RoomDetailPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) {
-      setLoading(true);
-      return;
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
       return;
     }
-    
-    let unsubRoom: Unsubscribe | undefined;
-
-    if (userProfile && firestore) {
-        if (userProfile.profileType !== 'professional') {
-            router.push('/dashboard');
-            return;
-        }
-        
-        setLoading(true);
-        unsubRoom = onSnapshot(doc(firestore, 'rooms', roomId), (doc) => {
-            if (doc.exists()) {
-                setRoom({ id: doc.id, ...doc.data() } as Room);
-            } else {
-                toast({ title: 'Sala não encontrada', description: 'Esta sala pode ter sido removida.', variant: 'destructive' });
-                router.push('/pro/patients');
-            }
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching room:", error);
-            toast({ title: 'Erro ao carregar a sala', description: 'Não foi possível buscar os dados da sala.', variant: 'destructive' });
-            router.push('/pro/patients');
-        });
-    } else if (!isUserLoading) {
-        setLoading(false);
+    if (!isUserLoading && user && userProfile && userProfile.profileType !== 'professional') {
+        router.push('/dashboard');
+        return;
     }
+  }, [user, isUserLoading, userProfile, router]);
+
+  useEffect(() => {
+    if (!user || !userProfile || !firestore || !roomId) {
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    const unsubRoom = onSnapshot(doc(firestore, 'rooms', roomId), (doc) => {
+        if (doc.exists()) {
+            setRoom({ id: doc.id, ...doc.data() } as Room);
+        } else {
+            toast({ title: 'Sala não encontrada', description: 'Esta sala pode ter sido removida.', variant: 'destructive' });
+            router.push('/pro/patients');
+        }
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching room:", error);
+        toast({ title: 'Erro ao carregar a sala', description: 'Não foi possível buscar os dados da sala.', variant: 'destructive' });
+        router.push('/pro/patients');
+    });
 
     return () => {
         if (unsubRoom) unsubRoom();
     };
 
-  }, [user, userProfile, isUserLoading, roomId, router, firestore, toast]);
+  }, [user, userProfile, roomId, router, firestore, toast]);
 
    useEffect(() => {
     if (!room?.patientId || !firestore) return;
@@ -166,7 +162,7 @@ export default function RoomDetailPage() {
   };
 
   
-  if (loading || isUserLoading) {
+  if (loading || isUserLoading || !userProfile) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

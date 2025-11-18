@@ -28,42 +28,43 @@ export default function ChefPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until the auth state is fully resolved.
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (!user || !firestore) {
       return;
     }
 
     let unsubMessages: Unsubscribe | undefined;
 
-    if (firestore) {
-      const messagesRef = collection(firestore, 'users', user.uid, 'chef_messages');
-      const q = query(messagesRef, orderBy('createdAt', 'asc'));
-      
-      unsubMessages = onSnapshot(q, (snapshot) => {
-          if (snapshot.empty) {
-              setMessages(defaultInitialMessages);
-          } else {
-              const loadedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-              setMessages(loadedMessages);
-          }
-      }, (error) => {
-          console.error("Error fetching chef messages:", error);
-          toast({
-            title: 'Erro ao carregar o chat',
-            description: 'Não foi possível buscar as mensagens. Verifique sua conexão.',
-            variant: 'destructive',
-          });
-          setMessages(defaultInitialMessages); 
-      });
-    }
+    const messagesRef = collection(firestore, 'users', user.uid, 'chef_messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    
+    unsubMessages = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            setMessages(defaultInitialMessages);
+        } else {
+            const loadedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            setMessages(loadedMessages);
+        }
+    }, (error) => {
+        console.error("Error fetching chef messages:", error);
+        toast({
+          title: 'Erro ao carregar o chat',
+          description: 'Não foi possível buscar as mensagens. Verifique sua conexão.',
+          variant: 'destructive',
+        });
+        setMessages(defaultInitialMessages); 
+    });
+    
 
     return () => {
       if (unsubMessages) unsubMessages();
     };
-  }, [user, isUserLoading, router, firestore, toast]);
+  }, [user, firestore, toast]);
 
   const handleProfileUpdateWithToast = useCallback(async (updatedProfile: Partial<UserProfile>) => {
      try {
@@ -185,7 +186,7 @@ export default function ChefPage() {
   }
 
 
-  if (isUserLoading) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

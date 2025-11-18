@@ -1,3 +1,4 @@
+
 // src/app/history/page.tsx
 'use client';
 
@@ -33,48 +34,46 @@ export default function HistoryPage() {
   const { toast } = useToast();
   
   useEffect(() => {
-    if (isUserLoading) {
-      setLoading(true);
-      return;
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (!user || !firestore) {
+      setLoading(false);
       return;
     }
 
-    setLoading(true); // Start loading after auth check
+    setLoading(true);
 
     let unsubMeals: Unsubscribe | undefined;
     let unsubHydration: Unsubscribe | undefined;
 
-    if (firestore) {
-      const mealsQuery = query(collection(firestore, 'users', user.uid, 'meal_entries'));
-      unsubMeals = onSnapshot(mealsQuery, (snapshot) => {
-        setAllMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching meal entries for history:", error);
-        toast({ title: "Erro ao carregar histórico de refeições", variant: "destructive" });
-        setLoading(false);
-      });
-
-      const hydrationQuery = query(collection(firestore, 'users', user.uid, 'hydration_entries'));
-      unsubHydration = onSnapshot(hydrationQuery, (snapshot) => {
-        setAllHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
-      }, (error) => {
-        console.error("Error fetching hydration entries for history:", error);
-        toast({ title: "Erro ao carregar histórico de hidratação", variant: "destructive" });
-      });
-    } else {
+    const mealsQuery = query(collection(firestore, 'users', user.uid, 'meal_entries'));
+    unsubMeals = onSnapshot(mealsQuery, (snapshot) => {
+      setAllMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
       setLoading(false);
-    }
+    }, (error) => {
+      console.error("Error fetching meal entries for history:", error);
+      toast({ title: "Erro ao carregar histórico de refeições", variant: "destructive" });
+      setLoading(false);
+    });
+
+    const hydrationQuery = query(collection(firestore, 'users', user.uid, 'hydration_entries'));
+    unsubHydration = onSnapshot(hydrationQuery, (snapshot) => {
+      setAllHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
+    }, (error) => {
+      console.error("Error fetching hydration entries for history:", error);
+      toast({ title: "Erro ao carregar histórico de hidratação", variant: "destructive" });
+    });
 
     return () => {
       if (unsubMeals) unsubMeals();
       if (unsubHydration) unsubHydration();
     };
 
-  }, [user, isUserLoading, router, firestore, toast]);
+  }, [user, firestore, toast]);
   
   const dailyData = useMemo(() => {
     const dateStr = getLocalDateString(selectedDate);
@@ -122,7 +121,7 @@ export default function HistoryPage() {
   }, [firestore, toast, user]);
 
 
-  if (loading || isUserLoading) {
+  if (loading || isUserLoading || !user) {
     return (
        <AppLayout user={user} userProfile={userProfile} onProfileUpdate={() => {}}>
          <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
@@ -150,7 +149,7 @@ export default function HistoryPage() {
               onDateSelect={setSelectedDate}
             />
 
-            {(loading || isUserLoading) && allMealEntries.length === 0 ? (
+            {(loading) && allMealEntries.length === 0 ? (
                 <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>

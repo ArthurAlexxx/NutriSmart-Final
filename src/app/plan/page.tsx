@@ -1,3 +1,4 @@
+
 // src/app/plan/page.tsx
 'use client';
 
@@ -26,13 +27,15 @@ export default function PlanPage() {
   const isUnderProfessionalCare = !!userProfile?.patientRoomId;
 
   useEffect(() => {
-    if (isUserLoading) {
-      setLoading(true);
-      return;
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
-      return;
+    }
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
     }
 
     let unsubRoom: Unsubscribe | undefined;
@@ -64,10 +67,10 @@ export default function PlanPage() {
       if (unsubRoom) unsubRoom();
     };
 
-  }, [user, userProfile, isUserLoading, router, firestore, toast]);
+  }, [user, userProfile, firestore, toast]);
   
 
-  if (isUserLoading || loading) {
+  if (isUserLoading || loading || !user) {
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="flex min-h-[calc(100vh-150px)] w-full flex-col items-center justify-center">

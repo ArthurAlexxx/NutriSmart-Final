@@ -1,3 +1,4 @@
+
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -44,42 +45,40 @@ export default function DashboardPage() {
   const hasAccess = true; // All features unlocked
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until the auth state is fully resolved.
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.push('/login');
-      return;
     }
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (!user || !db) return;
 
     let unsubMeals: Unsubscribe | undefined;
     let unsubHydration: Unsubscribe | undefined;
     let unsubWeight: Unsubscribe | undefined;
 
-    if (db) {
-      const baseQuery = (collectionName: string) => query(collection(db, 'users', user.uid, collectionName));
-      
-      unsubMeals = onSnapshot(baseQuery('meal_entries'), (snapshot) => {
-        setMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
-      }, (error) => {
-          console.error("Error fetching meal entries:", error);
-          toast({ title: "Erro ao carregar refeições", variant: "destructive" });
-      });
+    const baseQuery = (collectionName: string) => query(collection(db, 'users', user.uid, collectionName));
+    
+    unsubMeals = onSnapshot(baseQuery('meal_entries'), (snapshot) => {
+      setMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
+    }, (error) => {
+        console.error("Error fetching meal entries:", error);
+        toast({ title: "Erro ao carregar refeições", variant: "destructive" });
+    });
 
-      unsubHydration = onSnapshot(baseQuery('hydration_entries'), (snapshot) => {
-        setHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
-      }, (error) => {
-          console.error("Error fetching hydration entries:", error);
-          toast({ title: "Erro ao carregar hidratação", variant: "destructive" });
-      });
+    unsubHydration = onSnapshot(baseQuery('hydration_entries'), (snapshot) => {
+      setHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
+    }, (error) => {
+        console.error("Error fetching hydration entries:", error);
+        toast({ title: "Erro ao carregar hidratação", variant: "destructive" });
+    });
 
-      unsubWeight = onSnapshot(baseQuery('weight_logs'), (snapshot) => {
-        setWeightLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WeightLog)));
-      }, (error) => {
-          console.error("Error fetching weight logs:", error);
-          toast({ title: "Erro ao carregar histórico de peso", variant: "destructive" });
-      });
-    }
+    unsubWeight = onSnapshot(baseQuery('weight_logs'), (snapshot) => {
+      setWeightLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WeightLog)));
+    }, (error) => {
+        console.error("Error fetching weight logs:", error);
+        toast({ title: "Erro ao carregar histórico de peso", variant: "destructive" });
+    });
 
     return () => {
       if (unsubMeals) unsubMeals();
@@ -87,7 +86,7 @@ export default function DashboardPage() {
       if (unsubWeight) unsubWeight();
     };
 
-  }, [user, isUserLoading, router, db, toast]);
+  }, [user, db, toast]);
 
   const handleMealDeleted = useCallback(async (entryId: string) => {
     if (!db || !user) return;
@@ -211,7 +210,7 @@ export default function DashboardPage() {
     protein: userProfile?.proteinGoal || 140,
   }), [userProfile]);
 
-  if (isUserLoading) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
          <Loader2 className="h-16 w-16 animate-spin text-primary" />

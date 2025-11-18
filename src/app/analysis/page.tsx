@@ -1,3 +1,4 @@
+
 // src/app/analysis/page.tsx
 'use client';
 
@@ -38,6 +39,12 @@ export default function AnalysisPage() {
 
   const isDemoUser = user?.uid === DEMO_USER_ID;
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
   const handleSeedData = async () => {
     setIsSeeding(true);
     const result = await seedDemoData();
@@ -72,47 +79,40 @@ export default function AnalysisPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (isUserLoading) {
-      setLoading(true);
+    if (!user || !firestore) {
+      setLoading(false);
       return;
-    }
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    };
 
-    setLoading(true); // Start loading when user is available
+    setLoading(true);
 
     let unsubMeals: Unsubscribe | undefined;
     let unsubHydration: Unsubscribe | undefined;
     let unsubWeight: Unsubscribe | undefined;
 
-    if (firestore) {
-      const baseQuery = (collectionName: string) => query(collection(firestore, 'users', user.uid, collectionName));
+    const baseQuery = (collectionName: string) => query(collection(firestore, 'users', user.uid, collectionName));
 
-      unsubMeals = onSnapshot(baseQuery('meal_entries'), (snapshot) => {
-        setMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
-        setLoading(false);
-      }, (error) => handleError(error, 'refeições'));
-
-      unsubHydration = onSnapshot(baseQuery('hydration_entries'), (snapshot) => {
-        setHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
-      }, (error) => handleError(error, 'hidratação'));
-      
-      unsubWeight = onSnapshot(query(collection(firestore, 'users', user.uid, 'weight_logs')), (snapshot) => {
-        const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WeightLog));
-        setWeightLogs(logs);
-      }, (error) => handleError(error, 'peso'));
-    } else {
+    unsubMeals = onSnapshot(baseQuery('meal_entries'), (snapshot) => {
+      setMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
       setLoading(false);
-    }
+    }, (error) => handleError(error, 'refeições'));
+
+    unsubHydration = onSnapshot(baseQuery('hydration_entries'), (snapshot) => {
+      setHydrationEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry)));
+    }, (error) => handleError(error, 'hidratação'));
+    
+    unsubWeight = onSnapshot(query(collection(firestore, 'users', user.uid, 'weight_logs')), (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WeightLog));
+      setWeightLogs(logs);
+    }, (error) => handleError(error, 'peso'));
+    
 
     return () => {
       if (unsubMeals) unsubMeals();
       if (unsubHydration) unsubHydration();
       if (unsubWeight) unsubWeight();
     };
-  }, [user, isUserLoading, router, firestore, handleError]);
+  }, [user, firestore, handleError]);
 
   
   const getDateFilteredData = useCallback((entries: {date: string}[], period: number) => {
@@ -191,7 +191,7 @@ export default function AnalysisPage() {
 
 
   const mainContent = () => {
-    if (loading || isUserLoading) {
+    if (loading || isUserLoading || !user) {
       return (
         <div className="flex min-h-[50vh] w-full flex-col bg-background items-center justify-center">
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
