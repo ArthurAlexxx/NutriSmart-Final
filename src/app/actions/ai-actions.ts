@@ -146,7 +146,8 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
 
     // Handle cases where the AI might wrap the response
     const dataToValidate = planJson.plan || planJson;
-
+    
+    // Use the correct, more comprehensive schema for validation
     const validatedPlan = PlanSchema.parse(dataToValidate);
     return validatedPlan;
   } catch (error) {

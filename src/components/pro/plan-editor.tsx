@@ -25,7 +25,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { ptBR } from 'date-fns/locale';
-import { generateMealPlanAction, type GeneratedPlan } from '@/app/actions/ai-actions';
+import { generateMealPlanAction } from '@/app/actions/ai-actions';
+import type { GeneratedPlan } from '@/lib/ai-schemas';
 import { onProfileUpdate } from '@/firebase/provider';
 
 const formSchema = z.object({
