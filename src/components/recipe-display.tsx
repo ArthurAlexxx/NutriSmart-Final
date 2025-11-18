@@ -35,7 +35,7 @@ const NutrientItem = ({ value, label, icon: Icon, colorClass }: { value: string;
 
 
 export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false, isCollapsible = false }: RecipeDisplayProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(!isChatMode); // Start open if not in chat, start open always now in chat
 
   if (isGenerating) {
     return (
@@ -57,7 +57,6 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
     );
   }
   
-  if (!recipe && !isChatMode) return null;
   if (!recipe) return null;
 
 
@@ -94,51 +93,46 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
       </>
   );
 
-  if (isCollapsible) {
-      return (
-          <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
-              {mainContent}
-              <CollapsibleContent className={cn("space-y-8 px-6 pb-6", isChatMode && "px-4 pb-4")}>
-                   <div>
-                      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
-                      <ol className="space-y-4 list-decimal list-outside pl-5">
-                          {recipe.instructions.map((step, index) => (
-                              <li key={index} className="pl-2 text-base text-muted-foreground">
-                                  <span className="font-semibold text-foreground">Passo {index + 1}:</span> {step}
-                              </li>
-                          ))}
-                      </ol>
-                  </div>
-              </CollapsibleContent>
-              <CardFooter className={cn("p-6 pt-0", isChatMode && "p-4 pt-0")}>
-                  <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full text-primary hover:text-primary">
-                          {isOpen ? 'Ocultar' : 'Ver Modo de Preparo Completo'}
-                          <ChevronDown className={cn("h-4 w-4 ml-2 transition-transform", isOpen && "rotate-180")} />
-                      </Button>
-                  </CollapsibleTrigger>
-              </CardFooter>
-          </Collapsible>
-      )
+  const instructionsContent = (
+    <div className={cn("space-y-8", isChatMode ? 'px-4 pb-4' : 'px-6 pb-6')}>
+      <div>
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
+        <ol className="space-y-4 list-decimal list-outside pl-5">
+          {recipe.instructions.map((step, index) => (
+            <li key={index} className="pl-2 text-base text-muted-foreground">
+              <span className="font-semibold text-foreground">Passo {index + 1}:</span> {step.replace(/^\d+\.\s*/, '')}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+
+  if (isChatMode) {
+    return (
+      <div className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
+        {mainContent}
+        <CardContent className="p-0">
+          {instructionsContent}
+        </CardContent>
+      </div>
+    )
   }
 
   return (
-    <div className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
-      {mainContent}
-      {!isChatMode && (
-        <CardContent className={cn("space-y-8", isChatMode ? 'p-4 pt-2' : 'p-6')}>
-          <div>
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
-              <ol className="space-y-4 list-decimal list-outside pl-5">
-                  {recipe.instructions.map((step, index) => (
-                      <li key={index} className="pl-2 text-base text-muted-foreground">
-                          <span className="font-semibold text-foreground">Passo {index + 1}:</span> {step}
-                      </li>
-                  ))}
-              </ol>
-          </div>
-        </CardContent>
-      )}
-    </div>
-  );
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
+        {mainContent}
+        <CollapsibleContent>
+           {instructionsContent}
+        </CollapsibleContent>
+        <CardFooter className={cn("p-6 pt-0", isChatMode && "p-4 pt-0")}>
+            <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full text-primary hover:text-primary">
+                    {isOpen ? 'Ocultar Modo de Preparo' : 'Ver Modo de Preparo Completo'}
+                    <ChevronDown className={cn("h-4 w-4 ml-2 transition-transform", isOpen && "rotate-180")} />
+                </Button>
+            </CollapsibleTrigger>
+        </CardFooter>
+    </Collapsible>
+  )
 }
