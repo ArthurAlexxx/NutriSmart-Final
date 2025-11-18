@@ -41,30 +41,26 @@ export default function PlanPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    // Combine loading states
     const isOverallLoading = isUserLoading || isPlanLoading;
-    setLoading(isOverallLoading);
 
-    // Fetch room data only if the user is under professional care
-    let unsubRoom: Unsubscribe | undefined;
     if (!isOverallLoading && userProfile?.patientRoomId && firestore) {
       const roomRef = doc(firestore, 'rooms', userProfile.patientRoomId);
-      unsubRoom = onSnapshot(roomRef, (doc) => {
+      const unsubRoom = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
           setRoom({ id: doc.id, ...doc.data() } as Room);
         } else {
           setRoom(null);
         }
+        setLoading(false); // End loading after fetching room data
       }, (error) => {
         console.error("Error fetching room data:", error);
         toast({ title: "Erro ao carregar plano", description: "Não foi possível buscar os dados do seu nutricionista.", variant: "destructive" });
+        setLoading(false);
       });
+      return () => unsubRoom();
+    } else {
+      setLoading(isOverallLoading);
     }
-
-    return () => {
-      if (unsubRoom) unsubRoom();
-    };
-
   }, [user, isUserLoading, isPlanLoading, userProfile, firestore, toast]);
   
 

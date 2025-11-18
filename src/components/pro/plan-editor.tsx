@@ -96,7 +96,7 @@ const FormStep = ({ form, onNext }: { form: any, onNext: () => void }) => {
                                                 <FormLabel
                                                     htmlFor={item.id}
                                                     className={cn(
-                                                        "flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full transition-colors",
+                                                        "flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full transition-colors",
                                                         field.value === item.id && "border-primary bg-primary/5"
                                                     )}
                                                 >
