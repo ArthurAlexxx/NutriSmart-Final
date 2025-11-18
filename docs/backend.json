@@ -20,9 +20,46 @@
         "targetDate": { "type": "string", "format": "date-time" },
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
-        "waterGoal": { "type": "number" }
+        "waterGoal": { "type": "number" },
+        "savedPlans": {
+          "type": "array",
+          "description": "An array to store up to 3 saved meal plans.",
+          "items": {
+            "$ref": "#/entities/ActivePlan"
+          },
+          "maxItems": 3
+        }
       },
       "required": ["id", "profileType", "fullName", "email", "createdAt"]
+    },
+    "ActivePlan": {
+      "title": "ActivePlan",
+      "type": "object",
+      "description": "Represents a structured meal plan for a user.",
+      "properties": {
+        "name": { "type": "string" },
+        "meals": { 
+          "type": "array", 
+          "items": { "$ref": "#/entities/MealPlanItem" }
+        },
+        "hydrationGoal": { "type": "number" },
+        "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
+    },
+    "MealPlanItem": {
+      "title": "MealPlanItem",
+      "type": "object",
+      "description": "A single meal within a meal plan.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "time": { "type": "string", "format": "time" },
+        "items": { "type": "string" }
+      },
+      "required": ["name", "time", "items"]
     },
     "Room": {
         "title": "Room",

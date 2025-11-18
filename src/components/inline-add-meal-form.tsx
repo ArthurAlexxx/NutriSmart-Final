@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Trash2, Loader2, Camera, AlertTriangle, Lock } from 'lucide-react';
+import { Plus, Trash2, Loader2, Camera, AlertTriangle, Lock, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getNutritionalInfo, getNutritionalInfoFromPhoto } from '@/app/actions/meal-actions';
 import { useFirestore, useUser } from '@/firebase';
@@ -221,6 +221,16 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     toast({ title: "Erro ao Adicionar Refeição", description: error.message || defaultMessage, variant: "destructive" });
   }
 
+  const handleRemovePhoto = () => {
+    photoForm.setValue('photo', null);
+    setImagePreview(null);
+    const fileInput = document.getElementById('photo-input') as HTMLInputElement;
+    if (fileInput) {
+        fileInput.value = '';
+    }
+  };
+
+
   return (
     <div className="px-6 pb-6 border-b">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -338,6 +348,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                     <FormLabel>Foto da Refeição *</FormLabel>
                     <FormControl>
                       <Input 
+                        id="photo-input"
                         type="file" 
                         accept="image/*" 
                         disabled={disabled || !isPhotoFeatureAvailable}
@@ -360,8 +371,18 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
               />
 
               {imagePreview && isPhotoFeatureAvailable && (
-                <div className="w-full aspect-video rounded-lg overflow-hidden border">
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
                   <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={handleRemovePhoto}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remover Foto</span>
+                  </Button>
                 </div>
               )}
               

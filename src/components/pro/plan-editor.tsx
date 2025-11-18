@@ -6,34 +6,27 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { type Room } from '@/types/room';
-import { type UserProfile } from '@/types/user';
+import { type UserProfile, type ActivePlan } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, Rocket, Target, Weight, CalendarIcon } from 'lucide-react';
+import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, Rocket, Target, Weight, CalendarIcon, FolderDown, DownloadCloud, PlayCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { doc, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, runTransaction } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import AIPlanConfirmationModal from '../ai-plan-confirmation-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { ptBR } from 'date-fns/locale';
 import { generateMealPlanAction, type GeneratedPlan } from '@/app/actions/ai-actions';
-
-const mealPlanItemSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, 'O tipo de refeição é obrigatório.'),
-  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
-  items: z.string().min(3, 'Descreva os itens da refeição.'),
-});
+import { onProfileUpdate } from '@/firebase/provider';
 
 const formSchema = z.object({
   calorieGoal: z.coerce.number().positive('A meta de calorias deve ser positiva.'),
@@ -51,29 +44,17 @@ interface PlanEditorProps {
   userProfile?: UserProfile;
 }
 
-const defaultMealValues: Omit<z.infer<typeof mealPlanItemSchema>, 'id'> = { name: '', time: '00:00', items: '' };
-
-const mealTypeOptions = [
-    { value: 'Café da Manhã', label: 'Café da Manhã' },
-    { value: 'Lanche da Manhã', label: 'Lanche da Manhã' },
-    { value: 'Almoço', label: 'Almoço' },
-    { value: 'Lanche da Tarde', label: 'Lanche da Tarde' },
-    { value: 'Jantar', label: 'Jantar' },
-    { value: 'Ceia', label: 'Ceia' },
-];
-
 export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { onProfileUpdate } = useUser();
   const isProfessionalMode = !!room;
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAIModalOpen, setAIModalOpen] = useState(false);
   
-  const [currentPlan, setCurrentPlan] = useState<GeneratedPlan | null>(null);
+  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
-  const activePlan = isProfessionalMode ? room.activePlan : (currentPlan || userProfile?.activePlan);
-  
   const calculatedProteinGoal = (calories: number) => Math.round((calories * 0.35) / 4);
 
   const getTargetDate = () => {
@@ -108,18 +89,6 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
         });
     }
   }, [userProfile, form]);
-  
-  useEffect(() => {
-      if(activePlan && activePlan.meals.length > 0) {
-          setCurrentPlan({
-              calorieGoal: activePlan.calorieGoal,
-              proteinGoal: activePlan.proteinGoal,
-              hydrationGoal: activePlan.hydrationGoal,
-              meals: activePlan.meals,
-          });
-      }
-  }, [activePlan])
-
 
   const watchedCalorieGoal = form.watch('calorieGoal');
 
@@ -131,105 +100,67 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
       }
   }, [watchedCalorieGoal, form]);
 
-  const { isSubmitting, isDirty } = form.formState;
-
-  const onSavePlan = async () => {
-    if (!currentPlan) {
-        toast({title: "Nenhum plano para salvar", variant: "destructive"});
-        return;
-    }
-    await handleSaveSubmit(currentPlan);
-  };
-
-  const handleSaveSubmit = async (data: GeneratedPlan) => {
-    if (isProfessionalMode && room) {
-        await handleProfessionalSubmit(data);
-    } else if (userProfile) {
-        await handlePatientSubmit(data);
-    }
-  };
-
-  const handlePatientSubmit = async (data: GeneratedPlan) => {
-    if (!userProfile?.id || !firestore) return;
-    setIsSaving(true);
-    
-    try {
-        const userRef = doc(firestore, 'users', userProfile.id);
-        const newActivePlan = {
-            calorieGoal: data.calorieGoal,
-            proteinGoal: data.proteinGoal,
-            hydrationGoal: data.hydrationGoal,
-            meals: data.meals,
-            createdAt: serverTimestamp(),
-        };
-
-        await updateDoc(userRef, {
-            activePlan: newActivePlan,
-            calorieGoal: data.calorieGoal,
-            proteinGoal: data.proteinGoal,
-            waterGoal: data.hydrationGoal,
-        });
-
+  const handleSavePlanToSlot = async (slotIndex: number) => {
+      if (!generatedPlan || !userProfile) return;
+      setIsSaving(true);
+      
+      const newPlan = { ...generatedPlan, name: `Plano ${slotIndex + 1}` };
+      const currentSavedPlans = userProfile.savedPlans || [];
+      const newSavedPlans = [...currentSavedPlans];
+      
+      // Ensure the array has 3 slots
+      while (newSavedPlans.length < 3) {
+          newSavedPlans.push(null);
+      }
+      
+      newSavedPlans[slotIndex] = newPlan;
+      
+      try {
+        await onProfileUpdate({ savedPlans: newSavedPlans });
         toast({
-            title: "Plano Salvo!",
-            description: `Seu plano alimentar pessoal foi salvo com sucesso.`,
+            title: `Plano Salvo no Slot ${slotIndex + 1}!`,
+            description: "Seu novo plano foi armazenado com sucesso.",
         });
-
-    } catch (error: any) {
-         toast({
-            title: "Erro ao Salvar",
-            description: error.message || "Não foi possível salvar seu plano.",
-            variant: "destructive",
-        });
-    } finally {
+      } catch (e: any) {
+         toast({ title: "Erro ao Salvar", description: e.message, variant: "destructive" });
+      } finally {
         setIsSaving(false);
-    }
+      }
   }
   
-  const handleProfessionalSubmit = async (data: GeneratedPlan) => {
-     if(!room || !firestore) return;
-     setIsSaving(true);
-     try {
-        await runTransaction(firestore, async (transaction) => {
-            const roomRef = doc(firestore, 'rooms', room.id);
-            const roomDoc = await transaction.get(roomRef);
-            if (!roomDoc.exists()) {
-                throw new Error("Sala não encontrada.");
-            }
-            const roomData = roomDoc.data();
-            const oldPlan = roomData.activePlan;
-
-            const updatedActivePlan = {
-                calorieGoal: data.calorieGoal,
-                proteinGoal: data.proteinGoal,
-                hydrationGoal: data.hydrationGoal,
-                meals: data.meals,
-                createdAt: serverTimestamp(),
-            };
-
-            transaction.update(roomRef, {
-                activePlan: updatedActivePlan,
-                planHistory: arrayUnion(oldPlan),
-            });
-        });
-
-        toast({
-            title: "Plano Atualizado!",
-            description: `O plano de ${room.patientInfo.name} foi salvo com sucesso.`,
-        });
-    } catch(error: any) {
-        toast({
-            title: "Erro ao atualizar",
-            description: error.message || "Não foi possível salvar o plano.",
-            variant: "destructive",
-        });
-    } finally {
+  const handleActivatePlan = async (plan: ActivePlan | null) => {
+      if (!plan || !userProfile) return;
+      setIsSaving(true);
+      try {
+        await onProfileUpdate({ activePlan: plan });
+        toast({ title: "Plano Ativado!", description: `O plano "${plan.name}" agora é seu plano ativo.` });
+      } catch (e: any) {
+        toast({ title: "Erro ao Ativar", description: e.message, variant: "destructive" });
+      } finally {
         setIsSaving(false);
-    }
+      }
+  }
+
+  const handleDeleteSavedPlan = async (slotIndex: number) => {
+      if (!userProfile) return;
+      
+      const currentSavedPlans = userProfile.savedPlans || [];
+      const newSavedPlans = [...currentSavedPlans];
+      newSavedPlans[slotIndex] = null;
+      
+      setIsSaving(true);
+      try {
+        await onProfileUpdate({ savedPlans: newSavedPlans });
+        toast({ title: "Plano Removido", description: `O plano no Slot ${slotIndex + 1} foi removido.` });
+      } catch (e: any) {
+         toast({ title: "Erro ao Remover", description: e.message, variant: "destructive" });
+      } finally {
+        setIsSaving(false);
+      }
   };
 
+
   const handleConfirmAIPlan = async (goalsData: PlanGoalsFormValues) => {
-    setAIModalOpen(false);
     setIsGenerating(true);
     toast({
         title: "Gerando seu plano...",
@@ -246,13 +177,13 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
             targetDate: goalsData.targetDate ? goalsData.targetDate.toISOString().split('T')[0] : undefined,
         };
 
-        const generatedPlan = await generateMealPlanAction(payload);
+        const result = await generateMealPlanAction(payload);
         
-        setCurrentPlan(generatedPlan);
+        setGeneratedPlan(result);
         
         toast({
             title: "Plano Gerado pela IA!",
-            description: "Revise o plano à direita. Se estiver tudo certo, clique em 'Salvar Plano'.",
+            description: "Revise o plano à direita. Se estiver bom, salve-o em um dos slots.",
         });
 
     } catch (error: any) {
@@ -266,11 +197,12 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
         setIsGenerating(false);
     }
   };
+  
+  const savedPlans = userProfile?.savedPlans || [];
 
   return (
-    <>
     <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Coluna da Esquerda: Metas */}
+        {/* Coluna da Esquerda: Metas e Planos Salvos */}
         <div className='w-full space-y-6'>
             <Card className="shadow-sm rounded-2xl">
                 <CardHeader>
@@ -317,12 +249,56 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                     </Form>
                 </CardContent>
             </Card>
-            <div className='flex justify-end'>
-                <Button type="submit" form="goals-form" disabled={isGenerating}>
-                    {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
-                    Gerar Plano com IA
-                </Button>
-            </div>
+             <Card className="shadow-sm rounded-2xl">
+                 <CardHeader>
+                    <CardTitle>Planos Salvos</CardTitle>
+                    <CardDescription>Gerencie seus planos gerados. Você pode salvar até 3.</CardDescription>
+                </CardHeader>
+                 <CardContent className="space-y-3">
+                    {[0, 1, 2].map(index => {
+                        const plan = savedPlans[index];
+                        const isActive = userProfile?.activePlan?.name === `Plano ${index + 1}`;
+                        return (
+                             <Card key={index} className={cn("p-4", isActive && "border-primary bg-primary/5")}>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold">{plan ? plan.name : `Slot ${index + 1} Vazio`}</h4>
+                                        {plan ? (
+                                            <p className="text-sm text-muted-foreground">{plan.calorieGoal} kcal | {plan.proteinGoal}g Proteína</p>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">Disponível para salvar um novo plano.</p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                         {plan && (
+                                            <>
+                                                <Button size="icon" variant={isActive ? "default" : "outline"} onClick={() => handleActivatePlan(plan)} disabled={isSaving || isActive}>
+                                                    <PlayCircle className="h-4 w-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button size="icon" variant="destructive" disabled={isSaving}><Trash2 className="h-4 w-4" /></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                                            <AlertDialogDescription>Esta ação removerá o plano salvo neste slot. Não pode ser desfeita.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteSavedPlan(index)}>Remover</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </>
+                                         )}
+                                    </div>
+                                </div>
+                            </Card>
+                        )
+                    })}
+                 </CardContent>
+            </Card>
         </div>
         
         {/* Coluna da Direita: Plano Gerado */}
@@ -332,8 +308,12 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <CardTitle>Plano Alimentar Gerado</CardTitle>
-                            <CardDescription>Revise o plano gerado pela IA. Se estiver bom, salve-o.</CardDescription>
+                            <CardDescription>Revise o plano gerado pela IA e salve-o em um slot.</CardDescription>
                         </div>
+                        <Button type="submit" form="goals-form" disabled={isGenerating}>
+                            {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
+                            Gerar Plano com IA
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -342,9 +322,9 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
                             <p className="font-medium text-muted-foreground">Gerando plano alimentar...</p>
                         </div>
-                    ) : currentPlan && currentPlan.meals.length > 0 ? (
+                    ) : generatedPlan && generatedPlan.meals.length > 0 ? (
                         <div className="space-y-4">
-                            {currentPlan.meals.map((meal, index) => (
+                            {generatedPlan.meals.map((meal, index) => (
                                 <div key={index} className="rounded-2xl border p-4 space-y-4 relative bg-background shadow-sm">
                                     <div className='flex justify-between items-start'>
                                         <h4 className='font-semibold text-foreground'>{meal.name}</h4>
@@ -362,14 +342,23 @@ export default function PlanEditor({ room, userProfile }: PlanEditorProps) {
                     )}
                 </CardContent>
             </Card>
-            <div className='flex justify-end mb-8'>
-                 <Button type="button" onClick={onSavePlan} disabled={isSaving || !currentPlan || isGenerating}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Salvar Plano
-                </Button>
-            </div>
+            {generatedPlan && (
+                <Card className="shadow-sm rounded-2xl">
+                    <CardHeader>
+                        <CardTitle>Salvar Plano Gerado</CardTitle>
+                        <CardDescription>Escolha um slot para armazenar este plano.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {[0,1,2].map(index => (
+                             <Button key={index} variant="outline" onClick={() => handleSavePlanToSlot(index)} disabled={isSaving}>
+                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FolderDown className="mr-2 h-4 w-4"/>}
+                                 Salvar no Slot {index + 1}
+                            </Button>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     </div>
-    </>
   );
 }
