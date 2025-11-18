@@ -96,7 +96,7 @@ export default function PlanPage() {
               <p className='text-muted-foreground mt-1 max-w-2xl mx-auto sm:mx-0'>
                   {isUnderProfessionalCare
                       ? "Alterne entre o plano do seu nutricionista e o seu plano pessoal gerado por IA."
-                      : "Use nosso assistente de IA para gerar um plano alimentar sob medida."
+                      : "Use nosso assistente de IA para gerar um plano alimentar sob medida ou veja seu plano ativo."
                   }
               </p>
           </div>
@@ -111,10 +111,10 @@ export default function PlanPage() {
         </div>
 
         <TabsContent value="pro-plan">
-          <MealPlanView room={room} />
+          <MealPlanView room={room} userProfile={userProfile} />
         </TabsContent>
         <TabsContent value="my-plan">
-          <PlanEditor userProfile={userProfile || undefined} />
+          {userProfile && <PlanEditor userProfile={userProfile} />}
         </TabsContent>
       </Tabs>
     </AppLayout>

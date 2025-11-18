@@ -2,7 +2,7 @@
 // src/components/pro/plan-editor.tsx
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { type Room } from '@/types/room';
@@ -13,15 +13,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, User, Weight, Target, Footprints, Shield, Salad, ChevronsRight, BrainCircuit, Save, Sparkles, Wand2, Redo, ChevronsLeft } from 'lucide-react';
+import { Loader2, User, Shield, Footprints, ChevronsRight, Sparkles, Wand2, ChevronsLeft, Save } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { doc, runTransaction, serverTimestamp, updateDoc, Timestamp, collection, query, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
 import { GeneratedPlan, GeneratePlanInputSchema } from '@/lib/ai-schemas';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
+import { cn } from '@/lib/utils';
 
 
 type Step = 'goals' | 'confirmation' | 'result';
@@ -77,14 +78,47 @@ const FormStep = ({ form, onNext }: { form: any, onNext: () => void }) => {
                 <Separator />
                 <section>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Footprints className="h-5 w-5 text-primary" /> Nível de Atividade Semanal</h3>
-                    <FormField control={form.control} name="activityLevel" render={({ field }) => (<FormItem><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">{activityLevels.map(item => (<FormItem key={item.id}><FormControl><RadioGroupItem value={item.id} id={item.id} className="sr-only" checked={field.value === item.id} /></FormControl><FormLabel htmlFor={item.id} className="flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full"><p className="font-semibold">{item.label}</p><p className="text-xs text-muted-foreground">{item.description}</p></FormLabel></FormItem>))}</RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                        control={form.control}
+                        name="activityLevel"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+                                    >
+                                        {activityLevels.map((item) => (
+                                            <FormItem key={item.id}>
+                                                <FormControl>
+                                                    <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
+                                                </FormControl>
+                                                <FormLabel
+                                                    htmlFor={item.id}
+                                                    className={cn(
+                                                        "flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full transition-colors",
+                                                        field.value === item.id && "border-primary bg-primary/5"
+                                                    )}
+                                                >
+                                                    <p className="font-semibold">{item.label}</p>
+                                                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                                                </FormLabel>
+                                            </FormItem>
+                                        ))}
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </section>
                 <Separator />
                 <section>
                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Restrições e Preferências</h3>
                      <div className="space-y-6">
-                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="preferences" render={({ field }) => (<FormItem><FormLabel>Preferências ou Aversões</FormLabel><FormControl><Textarea placeholder="Ex: 'Não gosto de coentro', 'Prefiro peixe a carne vermelha', 'Gostaria de opções de café da manhã rápidas'" {...field} /></FormControl><FormMessage /></FormItem>)} />
                      </div>
                 </section>
@@ -97,9 +131,9 @@ const ConfirmationStep = ({ data }: { data: PlanGeneratorFormValues }) => {
     
     const getLabel = (arr: {id: string, label: string}[], id?: string) => arr.find(item => item.id === id)?.label || 'Não informado';
 
-    const renderList = (items: string[] | undefined, defaultText: string) => {
+    const renderList = (items: string[] | undefined, options: {id: string, label: string}[], defaultText: string) => {
         if (!items || items.length === 0) return defaultText;
-        return items.map(item => item.charAt(0).toUpperCase() + item.slice(1)).join(', ');
+        return items.map(item => getLabel(options, item)).join(', ');
     }
 
     return (
@@ -109,8 +143,8 @@ const ConfirmationStep = ({ data }: { data: PlanGeneratorFormValues }) => {
             <InfoItem title="Altura" value={`${data.height || 'N/A'} cm`} />
             <InfoItem title="Idade" value={`${data.age || 'N/A'} anos`} />
             <InfoItem title="Nível de Atividade" value={getLabel(activityLevels, data.activityLevel)} />
-            <InfoItem title="Restrições" value={renderList(data.dietaryRestrictions?.map(r => getLabel(dietaryRestrictions, r)), 'Nenhuma')} />
-            <InfoItem title="Alergias" value={renderList(data.allergies?.map(a => getLabel(allergyOptions, a)), 'Nenhuma')} />
+            <InfoItem title="Restrições" value={renderList(data.dietaryRestrictions, dietaryRestrictions, 'Nenhuma')} />
+            <InfoItem title="Alergias" value={renderList(data.allergies, allergyOptions, 'Nenhuma')} />
             {data.preferences && <InfoItem title="Preferências" value={data.preferences} />}
         </div>
     );
@@ -124,7 +158,7 @@ const InfoItem = ({title, value}: {title: string, value: string}) => (
 );
 
 
-const ResultStep = ({ plan, isSaving }: { plan: GeneratedPlan, isSaving: boolean }) => {
+const ResultStep = ({ plan }: { plan: GeneratedPlan }) => {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
@@ -148,16 +182,13 @@ const ResultStep = ({ plan, isSaving }: { plan: GeneratedPlan, isSaving: boolean
 };
 
 
-export default function PlanEditor({ room, userProfile }: { room?: Room; userProfile?: UserProfile; isFeatureLocked?: boolean; }) {
+export default function PlanEditor({ userProfile }: { userProfile: UserProfile; }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [step, setStep] = useState<Step>('goals');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
-
-  const isProfessionalMode = !!room;
-  const activePlan = isProfessionalMode ? room.activePlan : userProfile?.activePlan;
 
   const form = useForm<PlanGeneratorFormValues>({
     resolver: zodResolver(planGeneratorSchema),
@@ -266,7 +297,7 @@ export default function PlanEditor({ room, userProfile }: { room?: Room; userPro
             <CardContent>
                 {step === 'goals' && <FormStep form={form} onNext={handleNextStep} />}
                 {step === 'confirmation' && <ConfirmationStep data={form.getValues()} />}
-                {step === 'result' && generatedPlan && <ResultStep plan={generatedPlan} isSaving={isSaving} />}
+                {step === 'result' && generatedPlan && <ResultStep plan={generatedPlan} />}
             </CardContent>
             <CardFooter className="flex justify-between items-center border-t pt-6">
                 <div>
