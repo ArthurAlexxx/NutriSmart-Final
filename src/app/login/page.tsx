@@ -1,7 +1,7 @@
 // src/app/login/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft, LogIn } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email('E-mail inválido.'),
@@ -27,6 +27,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
+  const { user, userProfile, isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -35,6 +36,19 @@ export default function LoginPage() {
       password: '',
     },
   });
+  
+  useEffect(() => {
+    // This effect handles redirection AFTER the user state is fully resolved.
+    if (!isUserLoading && user && userProfile) {
+        toast({
+            title: "Login bem-sucedido!",
+            description: "Redirecionando para o seu painel...",
+        });
+        const destination = userProfile.profileType === 'professional' ? '/pro/patients' : '/dashboard';
+        router.push(destination);
+    }
+  }, [user, userProfile, isUserLoading, router, toast]);
+
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -45,15 +59,11 @@ export default function LoginPage() {
     }
 
     try {
+      // This just initiates the login. The useEffect above will handle the redirect.
       await signInWithEmailAndPassword(auth, values.email, values.password);
       
-      toast({
-        title: "Login bem-sucedido!",
-        description: "Redirecionando para o seu dashboard...",
-      });
-      router.push('/dashboard');
-      
     } catch (error: any) {
+      setLoading(false); // Stop loading on error
       let description = "Ocorreu um erro desconhecido. Por favor, tente novamente.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = "E-mail ou senha inválidos.";
@@ -67,9 +77,8 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
+    // No finally block to set loading to false, as the useEffect handles the final state.
   };
 
   return (
@@ -119,8 +128,8 @@ export default function LoginPage() {
                 </FormItem>
                 )}
             />
-            <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={loading || isUserLoading}>
+                {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Entrar
             </Button>
             </form>

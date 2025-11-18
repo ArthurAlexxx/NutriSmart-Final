@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Users, Stethoscope } from 'lucide-react';
@@ -45,6 +45,7 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const auth = useAuth();
   const firestore = useFirestore();
+  const { user, userProfile, isUserLoading } = useUser();
   
   const defaultProfileType = searchParams.get('type') === 'pro' ? 'professional' : 'patient';
 
@@ -58,6 +59,17 @@ function RegisterForm() {
       profileType: defaultProfileType,
     },
   });
+  
+  useEffect(() => {
+    if (!isUserLoading && user && userProfile) {
+        toast({
+            title: "Bem-vindo(a)! 🎉",
+            description: "Sua conta foi criada com sucesso.",
+        });
+        const destination = userProfile.profileType === 'professional' ? '/pro/patients' : '/dashboard';
+        router.push(destination);
+    }
+  }, [user, userProfile, isUserLoading, router, toast]);
 
   const profileType = registerForm.watch('profileType');
 
@@ -92,13 +104,11 @@ function RegisterForm() {
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
       await updateProfile(user, { displayName: data.fullName });
       
-      toast({
-          title: "Bem-vindo(a)! 🎉",
-          description: "Sua conta foi criada com sucesso.",
-      });
-      router.push(data.profileType === 'professional' ? '/pro/patients' : '/dashboard');
+      // The useEffect will now handle the redirection once the profile is loaded.
+      // No need to call router.push here.
 
     } catch (error: any) {
+        setLoading(false); // Stop loading on error
         let description = 'Ocorreu um erro desconhecido. Por favor, tente novamente.';
         if (error.code === 'auth/email-already-in-use') {
             description = 'Este e-mail já está sendo utilizado por outra conta.';
@@ -109,8 +119,6 @@ function RegisterForm() {
         }
 
         toast({ title: 'Erro no Cadastro', description, variant: 'destructive' });
-    } finally {
-        setLoading(false);
     }
   };
 
@@ -193,8 +201,8 @@ function RegisterForm() {
                 <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
                     <FormItem><FormLabel>Confirmar Senha</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                <Button type="submit" className="w-full !mt-6" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
+                    {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Criar Conta
                 </Button>
             </form>
