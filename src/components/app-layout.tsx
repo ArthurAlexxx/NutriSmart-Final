@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -29,11 +30,11 @@ interface AppLayoutProps {
 }
 
 const navItemsPatient = [
-  { href: '/dashboard', label: 'Meu Diário', icon: LayoutDashboard, premium: false, id: 'nav-dashboard' },
-  { href: '/analysis', label: 'Minha Análise', icon: BarChart3, premium: true, id: 'nav-analysis' },
-  { href: '/plan', label: 'Meu Plano (IA)', icon: BookMarked, premium: true, id: 'nav-plan' },
-  { href: '/chef', label: 'Chef Virtual', icon: ChefHat, premium: true, id: 'nav-chef' },
-  { href: '/history', label: 'Meu Histórico', icon: History, premium: false, id: 'nav-history' },
+  { href: '/dashboard', label: 'Meu Diário', icon: LayoutDashboard, id: 'nav-dashboard' },
+  { href: '/analysis', label: 'Minha Análise', icon: BarChart3, id: 'nav-analysis' },
+  { href: '/plan', label: 'Meu Plano (IA)', icon: BookMarked, id: 'nav-plan' },
+  { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef' },
+  { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history' },
 ];
 
 const navItemsPro = [
@@ -90,8 +91,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
-  const hasAccess = true; // All features unlocked for now
-  
   const handleSignOut = async () => {
     if (!auth) return;
     try {
@@ -111,7 +110,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       ...item,
       pathname: pathname,
       onClick: () => isMobile && setSheetOpen(false),
-      disabled: item.premium && !hasAccess
+      disabled: false // All features are enabled
     });
 
     if (isProUser) {
@@ -135,7 +134,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     );
   };
   
-  const showOverlay = false; // All features are unlocked, so never show the overlay
+  // All features are unlocked, so never show the overlay
+  const showOverlay = false; 
 
   return (
     <>

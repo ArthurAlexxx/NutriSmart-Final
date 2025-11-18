@@ -41,8 +41,6 @@ export default function DashboardPage() {
   const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
   const [isGoalsModalOpen, setGoalsModalOpen] = useState(false);
   const [isAddMealFormOpen, setAddMealFormOpen] = useState(false);
-  
-  const hasAccess = true; // All features unlocked
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -254,7 +252,7 @@ export default function DashboardPage() {
                                 </CollapsibleTrigger>
                            </CardHeader>
                            <CollapsibleContent>
-                                {user && <InlineAddMealForm userId={user.uid} onMealAdded={() => setAddMealFormOpen(false)} disabled={!hasAccess} />}
+                                {user && <InlineAddMealForm userId={user.uid} onMealAdded={() => setAddMealFormOpen(false)} />}
                            </CollapsibleContent>
                            <CardContent className={cn(isAddMealFormOpen && "pt-6")}>
                                <ConsumedFoodsList 

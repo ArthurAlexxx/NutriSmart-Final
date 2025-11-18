@@ -58,7 +58,10 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
   const todayStr = getLocalDateString();
   const dailyUploads = userProfile?.lastPhotoAnalysisDate === todayStr ? userProfile.photoAnalysisCount ?? 0 : 0;
-  const isPhotoLimitReached = dailyUploads >= MAX_DAILY_ANALYSIS;
+  
+  // Feature is available if user is premium, or if they haven't reached the daily limit on a free plan.
+  const isPhotoFeatureAvailable = userProfile?.subscriptionStatus === 'premium' || dailyUploads < MAX_DAILY_ANALYSIS;
+
 
   const manualForm = useForm<ManualMealFormValues>({
     resolver: zodResolver(manualFormSchema),
@@ -66,7 +69,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
       mealType: '',
       foods: [{ name: '', portion: 100, unit: 'g' }],
     },
-    disabled
+    disabled: disabled
   });
 
   const photoForm = useForm<PhotoMealFormValues>({
@@ -75,13 +78,22 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
       mealType: '',
       photo: null,
     },
-    disabled: disabled || isPhotoLimitReached,
+    disabled: disabled || !isPhotoFeatureAvailable,
   });
 
   const { fields, append, remove } = useFieldArray({
     control: manualForm.control,
     name: 'foods',
   });
+  
+  useEffect(() => {
+    // Disable/enable form based on feature availability
+    if (isPhotoFeatureAvailable) {
+      photoForm.formState.isSubmitting = false;
+    } else {
+      photoForm.formState.isSubmitting = true;
+    }
+  }, [isPhotoFeatureAvailable, photoForm]);
 
   const handleManualSubmit = async (data: ManualMealFormValues) => {
     setIsProcessing(true);
@@ -178,10 +190,12 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
             toast({ title: "Análise Inconclusiva", description: "Não foi possível identificar os alimentos na imagem. Tente uma foto mais nítida ou insira manualmente.", variant: 'destructive' });
         } else {
             await saveMeal(data.mealType, mealData);
-            await onProfileUpdate({
-                lastPhotoAnalysisDate: todayStr,
-                photoAnalysisCount: dailyUploads + 1,
-            });
+            if (userProfile?.subscriptionStatus !== 'premium') {
+              await onProfileUpdate({
+                  lastPhotoAnalysisDate: todayStr,
+                  photoAnalysisCount: dailyUploads + 1,
+              });
+            }
             photoForm.reset({ mealType: '', photo: undefined });
             setImagePreview(null);
             onMealAdded();
@@ -309,7 +323,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel className="font-semibold">Tipo de Refeição *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled || isPhotoLimitReached}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled || !isPhotoFeatureAvailable}>
                     <FormControl>
                         <SelectTrigger><SelectValue placeholder="Selecionar tipo de refeição" /></SelectTrigger>
                     </FormControl>
@@ -335,7 +349,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                       <Input 
                         type="file" 
                         accept="image/*" 
-                        disabled={disabled || isPhotoLimitReached}
+                        disabled={disabled || !isPhotoFeatureAvailable}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -354,18 +368,18 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 )}
               />
 
-              {imagePreview && !isPhotoLimitReached && (
+              {imagePreview && isPhotoFeatureAvailable && (
                 <div className="w-full aspect-video rounded-lg overflow-hidden border">
                   <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
                 </div>
               )}
               
-              {isPhotoLimitReached ? (
+              {!isPhotoFeatureAvailable ? (
                  <Alert variant="destructive">
                     <Lock className="h-4 w-4" />
                     <AlertTitle>Limite Diário Atingido</AlertTitle>
                     <AlertDescription>
-                        Você já usou suas {MAX_DAILY_ANALYSIS} análises de foto por hoje. O limite será zerado amanhã.
+                        Você já usou suas {MAX_DAILY_ANALYSIS} análises de foto por hoje no plano gratuito. O limite será zerado amanhã.
                     </AlertDescription>
                 </Alert>
               ) : (
@@ -373,14 +387,15 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                     <AlertTriangle className="h-4 w-4 text-primary" />
                     <AlertTitle className="text-primary">Modo Experimental</AlertTitle>
                     <AlertDescription>
-                    A análise por foto é uma estimativa e pode não ser 100% precisa. ({MAX_DAILY_ANALYSIS - dailyUploads}/{MAX_DAILY_ANALYSIS} restantes hoje)
+                    A análise por foto é uma estimativa e pode não ser 100% precisa.
+                    {userProfile?.subscriptionStatus !== 'premium' && ` (${MAX_DAILY_ANALYSIS - dailyUploads}/${MAX_DAILY_ANALYSIS} restantes hoje)`}
                     </AlertDescription>
                 </Alert>
               )}
 
 
               <div className='flex justify-end'>
-                <Button type="submit" disabled={isProcessing || disabled || isPhotoLimitReached}>
+                <Button type="submit" disabled={isProcessing || disabled || !isPhotoFeatureAvailable}>
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
                   Analisar e Adicionar
                 </Button>

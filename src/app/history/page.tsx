@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, query, where, onSnapshot, doc, deleteDoc, Unsubscribe } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, deleteDoc, Unsubscribe, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 import ConsumedFoodsList from '@/components/consumed-foods-list';
@@ -50,7 +50,7 @@ export default function HistoryPage() {
     let unsubMeals: Unsubscribe | undefined;
     let unsubHydration: Unsubscribe | undefined;
 
-    const mealsQuery = query(collection(firestore, 'users', user.uid, 'meal_entries'));
+    const mealsQuery = query(collection(firestore, 'users', user.uid, 'meal_entries'), orderBy('createdAt', 'desc'));
     unsubMeals = onSnapshot(mealsQuery, (snapshot) => {
       setAllMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
       setLoading(false);
