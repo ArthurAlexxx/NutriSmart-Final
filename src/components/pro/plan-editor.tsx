@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import { ptBR } from 'date-fns/locale';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
+import { GeneratedPlan } from '@/lib/ai-schemas';
 
 const mealPlanItemSchema = z.object({
   id: z.string().optional(),
