@@ -19,7 +19,7 @@ const openai = new OpenAI({
 
 /**
  * Gera uma receita usando a API da OpenAI.
- * @param userInput - A string de entrada do usuário com ingredientes ou tipo de prato.
+ * @param userInput - A string de entrada do usuário com ingredientes, tipo de prato, porções ou calorias.
  * @returns Um objeto de receita validado.
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
@@ -77,26 +77,30 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
         throw new Error(recipeJson.error);
     }
 
-    // Handle cases where the AI might wrap the response in a "recipe" object
-    const validationResult = RecipeSchema.safeParse(recipeJson);
-    if (validationResult.success) {
-      return validationResult.data;
+    // Attempt to validate the root object first
+    const rootValidation = RecipeSchema.safeParse(recipeJson);
+    if (rootValidation.success) {
+      return rootValidation.data;
     }
 
+    // If root fails, check for a nested 'recipe' object
     if (recipeJson.recipe) {
-      const nestedValidationResult = RecipeSchema.safeParse(recipeJson.recipe);
-      if (nestedValidationResult.success) {
-        return nestedValidationResult.data;
+      const nestedValidation = RecipeSchema.safeParse(recipeJson.recipe);
+      if (nestedValidation.success) {
+        return nestedValidation.data;
       }
     }
-
-    console.error("Zod validation failed for root and nested 'recipe' objects.");
+    
+    console.error("Zod validation failed for both root and nested 'recipe' objects.", {
+        rootError: (rootValidation as any).error,
+        nestedError: recipeJson.recipe ? (RecipeSchema.safeParse(recipeJson.recipe) as any).error : "No nested object"
+    });
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
 
   } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Zod validation error:", error.errors);
+        console.error("Zod validation error in generateRecipeAction:", error.errors);
       } else {
         console.error("Error parsing or validating recipe JSON:", error);
       }
@@ -166,19 +170,24 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
   try {
     const planJson = JSON.parse(resultText);
 
-    const validationResult = GeneratedPlan.safeParse(planJson);
-    if (validationResult.success) {
-        return validationResult.data;
+    // Attempt to validate the root object first
+    const rootValidation = GeneratedPlan.safeParse(planJson);
+    if (rootValidation.success) {
+        return rootValidation.data;
     }
 
+    // If root fails, check for a nested 'plan' object
     if (planJson.plan) {
-        const nestedValidationResult = GeneratedPlan.safeParse(planJson.plan);
-        if (nestedValidationResult.success) {
-            return nestedValidationResult.data;
+        const nestedValidation = GeneratedPlan.safeParse(planJson.plan);
+        if (nestedValidation.success) {
+            return nestedValidation.data;
         }
     }
 
-    console.error("Zod validation failed for root and nested 'plan' objects.");
+    console.error("Zod validation failed for both root and nested 'plan' objects.", {
+        rootError: (rootValidation as any).error,
+        nestedError: planJson.plan ? (GeneratedPlan.safeParse(planJson.plan) as any).error : "No nested object"
+    });
     console.error("Received JSON:", resultText);
     throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
 
@@ -202,45 +211,45 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
   const prompt = `
-    Você é um Sistema Avançado de Análise Nutricional por Visão Computacional, especializado em avaliação precisa de alimentos a partir de imagens reais.
+    Você é um Sistema Avançado de Análise Nutricional por Visão Computacional, especializado em avaliação precisa de alimentos a partir de imagens reais. Sua única função é retornar um objeto JSON com a análise.
 
     INSTRUÇÕES PRINCIPAIS:
 
-    1. **Identificação Visual Avançada**
-       - Identifique com precisão todos os alimentos presentes na imagem.
-       - Estime quantidades aproximadas em gramas ou unidades com base em proporções realistas.
+    1.  **Identificação Visual Avançada**:
+        - Identifique com precisão todos os alimentos e bebidas visíveis na imagem.
+        - Estime as quantidades de cada item (em gramas ou unidades) com base em proporções realistas (ex: um bife médio tem ~150g, uma xícara de arroz tem ~180g).
 
-    2. **Cálculo Nutricional Científico**
-       - Calcule calorias, proteínas, carboidratos e gorduras utilizando referências nutricionais padrão.
-       - Os valores devem ser o mais próximos possível da realidade, podendo ser decimais para maior precisão.
+    2.  **Cálculo Nutricional Científico**:
+        - Com base nos itens e quantidades identificados, calcule o total de **calorias (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)**.
+        - Os valores devem ser numéricos e podem ser decimais para máxima precisão (ex: 125.5).
 
-    3. **Descrição da Refeição**
-       - Crie uma descrição curta, objetiva e fiel ao conteúdo da foto.
+    3.  **Descrição Objetiva da Refeição**:
+        - Crie uma descrição curta e direta listando os principais itens identificados (ex: "Bife grelhado com arroz branco, feijão e salada de alface.").
 
-    4. **Validação de Imagem**
-       - Caso a imagem NÃO contenha alimentos, retorne:
-         {
-           "calories": 0,
-           "protein": 0,
-           "carbs": 0,
-           "fat": 0,
-           "description": ""
-         }
+    4.  **Validação de Imagem (Regra Crítica)**:
+        - Se a imagem fornecida claramente **NÃO CONTÉM COMIDA** (ex: uma foto de uma caneta, uma paisagem, um carro), você **DEVE** retornar o seguinte JSON com valores zerados:
+          {
+            "calories": 0,
+            "protein": 0,
+            "carbs": 0,
+            "fat": 0,
+            "description": ""
+          }
 
-    5. **Tipo de Refeição**
-       - Leve em consideração a categoria informada pelo usuário ("${input.mealType}"), mas priorize a evidência visual.
+    5.  **Contexto do Tipo de Refeição**:
+        - Use a informação do usuário sobre o tipo de refeição ("${input.mealType}") como um contexto, mas sua análise deve se basear **primariamente na evidência visual** da foto.
 
-    6. **FORMATO RÍGIDO**
-       - Responda exclusivamente com um objeto JSON no formato:
-         {
-           "calories": number,
-           "protein": number,
-           "carbs": number,
-           "fat": number,
-           "description": string
-         }
+    6.  **FORMATO DE SAÍDA ESTRITO E OBRIGATÓRIO**:
+        - A resposta deve ser **EXCLUSIVAMENTE** um objeto JSON válido, sem nenhum texto, explicação ou caractere adicional antes ou depois.
 
-    Nenhum texto adicional deve ser incluído.
+        EXEMPLO DE SAÍDA JSON:
+        {
+          "calories": 550.5,
+          "protein": 45.2,
+          "carbs": 55.0,
+          "fat": 15.8,
+          "description": "Bife grelhado com arroz branco, feijão e salada de alface."
+        }
   `;
 
   const response = await openai.chat.completions.create({
@@ -279,3 +288,4 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
   }
 }
 
+    
