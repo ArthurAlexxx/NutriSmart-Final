@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title: React.ReactNode;
@@ -23,18 +23,55 @@ export interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   }[];
 }
 
+const TypingAnimation = ({ texts }: { texts: string[] }) => {
+  const [textIndex, setTextIndex] = React.useState(0);
+  const [displayedText, setDisplayedText] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleTyping = () => {
+      const currentText = texts[textIndex];
+      if (isDeleting) {
+        if (displayedText.length > 0) {
+          setDisplayedText((prev) => prev.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setTextIndex((prev) => (prev + 1) % texts.length);
+        }
+      } else {
+        if (displayedText.length < currentText.length) {
+          setDisplayedText((prev) => currentText.slice(0, prev.length + 1));
+        } else {
+          // Wait before deleting
+          setTimeout(() => setIsDeleting(true), 2000);
+        }
+      }
+    };
+
+    const typingSpeed = isDeleting ? 100 : 150;
+    const timeout = setTimeout(handleTyping, typingSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayedText, isDeleting, textIndex, texts]);
+
+  return (
+    <span className="inline-block">
+      {displayedText}
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+        className="inline-block w-[2px] h-[1em] bg-primary ml-1 translate-y-1"
+      ></motion.span>
+    </span>
+  );
+};
+
+
 const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
   ({ className, title, animatedTexts, subtitle, infoBadgeText, ctaButtonText, ctaButtonLink, socialProofText, avatars, ...props }, ref) => {
-    const [textIndex, setTextIndex] = React.useState(0);
-
-    React.useEffect(() => {
-      const interval = setInterval(() => {
-        setTextIndex((prevIndex) => (prevIndex + 1) % animatedTexts.length);
-      }, 4000); // Change text every 4 seconds
-
-      return () => clearInterval(interval);
-    }, [animatedTexts.length]);
-
+    
     return (
       <section
         className={cn("container mx-auto flex flex-col items-center justify-center text-center py-20 md:py-32", className)}
@@ -55,18 +92,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 <span className="absolute inset-0 border-2 border-dashed border-primary rounded-2xl"></span>
               </span>
               <div className="text-primary min-h-[1.2em] inline-block">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={textIndex}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className="inline-block"
-                  >
-                    {animatedTexts[textIndex]}
-                  </motion.span>
-                </AnimatePresence>
+                <TypingAnimation texts={animatedTexts} />
               </div>
             </div>
           </h1>
