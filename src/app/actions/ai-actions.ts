@@ -142,28 +142,38 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  * @returns A validated meal analysis object.
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
-  const prompt = `Analise a imagem da refeição e estime o conteúdo nutricional. O usuário marcou esta refeição como '${input.mealType}'.
-Responda APENAS com um objeto JSON válido.
-Se não for uma imagem de comida, retorne 0 para todos os valores numéricos e uma string vazia para a descrição.
+  const prompt = `
+    Você é um nutricionista especialista em análise visual de alimentos. Sua tarefa é analisar a imagem de uma refeição e estimar seu conteúdo nutricional com a maior precisão possível.
 
-O formato da resposta JSON DEVE ser:
-{
-  "calories": number,
-  "protein": number,
-  "carbs": number,
-  "fat": number,
-  "description": string
-}
+    INSTRUÇÕES:
+    1.  **Identificação:** Primeiro, identifique os alimentos e as quantidades aproximadas (em gramas ou unidades) presentes na imagem.
+    2.  **Cálculo Nutricional:** Com base nos alimentos e quantidades identificados, calcule o total de calorias (kcal), proteínas (g), carboidratos (g) e gorduras (g).
+    3.  **Descrição:** Crie uma descrição curta e objetiva da refeição identificada (ex: "Prato de arroz, feijão, bife e batata frita").
+    4.  **Validação de Imagem:** Se a imagem claramente não contiver comida (ex: uma caneta, um carro, uma paisagem), você DEVE retornar 0 para todos os valores numéricos e uma string vazia para a descrição.
+    5.  **Refeição do Usuário:** O usuário classificou esta refeição como "${input.mealType}". Leve isso em conta, mas confie principalmente na análise visual.
 
-Exemplo de resposta para uma imagem de salada de frango:
-{
-  "calories": 350,
-  "protein": 30,
-  "carbs": 10,
-  "fat": 20,
-  "description": "Salada de frango com folhas verdes e tomate"
-}
-`;
+    REGRAS DE SAÍDA:
+    - Sua resposta DEVE SER APENAS um único objeto JSON válido, sem nenhum texto, markdown ou explicações antes ou depois.
+    - Os valores para calorias, proteínas, carboidratos e gorduras DEVEM ser números inteiros, não strings.
+
+    O formato da resposta JSON DEVE seguir este schema:
+    {
+      "calories": number,
+      "protein": number,
+      "carbs": number,
+      "fat": number,
+      "description": string
+    }
+
+    EXEMPLO DE RESPOSTA para uma imagem de um prato de arroz, feijão, bife e fritas:
+    {
+      "calories": 750,
+      "protein": 35,
+      "carbs": 80,
+      "fat": 30,
+      "description": "Arroz branco, feijão, bife grelhado e batata frita"
+    }
+  `;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
