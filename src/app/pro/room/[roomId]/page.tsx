@@ -54,8 +54,10 @@ export default function RoomDetailPage() {
     if (userProfile && firestore) {
         if (userProfile.profileType !== 'professional') {
             router.push('/dashboard');
+            return;
         }
         
+        setLoading(true);
         unsubRoom = onSnapshot(doc(firestore, 'rooms', roomId), (doc) => {
             if (doc.exists()) {
                 setRoom({ id: doc.id, ...doc.data() } as Room);

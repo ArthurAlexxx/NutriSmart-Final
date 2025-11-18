@@ -28,7 +28,9 @@ export default function ChefPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) {
+      return; // Wait until the auth state is fully resolved.
+    }
     if (!user) {
       router.push('/login');
       return;

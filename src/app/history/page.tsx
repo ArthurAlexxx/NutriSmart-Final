@@ -42,7 +42,7 @@ export default function HistoryPage() {
       return;
     }
 
-    setLoading(false);
+    setLoading(true); // Start loading after auth check
 
     let unsubMeals: Unsubscribe | undefined;
     let unsubHydration: Unsubscribe | undefined;
@@ -51,9 +51,11 @@ export default function HistoryPage() {
       const mealsQuery = query(collection(firestore, 'users', user.uid, 'meal_entries'));
       unsubMeals = onSnapshot(mealsQuery, (snapshot) => {
         setAllMealEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry)));
+        setLoading(false);
       }, (error) => {
         console.error("Error fetching meal entries for history:", error);
         toast({ title: "Erro ao carregar histórico de refeições", variant: "destructive" });
+        setLoading(false);
       });
 
       const hydrationQuery = query(collection(firestore, 'users', user.uid, 'hydration_entries'));
@@ -63,6 +65,8 @@ export default function HistoryPage() {
         console.error("Error fetching hydration entries for history:", error);
         toast({ title: "Erro ao carregar histórico de hidratação", variant: "destructive" });
       });
+    } else {
+      setLoading(false);
     }
 
     return () => {

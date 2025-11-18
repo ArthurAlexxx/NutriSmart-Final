@@ -44,6 +44,7 @@ export default function ProPatientsPage() {
         }
 
         if (firestore) {
+            setLoading(true);
             const roomsRef = collection(firestore, 'rooms');
             const q = query(roomsRef, where('professionalId', '==', user.uid));
 
@@ -61,6 +62,7 @@ export default function ProPatientsPage() {
             setLoading(false);
         }
     } else if (!isUserLoading) {
+        // If profile is still loading, wait, but if it finished and is null, stop loading.
         setLoading(false);
     }
 

@@ -103,6 +103,8 @@ export default function AnalysisPage() {
         const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WeightLog));
         setWeightLogs(logs);
       }, (error) => handleError(error, 'peso'));
+    } else {
+      setLoading(false);
     }
 
     return () => {
@@ -231,7 +233,7 @@ export default function AnalysisPage() {
                     <h2 className="text-3xl font-bold text-foreground font-heading">Análise de Desempenho</h2>
                     <p className="text-muted-foreground mt-1">Seu progresso e tendências de consumo.</p>
                 </div>
-                 <div class='flex w-full flex-col sm:w-auto sm:flex-row items-center gap-2'>
+                 <div className='flex w-full flex-col sm:w-auto sm:flex-row items-center gap-2'>
                     <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-full sm:w-auto">
                         {( [7, 15, 30] as Period[]).map(p => (
                             <Button 

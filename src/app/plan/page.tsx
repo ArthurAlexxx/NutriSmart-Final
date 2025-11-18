@@ -37,6 +37,7 @@ export default function PlanPage() {
 
     let unsubRoom: Unsubscribe | undefined;
     if (userProfile?.patientRoomId && firestore) {
+      setLoading(true);
       const roomRef = doc(firestore, 'rooms', userProfile.patientRoomId);
       unsubRoom = onSnapshot(roomRef, (doc) => {
         if (doc.exists()) {
