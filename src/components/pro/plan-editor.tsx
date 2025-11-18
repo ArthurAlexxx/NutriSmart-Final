@@ -1,10 +1,9 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { type Room } from '@/types/room';
 import { type UserProfile, type ActivePlan } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -14,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Loader2, User, Shield, Footprints, ChevronsRight, Sparkles, Wand2, ChevronsLeft, Save } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
@@ -22,7 +21,6 @@ import { GeneratedPlan, GeneratePlanInputSchema } from '@/lib/ai-schemas';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-
 
 type Step = 'goals' | 'confirmation' | 'result';
 
@@ -181,7 +179,7 @@ const ResultStep = ({ plan }: { plan: GeneratedPlan }) => {
 };
 
 
-export default function PlanEditor({ userProfile, activePlan }: { userProfile: UserProfile; activePlan: ActivePlan | null }) {
+export default function PlanEditor({ userProfile, activePlan, onPlanSaved }: { userProfile: UserProfile; activePlan: ActivePlan | null; onPlanSaved?: () => void; }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [step, setStep] = useState<Step>('goals');
@@ -264,6 +262,7 @@ export default function PlanEditor({ userProfile, activePlan }: { userProfile: U
           description: `Seu novo plano alimentar foi salvo e ativado.`,
       });
       setStep('goals');
+      if (onPlanSaved) onPlanSaved();
 
     } catch (error: any) {
          toast({
