@@ -23,53 +23,26 @@ function initializeAdminApp(): FirebaseAdminServices {
       db: admin.firestore(existingApp),
     };
   }
-
-  // --- NEW LOGIC: Prefer a single service account key from env ---
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    try {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      const app = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      return {
-        app,
-        auth: admin.auth(app),
-        db: admin.firestore(app),
-      };
-    } catch (e: any) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
-      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não é um JSON válido.');
-    }
-  }
-
-  // --- FALLBACK LOGIC: Use separate environment variables ---
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Replace escaped newlines from the environment variable
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error('As variáveis de ambiente do Firebase Admin (FIREBASE_SERVICE_ACCOUNT_KEY ou FIREBASE_PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) não estão definidas corretamente.');
+  
+  // Use a single service account key from env, which is the Vercel-recommended approach.
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. O backend não pode se autenticar.');
   }
 
   try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
     const app = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
+      credential: admin.credential.cert(serviceAccount),
     });
-
+    
     return {
       app,
       auth: admin.auth(app),
       db: admin.firestore(app),
     };
-
-  } catch (error: any) {
-    console.error("Falha crítica ao inicializar o Firebase Admin SDK:", error.message);
-    throw new Error('Erro desconhecido ao inicializar o Firebase Admin. Verifique as variáveis de ambiente.');
+  } catch (e: any) {
+    console.error('Falha crítica ao inicializar o Firebase Admin com a chave de serviço.', e.message);
+    throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não é um JSON válido ou está corrompida.');
   }
 }
 
