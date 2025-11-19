@@ -15,33 +15,35 @@ let services: FirebaseAdminServices | null = null;
 
 function initializeAdminApp(): FirebaseAdminServices {
   // If already initialized, return the existing services
-  if (services) {
-    return services;
-  }
-
-  // If there are existing admin apps, use the first one. This handles hot-reloads in development.
   if (admin.apps.length > 0) {
     const app = admin.apps[0] as App;
-    services = {
-      app,
-      auth: admin.auth(app),
-      db: admin.firestore(app),
-    };
+    if (!services) {
+       services = {
+        app,
+        auth: admin.auth(app),
+        db: admin.firestore(app),
+      };
+    }
     return services;
   }
-  
-  const serviceAccountKeyBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  if (!serviceAccountKeyBase64) {
-    throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. O valor deve ser a string codificada em base64 do seu arquivo de chave de serviço JSON.');
+  // Vercel environment variables for Firebase Admin
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  // Replace escaped newlines from the environment variable
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error('As variáveis de ambiente do Firebase Admin (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) não estão definidas corretamente.');
   }
 
   try {
-    const serviceAccountJson = Buffer.from(serviceAccountKeyBase64, 'base64').toString('utf-8');
-    const serviceAccount = JSON.parse(serviceAccountJson);
-
     const app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
     });
 
     services = {
@@ -53,10 +55,7 @@ function initializeAdminApp(): FirebaseAdminServices {
 
   } catch (error: any) {
     console.error("Falha crítica ao inicializar o Firebase Admin SDK:", error.message);
-    if (error instanceof SyntaxError) {
-      throw new Error('Erro ao inicializar o Firebase Admin: O valor em FIREBASE_SERVICE_ACCOUNT_KEY parece não ser uma string base64 válida ou está corrompido.');
-    }
-    throw new Error('Erro desconhecido ao inicializar o Firebase Admin. Verifique a variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY.');
+    throw new Error('Erro desconhecido ao inicializar o Firebase Admin. Verifique as variáveis de ambiente.');
   }
 }
 
