@@ -1,3 +1,4 @@
+
 // src/components/pix-payment-modal.tsx
 'use client';
 
@@ -46,7 +47,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const [lastPlanName, setLastPlanName] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { onProfileUpdate } = useUser();
+  const { onProfileUpdate, user } = useUser();
 
 
   const form = useForm<CustomerDataFormValues>({
@@ -87,12 +88,13 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     setError(null);
 
     try {
+        if (!user) throw new Error("Usuário não autenticado.");
         const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: userProfile.id,
-                planName: plan.name,
+                userId: user.uid,
+                planName: plan.name.toUpperCase(),
                 isYearly: isYearly,
                 customerData: customerData,
             }),
@@ -133,19 +135,19 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         };
 
         await generateQrCode(customerDataForApi);
-    } catch(e) {
+    } catch(e: any) {
         console.error("Failed to update profile before payment", e);
-        toast({ title: "Erro ao salvar dados", description: "Não foi possível atualizar seu perfil. Tente novamente.", variant: "destructive"});
+        toast({ title: "Erro ao salvar dados", description: e.message || "Não foi possível atualizar seu perfil. Tente novamente.", variant: "destructive"});
         setIsLoading(false);
     }
   }
 
   const handleSuccessfulPayment = useCallback((paidChargeId: string) => {
-    if (paymentStatus === 'PAID') return;
+    if (paymentStatus === 'PAID' || !user) return;
     
     setPaymentStatus('PAID');
     // Store charge ID in localStorage, scoped to the user, for client-side finalization on the dashboard.
-    localStorage.setItem(`pendingChargeId_${userProfile.id}`, paidChargeId);
+    localStorage.setItem(`pendingChargeId_${user.uid}`, paidChargeId);
 
     confetti({
       particleCount: 150,
@@ -165,7 +167,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         // We no longer redirect from here. The dashboard will handle the final update.
     }, 3000);
 
-  }, [onOpenChange, paymentStatus, toast, userProfile.id]);
+  }, [onOpenChange, paymentStatus, toast, user]);
   
   const handleCheckPayment = useCallback(async () => {
     if (!chargeId || isVerifying || paymentStatus === 'PAID') return;
@@ -308,10 +310,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
                              Já Paguei, Verificar Status
                         </Button>
-                         <div className="flex items-center justify-center gap-2 text-muted-foreground pt-2">
-                            <Clock className="h-4 w-4" />
-                            <p className="text-sm">A atualização da assinatura é automática.</p>
-                        </div>
                     </DialogFooter>
                 )}
             </div>

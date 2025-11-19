@@ -1,9 +1,10 @@
+
 // src/app/actions/billing-actions.ts
 'use server';
 import { db } from '@/lib/firebase/admin';
 import type { UserProfile } from '@/types/user';
 import { Timestamp } from 'firebase-admin/firestore';
-import { addMonths, addYears } from 'date-fns';
+import { addMonths, addYears, addSeconds } from 'date-fns';
 
 /**
  * Updates a user's subscription status in Firestore.
@@ -23,7 +24,10 @@ export async function updateUserSubscriptionAction(
   }
 
   const now = new Date();
-  const expirationDate = billingCycle === 'yearly' ? addYears(now, 1) : addMonths(now, 1);
+  // TEST CHANGE: Set expiration to 30 seconds for testing
+  const expirationDate = addSeconds(now, 30);
+  // Original logic:
+  // const expirationDate = billingCycle === 'yearly' ? addYears(now, 1) : addMonths(now, 1);
   const expirationTimestamp = Timestamp.fromDate(expirationDate);
 
   try {
@@ -43,7 +47,7 @@ export async function updateUserSubscriptionAction(
 
     await userRef.update(updatePayload);
 
-    const successMessage = `Assinatura do usuário ${userId} atualizada para ${updatePayload.subscriptionStatus} até ${expirationDate.toLocaleDateString('pt-BR')}.`;
+    const successMessage = `Assinatura do usuário ${userId} atualizada para ${updatePayload.subscriptionStatus} até ${expirationDate.toISOString()}.`;
     console.log(successMessage);
     return { success: true, message: successMessage };
   } catch (error: any) {
