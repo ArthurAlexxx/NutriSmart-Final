@@ -7,7 +7,7 @@ import { collection, query, orderBy, where, onSnapshot, Unsubscribe } from 'fire
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { FinancialTransaction } from '@/types/finance';
 
 import AppLayout from '@/components/app-layout';
@@ -35,7 +35,7 @@ export default function FinanceiroPage() {
     if (!isUserLoading && userProfile && userProfile.profileType !== 'professional') router.push('/dashboard');
   }, [user, userProfile, isUserLoading, router]);
 
-  const transactionsQuery = useMemo(() => {
+  const transactionsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
