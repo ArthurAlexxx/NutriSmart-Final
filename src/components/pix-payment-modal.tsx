@@ -62,23 +62,23 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   
   useEffect(() => {
     if(isOpen) {
-        // Reset state when modal opens
+        // Reset state when modal opens, always starting with the form
         form.reset({
             fullName: userProfile.fullName || '',
             phone: userProfile.phone || '',
             taxId: userProfile.taxId || '',
         });
-        const hasAllData = userProfile.fullName && userProfile.phone && userProfile.taxId;
-        setStep(hasAllData ? 'qrcode' : 'form');
+        setStep('form');
         setPaymentStatus('PENDING');
         setQrCode(null);
         setBrCode(null);
         setChargeId(null);
         setError(null);
+        setIsLoading(false);
     }
   }, [isOpen, userProfile, form]);
 
-  const generateQrCode = async (customerData: CustomerDataFormValues) => {
+  const generateQrCode = async () => {
         setIsLoading(true);
         setError(null);
         setChargeId(null);
@@ -90,7 +90,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
               userId: userProfile.id,
               planName: plan.name,
               isYearly: isYearly,
-              // We pass customer data here, but the API should fetch it again for security
             }),
           });
           const data = await response.json();
@@ -114,16 +113,17 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     setIsLoading(true);
     try {
         const { fullName, phone, taxId } = data;
+        // Update profile only if data has changed
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
-        await generateQrCode(data);
+        await generateQrCode();
     } catch(e) {
         console.error("Failed to update profile before payment", e);
         toast({ title: "Erro ao salvar dados", description: "Não foi possível atualizar seu perfil. Tente novamente.", variant: "destructive"});
-    } finally {
         setIsLoading(false);
     }
+    // setIsLoading is handled by generateQrCode
   }
 
   const handleSuccessfulPayment = useCallback(() => {
@@ -143,13 +143,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         router.push(destination);
     }, 2500);
   }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
-
-  // Effect to generate QR Code immediately if data is already present
-  useEffect(() => {
-    if (step === 'qrcode' && !chargeId && !isLoading && !error) {
-       generateQrCode(form.getValues());
-    }
-  }, [step, chargeId, isLoading, error, form]);
 
   // Effect for polling payment status
   useEffect(() => {
