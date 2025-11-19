@@ -12,10 +12,10 @@ export function CTASection() {
                     <CardContent className="p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
                         <div className="flex-1">
                             <h2 className="text-3xl font-bold md:text-4xl font-heading">
-                                Pronto para revolucionar sua saúde?
+                                Sua melhor versão está esperando.
                             </h2>
                             <p className="mt-4 text-lg text-primary-foreground/80 max-w-xl">
-                                Junte-se a milhares de pessoas que já estão vivendo de forma mais saudável com a ajuda da nossa plataforma inteligente.
+                                Dê o primeiro passo hoje e descubra como a tecnologia pode simplificar sua jornada para uma vida mais saudável e feliz.
                             </p>
                         </div>
                         <div className="shrink-0">

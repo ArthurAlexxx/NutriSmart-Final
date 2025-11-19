@@ -83,9 +83,9 @@ export const TestimonialsSection = () => {
             <div className="container mx-auto">
                  <div className="text-center max-w-3xl mx-auto">
                     <Badge variant="outline" className="mb-4">Depoimentos</Badge>
-                    <h2 className="text-3xl font-bold md:text-4xl font-heading">Resultados que falam por si</h2>
+                    <h2 className="text-3xl font-bold md:text-4xl font-heading">Amado por milhares de usuários e profissionais</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                        Veja o que nossos usuários e profissionais parceiros estão dizendo sobre o NutriSmart.
+                        Veja o que estão dizendo sobre a transformação que o NutriSmart proporcionou.
                     </p>
                 </div>
                 <div className="mt-16 flex justify-center items-start gap-6">

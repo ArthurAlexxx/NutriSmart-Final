@@ -38,18 +38,17 @@ export default function Home() {
       <main className="flex-1">
         
         <HeroSection
-            title={<>Transforme sua saúde com <br/></>}
+            title={<>Sua jornada para uma vida saudável começa aqui.</>}
             animatedTexts={[
-            "nutrição inteligente.",
-            "planos personalizados.",
-            "análise de IA.",
-            "receitas saudáveis.",
+            "Coma melhor.",
+            "Cozinhe fácil.",
+            "Evolua sempre.",
             ]}
-            subtitle="A plataforma completa para você atingir seus objetivos de bem-estar com o poder da tecnologia e da inteligência artificial."
+            subtitle="Atingir seus objetivos de saúde nunca foi tão simples. Deixe nossa Inteligência Artificial cuidar dos detalhes para você."
             infoBadgeText="✨ Bem-vindo ao futuro da nutrição!"
             ctaButtonText="Começar minha Jornada"
             ctaButtonLink="/register"
-            socialProofText="Mais de 10.000 pessoas já se juntaram a nós"
+            socialProofText="Mais de 10.000 pessoas já confiam em nós"
             avatars={avatarData}
         />
 

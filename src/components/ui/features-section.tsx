@@ -19,26 +19,26 @@ const features = [
   {
     id: 'diary',
     icon: BookCheck,
-    title: 'Diário Inteligente com Análise Nutricional Automática',
-    description: 'Basta descrever sua refeição como faria normalmente, por exemplo: "150g de salmão com 200g de brócolis". Nossa IA processa o texto em tempo real, calcula as calorias, proteínas, carboidratos e gorduras, e adiciona tudo ao seu diário. Chega de procurar alimentos em listas intermináveis!',
+    title: 'Diário Inteligente, Esforço Mínimo',
+    description: 'Chega de procurar alimentos em listas intermináveis. Apenas descreva sua refeição e nossa IA calcula tudo para você em segundos.',
   },
   {
     id: 'chef',
     icon: ChefHat,
-    title: 'Chef Virtual que Cozinha com o que Você Tem',
-    description: 'Está sem inspiração na cozinha? Diga ao nosso Chef IA os ingredientes que você tem à disposição. Ele não só criará uma receita deliciosa, como também fornecerá o passo a passo completo, tempo de preparo e toda a informação nutricional, adaptando-se às suas preferências.',
+    title: 'Chef Virtual com o que Você Tem na Geladeira',
+    description: 'Sem inspiração? Diga ao nosso Chef IA os ingredientes que você tem e receba receitas incríveis, com passo a passo e informações nutricionais.',
   },
   {
     id: 'plan',
     icon: BookCopy,
-    title: 'Plano Alimentar Personalizado por IA',
-    description: 'Com base em suas metas de peso, calorias e proteínas, nossa inteligência artificial elabora um plano de refeições completo para o seu dia. Ele distribui os nutrientes de forma inteligente entre café da manhã, almoço, lanches e jantar, oferecendo um guia claro para você seguir e atingir seus objetivos.',
+    title: 'Plano Alimentar que se Adapta a Você',
+    description: 'Nossa IA elabora um plano de refeições completo para o seu dia, com base em suas metas, distribuindo os nutrientes de forma inteligente para você seguir e evoluir.',
   },
   {
     id: 'analysis',
     icon: TrendingUp,
-    title: 'Análise de Desempenho e Progresso Visual',
-    description: 'Acompanhe sua jornada de forma clara e visual. A plataforma compila seus registros diários e os transforma em gráficos intuitivos que mostram sua evolução de peso, consumo de calorias e hidratação ao longo do tempo. Entenda seus padrões e mantenha-se motivado.',
+    title: 'Seu Progresso, de Forma Clara e Visual',
+    description: 'Transformamos seus registros diários em gráficos intuitivos que mostram sua evolução de peso, consumo de calorias e hidratação. Entenda seus padrões e mantenha-se motivado.',
   },
 ];
 
@@ -300,9 +300,9 @@ export function FeaturesSection() {
       <div className="container mx-auto">
         <div className="text-center max-w-3xl mx-auto">
           <Badge variant="outline" className="mb-4">Funcionalidades</Badge>
-          <h2 className="text-3xl font-bold md:text-4xl font-heading">Uma plataforma <span className='text-primary'>completa</span> para sua saúde</h2>
+          <h2 className="text-3xl font-bold md:text-4xl font-heading">Tudo que você precisa em um <span className='text-primary'>só lugar</span></h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Do registro de refeições ao plano personalizado com IA, temos tudo o que você precisa para alcançar seus objetivos.
+            Esqueça as complicações. Foco nos seus resultados com ferramentas inteligentes.
           </p>
         </div>
 

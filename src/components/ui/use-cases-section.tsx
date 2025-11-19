@@ -38,9 +38,9 @@ export default function UseCasesSection() {
         <section className="w-full py-20 lg:py-24">
             <div className="container mx-auto">
                 <div className="text-center max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold md:text-4xl font-heading">Feito para você, seja qual for seu objetivo</h2>
+                    <h2 className="text-3xl font-bold md:text-4xl font-heading">Perfeito para a sua rotina</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                        NutriSmart se adapta às suas necessidades, oferecendo as ferramentas certas para diferentes perfis e metas.
+                        Seja para perder peso, ganhar performance ou alimentar melhor sua família, o NutriSmart se adapta a você.
                     </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">

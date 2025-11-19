@@ -3,6 +3,7 @@
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from './skeleton';
+import { Badge } from './badge';
 
 // Dynamic import for CountUp to ensure it only runs on the client side
 const CountUp = dynamic(() => import('react-countup'), {
@@ -56,6 +57,13 @@ export default function MetricsSection() {
     return (
         <section className="w-full py-20 lg:py-24 bg-secondary/30">
             <div className="container mx-auto">
+                 <div className="text-center max-w-3xl mx-auto mb-16">
+                    <Badge variant="outline" className="mb-4">Resultados</Badge>
+                    <h2 className="text-3xl font-bold md:text-4xl font-heading">Nossos números falam por nós</h2>
+                    <p className="mt-4 text-lg text-muted-foreground">
+                        Estamos orgulhosos do impacto que geramos na vida de nossos usuários e da confiança que construímos.
+                    </p>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {metrics.map((metric) => (
                         <MetricItem key={metric.label} {...metric} />
