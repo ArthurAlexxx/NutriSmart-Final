@@ -255,7 +255,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       if (qrCode && brCode) {
           return (
              <div className='flex flex-col items-center gap-4 animate-in fade-in w-full'>
-                <div className='p-4 bg-background rounded-lg border'>
+                <div className='p-4 bg-white rounded-lg border'>
                     <img src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
                 </div>
                 <Button onClick={handleCopyCode} variant="outline" className='w-full'>
