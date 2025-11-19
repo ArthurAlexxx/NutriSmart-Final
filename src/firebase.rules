@@ -1,11 +1,55 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras de desenvolvimento: Permite leitura e escrita para qualquer entidade.
-    // ATENÇÃO: Esta regra é insegura para produção.
+
+    // Regra Geral: Ninguém pode ler/escrever onde não há regra explícita.
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    // Users Collection: Usuários só podem acessar seus próprios dados.
+    match /users/{userId} {
+      allow read, update: if request.auth.uid == userId;
+      // Permite a criação de perfil apenas durante o cadastro do próprio usuário.
+      allow create: if request.auth.uid == userId;
+    }
+
+    // Subcoleções de Usuários: Acesso restrito ao dono dos dados.
+    match /users/{userId}/{subcollection}/{docId} {
+      allow read, write, create, delete: if request.auth.uid == userId;
+    }
+
+    // Rooms Collection: Acesso permitido apenas para o profissional ou o paciente da sala.
+    match /rooms/{roomId} {
+      function isParticipant() {
+        return request.auth.uid == resource.data.professionalId || request.auth.uid == resource.data.patientId;
+      }
+
+      allow read: if isParticipant();
+      
+      // Apenas o profissional pode atualizar o plano, histórico e infos do paciente.
+      allow update: if request.auth.uid == resource.data.professionalId;
+
+      // Ninguém pode criar ou deletar uma sala diretamente (isso é feito via transação segura).
+      allow create, delete: if false;
+    }
+    
+    // Messages Subcollection in Rooms: Apenas participantes podem ler/escrever.
+    match /rooms/{roomId}/messages/{messageId} {
+       function isParticipant() {
+        // Acessa o documento pai (a sala) para verificar os IDs.
+        return request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.professionalId ||
+               request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.patientId;
+      }
+      allow read, create: if isParticipant();
+      allow update, delete: if false; // Ninguém pode editar/deletar mensagens.
+    }
+
+    // Webhook Logs: Ninguém pode ler ou escrever. Apenas o backend (com credenciais de admin) pode criar.
+    match /webhook_logs/{logId} {
+      allow read, write: if false;
     }
   }
 }

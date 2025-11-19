@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook } from 'lucide-react';
+import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -95,8 +95,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const isProUser = effectiveSubscriptionStatus === 'professional';
 
   useEffect(() => {
-    // If the user is not a professional but is trying to access a pro page,
-    // redirect them to the standard dashboard.
     if (user && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
@@ -123,7 +121,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       onClick: () => isMobile && setSheetOpen(false),
     });
     
-    // Show Professional menu ONLY if they have an active professional subscription
     if (isProUser) {
         return (
           <>
@@ -138,7 +135,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         );
     }
 
-    // Default to patient menu for everyone else
+    // Default to patient menu for free and premium non-pro users
     return (
         <NavSection title="Menu">
             {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={item.premium && isFreeUser} />)}
