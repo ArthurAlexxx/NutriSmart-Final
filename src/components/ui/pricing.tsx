@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useUser } from "@/firebase";
-import { Check, MoveRight, PhoneCall, Loader2 } from "lucide-react";
+import { Check, MoveRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,9 +17,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-
+import PixPaymentModal from "../pix-payment-modal";
 
 const plans = [
     {
@@ -40,7 +38,8 @@ const plans = [
     },
     {
         name: 'PREMIUM',
-        priceId: 'premium_placeholder',
+        priceId: 'price_premium_monthly', // ID para o plano mensal
+        yearlyPriceId: 'price_premium_yearly', // ID para o plano anual
         price: '19.90',
         yearlyPrice: '15.90', 
         period: 'por mês',
@@ -58,7 +57,8 @@ const plans = [
     },
     {
         name: 'CLÍNICO',
-        priceId: null,
+        priceId: 'price_pro_monthly',
+        yearlyPriceId: 'price_pro_yearly',
         price: '99.90',
         yearlyPrice: '79.90',
         period: 'por mês, por profissional',
@@ -78,59 +78,34 @@ const plans = [
 
 function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const { user, userProfile, onProfileUpdate } = useUser();
-  const { toast } = useToast();
-  const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, userProfile } = useUser();
 
-  const handleCtaClick = async (plan: typeof plans[0]) => {
+  const handleCtaClick = (plan: typeof plans[0]) => {
     if (!user || !userProfile) {
         // Not logged in, redirect to register
-        router.push(plan.href);
+        window.location.href = plan.href;
         return;
     }
     
     // User is logged in
-    setLoadingPlan(plan.name);
-
-    if (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') {
-        toast({ title: "Você já é Premium!", description: "Sua assinatura já está ativa."});
-        setLoadingPlan(null);
-        return;
-    }
-    
     if (plan.name === 'GRATUITO') {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
       return;
     }
 
-    try {
-        // Simulate payment & update subscription status
-        const newStatus = plan.name === 'PREMIUM' ? 'premium' : 'professional';
-        await onProfileUpdate({ subscriptionStatus: newStatus });
-        
-        toast({
-            title: "Assinatura Ativada!",
-            description: `Bem-vindo(a) ao plano ${plan.name}.`,
-        });
-
-        const destination = newStatus === 'professional' ? '/pro/patients' : '/dashboard';
-        router.push(destination);
-
-    } catch (error: any) {
-        console.error("Subscription update failed:", error);
-        toast({
-            title: "Erro na Assinatura",
-            description: "Não foi possível atualizar sua assinatura. Tente novamente.",
-            variant: "destructive"
-        });
-    } finally {
-        setLoadingPlan(null);
+    if (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') {
+        return; // Already has this plan
     }
+
+    setSelectedPlan(plan);
+    setIsModalOpen(true);
   };
 
 
   return (
+    <>
     <div className="w-full py-20 lg:py-24">
       <div className="mx-auto px-4">
         <div className="flex text-center justify-center items-center gap-4 flex-col">
@@ -156,9 +131,8 @@ function Pricing() {
           <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3">
             {plans.map((plan) => {
               
-              const ctaText = user ? 
-                (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM' ? 'Plano Atual' : plan.buttonText) : 
-                'Começar Agora';
+              const isCurrentPlan = userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM';
+              const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
 
               return (
                 <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl", plan.isPopular && "shadow-2xl border-primary")}>
@@ -196,17 +170,11 @@ function Pricing() {
                             className="w-full gap-4" 
                             variant={plan.isPopular ? "default" : "outline"}
                             onClick={() => handleCtaClick(plan)}
-                            disabled={loadingPlan === plan.name || (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM')}
+                            disabled={isCurrentPlan}
                          >
-                            {loadingPlan === plan.name ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
-                                </>
-                            ) : (
-                                <>
-                                 {ctaText} <MoveRight className="w-4 h-4" />
-                                </>
-                            )}
+                            <>
+                             {ctaText} <MoveRight className="w-4 h-4" />
+                            </>
                         </Button>
                     </CardFooter>
                 </Card>
@@ -215,6 +183,16 @@ function Pricing() {
         </div>
       </div>
     </div>
+    {user && userProfile && selectedPlan && (
+        <PixPaymentModal 
+            isOpen={isModalOpen}
+            onOpenChange={setIsModalOpen}
+            plan={selectedPlan}
+            isYearly={isYearly}
+            userProfile={userProfile}
+        />
+    )}
+    </>
   );
 }
 
