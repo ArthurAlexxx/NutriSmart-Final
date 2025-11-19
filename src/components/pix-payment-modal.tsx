@@ -1,4 +1,3 @@
-
 // src/components/pix-payment-modal.tsx
 'use client';
 
@@ -199,7 +198,8 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     toast({ title: 'Código Copiado!', description: 'Você pode usar o PIX Copia e Cola no seu banco.' });
   };
 
-  const price = isYearly ? plan.yearlyPrice : plan.price;
+  const monthlyPrice = parseFloat(isYearly ? plan.yearlyPrice : plan.price);
+  const displayPrice = isYearly ? monthlyPrice * 12 : monthlyPrice;
   const period = isYearly ? 'por ano' : 'por mês';
 
   const renderContent = () => {
@@ -294,7 +294,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                          <p className='font-semibold'>Plano {plan.name}</p>
                          <p className='text-sm text-muted-foreground'>{period}</p>
                     </div>
-                    <p className='text-2xl font-bold text-primary text-left'>R$ {price}</p>
+                    <p className='text-2xl font-bold text-primary text-left'>R$ {displayPrice.toFixed(2)}</p>
                 </div>
 
                 {step === 'form' ? (
