@@ -1,4 +1,3 @@
-
 // src/firebase/provider.tsx
 'use client';
 
@@ -177,7 +176,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
     
-    // Calculate effective subscription status
     const profile = userAuthState.userProfile;
     let effectiveStatus: EffectiveSubscriptionState['effectiveSubscriptionStatus'] = 'free';
 
@@ -185,12 +183,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         const storedStatus = profile.subscriptionStatus || 'free';
         const expiresAt = profile.subscriptionExpiresAt ? (profile.subscriptionExpiresAt as any).toDate() : null;
 
-        if (storedStatus !== 'free') {
-            if (expiresAt && expiresAt > new Date()) {
-                effectiveStatus = storedStatus;
-            }
-        }
-        // Special case for professionals on trial
+        // A user has a non-free status only if their subscription status is not 'free'
+        // AND their subscription has not expired.
+        if (storedStatus !== 'free' && expiresAt && expiresAt > new Date()) {
+            effectiveStatus = storedStatus;
+        } 
+        // Special case for professionals on trial. Their status is 'free', but they have a future expiry date.
         else if (profile.profileType === 'professional' && storedStatus === 'free' && expiresAt && expiresAt > new Date()) {
             effectiveStatus = 'professional'; // Grant pro access during trial
         }
