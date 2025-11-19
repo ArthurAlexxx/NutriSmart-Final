@@ -1,4 +1,3 @@
-
 // src/lib/firebase/admin.ts
 import * as admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
@@ -15,16 +14,19 @@ interface FirebaseAdminServices {
 let services: FirebaseAdminServices | null = null;
 
 function initializeAdminApp(): FirebaseAdminServices {
-  // If already initialized, return the existing services
+  // If services are already initialized, return them
+  if (services) {
+    return services;
+  }
+  
+  // If admin.apps has already been populated, use the existing app
   if (admin.apps.length > 0) {
     const app = admin.apps[0] as App;
-    if (!services) {
-       services = {
+    services = {
         app,
         auth: admin.auth(app),
         db: admin.firestore(app),
-      };
-    }
+    };
     return services;
   }
 
@@ -61,9 +63,14 @@ function initializeAdminApp(): FirebaseAdminServices {
 }
 
 // Create getters that initialize the app on first use
-const getDb = () => initializeAdminApp().db;
-const getAuth = () => initializeAdminApp().auth;
+function getDb(): Firestore {
+    return initializeAdminApp().db;
+}
 
-// Export getters instead of direct instances
+function getAuth(): Auth {
+    return initializeAdminApp().auth;
+}
+
+// Export getters that will be evaluated at runtime
 export const db = getDb();
 export const auth = getAuth();
