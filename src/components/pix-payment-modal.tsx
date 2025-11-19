@@ -12,6 +12,8 @@ import { onSnapshot, doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import confetti from 'canvas-confetti';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface PixPaymentModalProps {
   isOpen: boolean;
@@ -156,10 +158,13 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
       if (error) {
            return (
-            <div className='text-destructive-foreground bg-destructive/80 p-4 rounded-lg'>
-                <p className='font-bold'>Erro ao gerar QR Code</p>
-                <p className='text-sm'>{error}</p>
-            </div>
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro ao gerar QR Code</AlertTitle>
+                <AlertDescription>
+                    {error}
+                </AlertDescription>
+            </Alert>
           )
       }
 

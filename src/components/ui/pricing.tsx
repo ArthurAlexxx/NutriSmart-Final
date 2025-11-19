@@ -18,6 +18,8 @@ import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import PixPaymentModal from "../pix-payment-modal";
+import ProfileSettingsModal from "../profile-settings-modal";
+import { useToast } from "@/hooks/use-toast";
 
 const plans = [
     {
@@ -79,13 +81,15 @@ const plans = [
 function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { user, userProfile } = useUser();
+  const { toast } = useToast();
 
   const handleCtaClick = (plan: typeof plans[0]) => {
     if (!user || !userProfile) {
-        // Not logged in, redirect to register
-        window.location.href = plan.href;
+        // Not logged in, redirect to register/login
+        window.location.href = plan.name === 'PROFISSIONAL' ? plan.href : '/register';
         return;
     }
     
@@ -95,11 +99,24 @@ function Pricing() {
       return;
     }
 
-    if (plan.name === 'PREMIUM' && userProfile.subscriptionStatus === 'premium') return;
-    if (plan.name === 'PROFISSIONAL' && userProfile.subscriptionStatus === 'professional') return;
+    const isCurrentPlan = (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') || 
+                          (userProfile.subscriptionStatus === 'professional' && plan.name === 'PROFISSIONAL');
+    if (isCurrentPlan) return;
+
+    // Check if profile data is complete before proceeding to payment
+    const { fullName, phone, taxId } = userProfile;
+    if (!fullName || !phone || !taxId) {
+        toast({
+            title: "Dados Incompletos",
+            description: "Por favor, complete seu nome, celular e CPF/CNPJ para continuar com a assinatura.",
+            variant: "default",
+        });
+        setIsProfileModalOpen(true);
+        return;
+    }
     
     setSelectedPlan(plan);
-    setIsModalOpen(true);
+    setIsPixModalOpen(true);
   };
 
 
@@ -184,11 +201,19 @@ function Pricing() {
     </div>
     {user && userProfile && selectedPlan && (
         <PixPaymentModal 
-            isOpen={isModalOpen}
-            onOpenChange={setIsModalOpen}
+            isOpen={isPixModalOpen}
+            onOpenChange={setIsPixModalOpen}
             plan={selectedPlan}
             isYearly={isYearly}
             userProfile={userProfile}
+        />
+    )}
+    {user && userProfile && (
+        <ProfileSettingsModal
+            isOpen={isProfileModalOpen}
+            onOpenChange={setIsProfileModalOpen}
+            userProfile={userProfile}
+            userId={user.uid}
         />
     )}
     </>
