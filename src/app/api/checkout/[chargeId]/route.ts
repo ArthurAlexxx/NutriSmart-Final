@@ -3,6 +3,27 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 
+/**
+ * Busca de forma flexível pelos metadados dentro da resposta da API de verificação.
+ * @param {any} responseData O objeto de dados da API do AbacatePay.
+ * @returns Os metadados se encontrados, caso contrário, null.
+ */
+function findMetadataInCheckResponse(responseData: any) {
+    if (!responseData) return null;
+
+    // Caminho 1: Padrão observado
+    if (responseData.pixQrCode?.metadata) {
+        return responseData.pixQrCode.metadata;
+    }
+    // Caminho 2: Metadados diretamente no objeto
+    if (responseData.metadata) {
+        return responseData.metadata;
+    }
+    // Adicione outros caminhos possíveis aqui se forem descobertos
+
+    return null;
+}
+
 async function updateSubscriptionStatus(userId: string, planName: string) {
     let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
 
@@ -56,16 +77,19 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
        throw new Error(errorMessage);
     }
     
-    const status = data.data?.pixQrCode?.status;
+    const status = data.data?.pixQrCode?.status || data.data?.status;
 
     if (status === 'PAID') {
-        const metadata = data.data?.pixQrCode?.metadata;
+        const metadata = findMetadataInCheckResponse(data.data);
+        
         if (metadata && metadata.externalId && metadata.plan) {
             await updateSubscriptionStatus(metadata.externalId, metadata.plan);
             return NextResponse.json({ status: 'PAID' });
         } else {
              console.error("Metadados ausentes ou inválidos na resposta do AbacatePay:", data.data);
-             return NextResponse.json({ error: 'Metadados da cobrança ausentes ou inválidos.' }, { status: 400 });
+             // Retorna PENDING para que o cliente continue tentando, caso os metadados apareçam depois.
+             // Se fosse um erro definitivo, poderíamos retornar um erro 400.
+             return NextResponse.json({ status: 'PENDING', error: 'Metadados da cobrança ausentes ou inválidos.' });
         }
     }
 

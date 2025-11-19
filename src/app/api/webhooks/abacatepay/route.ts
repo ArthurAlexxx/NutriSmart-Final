@@ -24,12 +24,38 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
     }
 }
 
-async function handlePayment(event: any) {
-    if (event.event === 'billing.paid' && event.data?.pixQrCode) {
-      const charge = event.data.pixQrCode;
-      const metadata = charge.metadata;
+/**
+ * Busca de forma flexível pelos metadados dentro do payload do evento.
+ * @param {any} eventData O objeto de dados do evento do AbacatePay.
+ * @returns Os metadados se encontrados, caso contrário, null.
+ */
+function findMetadata(eventData: any) {
+    if (!eventData) return null;
 
-      if (metadata && metadata.externalId && metadata.plan) {
+    // Caminho 1: Padrão observado em billing.paid
+    if (eventData.pixQrCode?.metadata) {
+        return eventData.pixQrCode.metadata;
+    }
+    // Caminho 2: Metadados diretamente no objeto de dados
+    if (eventData.metadata) {
+        return eventData.metadata;
+    }
+    // Adicione outros caminhos possíveis aqui se forem descobertos
+    // ex: if (eventData.charge?.metadata) return eventData.charge.metadata;
+
+    return null;
+}
+
+async function handlePayment(event: any) {
+    if (event.event !== 'billing.paid') {
+        const message = `Evento não processado: ${event.event || 'desconhecido'}`;
+        await saveWebhookLog(event, 'SUCCESS', message);
+        return;
+    }
+
+    const metadata = findMetadata(event.data);
+
+    if (metadata && metadata.externalId && metadata.plan) {
         const userId = metadata.externalId;
         const planName = metadata.plan;
         const userRef = db.collection('users').doc(userId);
@@ -41,29 +67,30 @@ async function handlePayment(event: any) {
         } else if (planName === 'PROFISSIONAL') {
             newSubscriptionStatus = 'professional';
         } else {
-          const message = `Plano desconhecido "${planName}" no webhook para o usuário ${userId}.`;
-          console.warn(message);
-          await saveWebhookLog(event, 'FAILURE', message);
-          return; // Para o processamento
+            const message = `Plano desconhecido "${planName}" no webhook para o usuário ${userId}.`;
+            console.warn(message);
+            await saveWebhookLog(event, 'FAILURE', message);
+            return; // Para o processamento
         }
 
-        await userRef.update({
-          subscriptionStatus: newSubscriptionStatus,
-        });
+        try {
+            await userRef.update({
+                subscriptionStatus: newSubscriptionStatus,
+            });
 
-        const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`;
-        console.log(successMessage);
-        await saveWebhookLog(event, 'SUCCESS', successMessage);
+            const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`;
+            console.log(successMessage);
+            await saveWebhookLog(event, 'SUCCESS', successMessage);
+        } catch (dbError: any) {
+            const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${dbError.message}`;
+            console.error(errorMessage);
+            await saveWebhookLog(event, 'FAILURE', errorMessage);
+        }
 
-      } else {
-        const message = 'Metadados ausentes no webhook (externalId ou plan).';
-        console.warn(message, metadata);
-        await saveWebhookLog(event, 'FAILURE', message);
-      }
     } else {
-        const message = `Evento não processado: ${event.event}`;
-        // Salva como sucesso porque recebemos, mesmo que não tenhamos uma ação para ele.
-        await saveWebhookLog(event, 'SUCCESS', message);
+        const message = 'Metadados cruciais (externalId ou plan) não encontrados no payload do webhook.';
+        console.warn(message, { payloadData: event.data });
+        await saveWebhookLog(event, 'FAILURE', message);
     }
 }
 
@@ -82,12 +109,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!signature) {
-      const receivedHeaders: { [key: string]: string } = {};
-      headerPayload.forEach((value, key) => {
-        receivedHeaders[key] = value;
-      });
-      console.warn('Requisição de webhook recebida sem assinatura. Cabeçalhos recebidos:', JSON.stringify(receivedHeaders, null, 2));
-      
+       console.warn('Requisição de webhook recebida sem assinatura.');
+       const receivedHeaders: { [key: string]: string } = {};
+       headerPayload.forEach((value, key) => {
+         receivedHeaders[key] = value;
+       });
+       console.log('Cabeçalhos recebidos:', JSON.stringify(receivedHeaders, null, 2));
       return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
     }
 
