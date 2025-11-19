@@ -2,7 +2,7 @@
 // src/components/profile-settings-modal.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { differenceInDays, differenceInHours } from 'date-fns';
 
 const formSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -38,7 +39,7 @@ interface ProfileSettingsModalProps {
 
 export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile, userId }: ProfileSettingsModalProps) {
   const { toast } = useToast();
-  const { onProfileUpdate } = useUser();
+  const { onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const auth = useAuth();
   const router = useRouter();
 
@@ -109,6 +110,28 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const tabsToShow = userProfile.profileType === 'patient' ? ['personal-data', 'sharing', 'subscription'] : ['personal-data', 'subscription'];
 
+  const expiryDate = useMemo(() => {
+    if (!userProfile?.subscriptionExpiresAt) return null;
+    return (userProfile.subscriptionExpiresAt as any).toDate();
+  }, [userProfile]);
+
+  const countdown = useMemo(() => {
+    if (!expiryDate || expiryDate < new Date()) return null;
+
+    const now = new Date();
+    const daysLeft = differenceInDays(expiryDate, now);
+    const hoursLeft = differenceInHours(expiryDate, now) % 24;
+
+    if (daysLeft > 0) {
+      return `${daysLeft}d ${hoursLeft}h restantes`;
+    }
+    if (hoursLeft > 0) {
+      return `${hoursLeft}h restantes`;
+    }
+    return 'Expirando em breve';
+  }, [expiryDate]);
+
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl shadow-2xl p-0">
@@ -165,9 +188,15 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     <div className="space-y-4 text-center">
                          <h3 className="font-semibold text-foreground">Sua Assinatura</h3>
                         <p className="text-sm">Status da sua assinatura:</p>
-                        <Badge variant={userProfile.subscriptionStatus === 'premium' || userProfile.subscriptionStatus === 'professional' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
-                            {userProfile.subscriptionStatus || 'Grátis'}
+                        <Badge variant={effectiveSubscriptionStatus !== 'free' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
+                            {effectiveSubscriptionStatus || 'Grátis'}
                         </Badge>
+                        {countdown && (
+                             <div className='p-3 rounded-lg bg-primary/10 text-primary text-center max-w-xs mx-auto'>
+                                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> Período de Teste</p>
+                                <p className='text-xs font-medium'>Expira em: {countdown}</p>
+                            </div>
+                        )}
                         <div className="pt-4">
                             <Button asChild>
                                 <Link href="/pricing">Gerenciar Assinatura</Link>

@@ -81,30 +81,6 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
     </div>
 );
 
-const TrialCountdown = ({ expiryDate }: { expiryDate: Date }) => {
-    const now = new Date();
-    const daysLeft = differenceInDays(expiryDate, now);
-    const hoursLeft = differenceInHours(expiryDate, now) % 24;
-
-    let countdownText = '';
-    if (daysLeft > 0) {
-        countdownText = `${daysLeft}d ${hoursLeft}h restantes`;
-    } else if (hoursLeft > 0) {
-        countdownText = `${hoursLeft}h restantes`;
-    } else {
-        countdownText = 'Trial expirado';
-    }
-
-    return (
-        <div className='px-6 mt-auto mb-4'>
-            <div className='p-3 rounded-lg bg-primary/10 text-primary text-center'>
-                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> Período de Teste</p>
-                <p className='text-xs font-medium'>{countdownText}</p>
-            </div>
-        </div>
-    )
-}
-
 const LogoDisplay = () => {
     return <span className="text-xl font-semibold">NutriSmart</span>;
 };
@@ -180,7 +156,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       <div className="flex-1 py-4 overflow-y-auto">
         {renderNavLinks(isMobile)}
       </div>
-      {isTrialingPro && expiryDate && <TrialCountdown expiryDate={expiryDate} />}
     </>
   );
 
