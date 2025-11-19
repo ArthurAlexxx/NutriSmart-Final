@@ -16,6 +16,8 @@ import { useUser, useFirestore } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { generateRecipeAction } from '@/app/actions/ai-actions';
+import SubscriptionOverlay from '@/components/subscription-overlay';
+import { cn } from '@/lib/utils';
 
 
 export default function ChefPage() {
@@ -26,6 +28,9 @@ export default function ChefPage() {
   const [isResponding, setIsResponding] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const { toast } = useToast();
+  
+  const isFeatureLocked = userProfile?.subscriptionStatus === 'free';
+
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -101,7 +106,7 @@ export default function ChefPage() {
   };
 
   const handleSendMessage = async (input: string) => {
-      if (!input.trim() || !user) return;
+      if (!input.trim() || !user || isFeatureLocked) return;
       
       setIsResponding(true);
 
@@ -201,29 +206,32 @@ export default function ChefPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-      <div className="flex flex-col h-full">
-         <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center relative shrink-0">
-             <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-2 sm:p-3 mb-2 sm:mb-4">
-                <ChefHat className="h-8 w-8 sm:h-10 sm:w-10" />
+      <div className="flex flex-col h-full relative">
+        {isFeatureLocked && <SubscriptionOverlay />}
+         <div className={cn("flex flex-col h-full", isFeatureLocked && 'blur-md pointer-events-none')}>
+            <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center relative shrink-0">
+                <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-2 sm:p-3 mb-2 sm:mb-4">
+                    <ChefHat className="h-8 w-8 sm:h-10 sm:w-10" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground font-heading">Converse com seu Chef IA</h1>
+                <p className="text-muted-foreground max-w-2xl mt-2 sm:mt-3 mx-auto">Peça receitas, dicas de culinária ou faça alterações nos pratos. Sua imaginação é o limite.</p>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleClearChat}
+                    className="absolute top-4 right-4 h-9 w-9"
+                    aria-label="Limpar histórico do chat"
+                >
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground font-heading">Converse com seu Chef IA</h1>
-            <p className="text-muted-foreground max-w-2xl mt-2 sm:mt-3 mx-auto">Peça receitas, dicas de culinária ou faça alterações nos pratos. Sua imaginação é o limite.</p>
-            <Button
-                variant="outline"
-                size="icon"
-                onClick={handleClearChat}
-                className="absolute top-4 right-4 h-9 w-9"
-                aria-label="Limpar histórico do chat"
-            >
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-            </Button>
-        </div>
 
-        <ChatView
-          messages={messages}
-          isResponding={isResponding}
-          onSendMessage={handleSendMessage}
-        />
+            <ChatView
+            messages={messages}
+            isResponding={isResponding}
+            onSendMessage={handleSendMessage}
+            />
+         </div>
       </div>
     </AppLayout>
   );

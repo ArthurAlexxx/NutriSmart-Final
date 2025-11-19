@@ -1,3 +1,4 @@
+
 // src/app/analysis/page.tsx
 'use client';
 
@@ -19,6 +20,8 @@ import { query, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import SummaryCards from '@/components/summary-cards';
 import ChartsView from '@/components/analysis/charts-view';
 import { seedDemoData, deleteSeededData } from '@/app/actions/seed-data';
+import SubscriptionOverlay from '@/components/subscription-overlay';
+
 
 type Period = 7 | 15 | 30;
 const DEMO_USER_ID = 'z9Ru4QiC4Kf5Okf257OruaazvyF2';
@@ -37,6 +40,7 @@ export default function AnalysisPage() {
   const [isSeeding, setIsSeeding] = useState(false);
 
   const isDemoUser = user?.uid === DEMO_USER_ID;
+  const isFeatureLocked = userProfile?.subscriptionStatus === 'free';
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -200,8 +204,9 @@ export default function AnalysisPage() {
     }
     
     return (
-      <div className="w-full space-y-8">
-        <div className="w-full space-y-6">
+      <div className="w-full space-y-8 relative">
+        {isFeatureLocked && <SubscriptionOverlay />}
+        <div className={cn("w-full space-y-6", isFeatureLocked && 'blur-md pointer-events-none')}>
           <SummaryCards
             totalNutrients={totalNutrients}
             nutrientGoals={userProfile ? { calories: userProfile.calorieGoal || 2000, protein: userProfile.proteinGoal || 140 } : undefined}
@@ -211,11 +216,13 @@ export default function AnalysisPage() {
             Médias calculadas para o período de {period} dias.
           </p>
         </div>
-        <ChartsView
-          caloriesData={chartData}
-          hydrationData={chartData}
-          weightData={weightChartData}
-        />
+        <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
+            <ChartsView
+            caloriesData={chartData}
+            hydrationData={chartData}
+            weightData={weightChartData}
+            />
+        </div>
       </div>
     );
   }

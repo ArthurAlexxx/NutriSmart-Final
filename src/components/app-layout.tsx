@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -28,11 +29,11 @@ interface AppLayoutProps {
 }
 
 const navItemsPatient = [
-  { href: '/dashboard', label: 'Meu Diário', icon: LayoutDashboard, id: 'nav-dashboard' },
-  { href: '/analysis', label: 'Minha Análise', icon: BarChart3, id: 'nav-analysis' },
-  { href: '/plan', label: 'Meu Plano (IA)', icon: BookMarked, id: 'nav-plan' },
-  { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef' },
-  { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history' },
+  { href: '/dashboard', label: 'Meu Diário', icon: LayoutDashboard, id: 'nav-dashboard', premium: false },
+  { href: '/analysis', label: 'Minha Análise', icon: BarChart3, id: 'nav-analysis', premium: true },
+  { href: '/plan', label: 'Meu Plano (IA)', icon: BookMarked, id: 'nav-plan', premium: true },
+  { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
+  { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
 ];
 
 const navItemsPro = [
@@ -105,6 +106,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   const isProUser = userProfile?.profileType === 'professional';
   const isChefPage = pathname === '/chef';
+  const isFreeUser = userProfile?.subscriptionStatus === 'free';
   
   const renderNavLinks = (isMobile = false) => {
     const navLinkProps = (item: any) => ({
@@ -124,7 +126,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             </NavSection>
             <Separator className="my-4" />
             <NavSection title="Uso Pessoal">
-              {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+              {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={item.premium && isFreeUser} />)}
             </NavSection>
           </>
         );
@@ -132,7 +134,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
     return (
         <NavSection title="Menu">
-            {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+            {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={item.premium && isFreeUser} />)}
         </NavSection>
     );
   };
@@ -213,7 +215,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
               </div>
           </header>
           <main className={cn("relative bg-muted/40 print:bg-white print:p-0 overflow-y-auto", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
-              <div className={cn("h-full", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
+              <div className={cn("h-full", isChefPage ? "flex-1 flex flex-col min-h-0" : "")}>
                   {children}
               </div>
           </main>

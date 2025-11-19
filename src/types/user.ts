@@ -1,3 +1,4 @@
+
 // src/types/user.ts
 import { Timestamp } from "firebase/firestore";
 
@@ -6,15 +7,6 @@ export interface MealPlanItem {
     name: string;
     time: string;
     items: string;
-}
-
-export interface ActivePlan {
-    name?: string; // Optional name for the plan
-    meals: MealPlanItem[];
-    hydrationGoal: number;
-    calorieGoal: number;
-    proteinGoal: number; 
-    createdAt: Timestamp | { seconds: number; nanoseconds: number; };
 }
 
 export interface UserProfile {
@@ -37,6 +29,7 @@ export interface UserProfile {
     // Health Goal fields
     weight?: number;
     targetWeight?: number;
+    targetDate?: Timestamp | Date;
     height?: number;
     age?: number;
     gender?: 'male' | 'female';
