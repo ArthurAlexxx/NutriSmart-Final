@@ -1,6 +1,5 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/admin';
 
 // Definindo os preços e planos de forma estruturada.
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
