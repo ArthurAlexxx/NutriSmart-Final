@@ -15,9 +15,9 @@ const plans: { [key: string]: { monthly: number, yearly: number } } = {
 };
 
 export async function POST(request: Request) {
-  const { userId, planName, isYearly } = await request.json();
+  const { userId, planName, isYearly, customerData } = await request.json();
 
-  if (!userId || !planName) {
+  if (!userId || !planName || !customerData) {
     return NextResponse.json({ error: 'Dados insuficientes para gerar a cobrança.' }, { status: 400 });
   }
 
@@ -36,25 +36,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Busca os dados do usuário no Firestore para criar o cliente na AbacatePay
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
-    }
-    const userData = userDoc.data();
-
-    // Validação dos dados do cliente
-    if (!userData?.fullName || !userData.email || !userData.phone || !userData.taxId) {
+    // Validação dos dados do cliente recebidos do frontend
+    if (!customerData.name || !customerData.email || !customerData.cellphone || !customerData.taxId) {
         return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
     }
-
-    // Monta o objeto do cliente com os dados do usuário
-    const customer = {
-      name: userData.fullName,
-      email: userData.email,
-      cellphone: userData.phone,
-      taxId: userData.taxId, 
-    };
 
     const abacateApiUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';
 
@@ -67,7 +52,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         amount,
         description,
-        customer,
+        customer: customerData,
         expiresIn: 3600, // QR Code expira em 1 hora
         metadata: {
           externalId: userId,

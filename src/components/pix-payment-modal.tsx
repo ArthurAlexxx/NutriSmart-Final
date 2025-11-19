@@ -78,7 +78,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }
   }, [isOpen, userProfile, form]);
 
-  const generateQrCode = async () => {
+  const generateQrCode = async (customerData: any) => {
         setIsLoading(true);
         setError(null);
         setChargeId(null);
@@ -90,6 +90,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
               userId: userProfile.id,
               planName: plan.name,
               isYearly: isYearly,
+              customerData: customerData,
             }),
           });
           const data = await response.json();
@@ -117,7 +118,15 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
-        await generateQrCode();
+        // Prepare customer data for the API, including the email
+        const customerDataForApi = {
+            name: fullName,
+            email: userProfile.email,
+            cellphone: phone,
+            taxId: taxId,
+        };
+
+        await generateQrCode(customerDataForApi);
     } catch(e) {
         console.error("Failed to update profile before payment", e);
         toast({ title: "Erro ao salvar dados", description: "Não foi possível atualizar seu perfil. Tente novamente.", variant: "destructive"});
