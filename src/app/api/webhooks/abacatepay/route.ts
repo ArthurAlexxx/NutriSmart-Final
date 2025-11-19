@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
     // Log do evento para depuração
     console.log('Webhook do AbacatePay recebido e verificado:', JSON.stringify(event, null, 2));
 
-    // Processa apenas eventos de PIX pago com sucesso
-    if (event.event === 'pixQrCode.paid') {
-      const charge = event.data;
+    // Processa apenas eventos de pagamento de cobrança com sucesso (billing.paid)
+    if (event.event === 'billing.paid' && event.data?.pixQrCode) {
+      const charge = event.data.pixQrCode;
       const metadata = charge.metadata;
 
       // Garante que o metadata com o ID do nosso usuário exista
