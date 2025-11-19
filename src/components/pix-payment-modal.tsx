@@ -50,7 +50,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const firestore = useFirestore();
   const router = useRouter();
   const { onProfileUpdate } = useUser();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 
   const form = useForm<CustomerDataFormValues>({
@@ -61,13 +60,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       taxId: userProfile.taxId || '',
     }
   });
-
-  const stopPolling = () => {
-    if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-    }
-  };
   
   useEffect(() => {
     if(isOpen) {
@@ -84,11 +76,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setError(null);
         setIsLoading(false);
         setIsVerifying(false);
-    } else {
-        stopPolling();
     }
-
-    return () => stopPolling();
   }, [isOpen, userProfile, form]);
 
   const generateQrCode = async (customerData: any) => {
@@ -152,7 +140,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const handleSuccessfulPayment = useCallback(() => {
     if (paymentStatus === 'PAID') return;
     
-    stopPolling();
     setPaymentStatus('PAID');
     confetti({
       particleCount: 150,
@@ -190,17 +177,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setIsVerifying(false);
     }
   }, [chargeId, isVerifying, handleSuccessfulPayment, toast, paymentStatus]);
-
-  useEffect(() => {
-      if (step === 'qrcode' && chargeId && paymentStatus === 'PENDING') {
-          pollingIntervalRef.current = setInterval(handleCheckPayment, 5000);
-      }
-      return () => {
-          if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current);
-          }
-      };
-  }, [step, chargeId, paymentStatus, handleCheckPayment]);
 
 
   const handleCopyCode = () => {
