@@ -30,20 +30,18 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
     if (!response.ok || data.error) {
        const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
        console.error(`AbacatePay API Error for chargeId ${chargeId}:`, errorMessage);
-       throw new Error(errorMessage);
+       return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
     
-    // A API de /check retorna um objeto `data` com o status.
+    // A rota de verificação APENAS confirma o status.
+    // A atualização do usuário é responsabilidade do webhook (mais confiável) ou
+    // de uma ação no lado do cliente após a confirmação.
     const status = data.data?.status;
 
     if (status === 'PAID') {
-        // A rota de verificação manual NÃO deve atualizar o banco.
-        // Ela apenas confirma o status para o frontend.
-        // O webhook é a única fonte de verdade para a atualização do banco de dados.
-        return NextResponse.json({ status: 'PAID' });
+        return NextResponse.json({ status: 'PAID', chargeId: chargeId });
     }
 
-    // Se o status não for 'PAID', retorna 'PENDING'
     return NextResponse.json({ status: 'PENDING' });
 
   } catch (error: any) {

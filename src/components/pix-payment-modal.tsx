@@ -133,9 +133,12 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }
   }
 
-  const handleSuccessfulPayment = useCallback(() => {
+  const handleSuccessfulPayment = useCallback((paidChargeId: string) => {
     if (paymentStatus === 'PAID') return;
     
+    // Store charge ID for client-side finalization
+    localStorage.setItem('pendingChargeId', paidChargeId);
+
     setPaymentStatus('PAID');
     confetti({
       particleCount: 150,
@@ -164,11 +167,11 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         const data = await response.json();
 
         if (response.ok && data.status === 'PAID') {
-            handleSuccessfulPayment();
+            handleSuccessfulPayment(data.chargeId);
         } else if (!response.ok) {
             toast({ title: 'Erro ao Verificar', description: data.error || 'Não foi possível verificar o pagamento no momento.', variant: 'destructive'});
         } else {
-             toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente. O sistema será atualizado automaticamente assim que o pagamento for processado.' });
+             toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente. A atualização será feita assim que o pagamento for processado.' });
         }
     } catch (e: any) {
         console.error("Verification failed", e);
@@ -293,7 +296,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                         </Button>
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">A atualização é automática via webhook.</p>
+                            <p className="text-sm">Aguarde. A atualização da assinatura será feita aqui.</p>
                         </div>
                     </DialogFooter>
                 )}

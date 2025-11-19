@@ -24,9 +24,9 @@ function initializeAdminApp(): FirebaseAdminServices {
     };
   }
   
-  // Use a single service account key from env, which is the Vercel-recommended approach.
+  // Vercel-recommended approach: Use a single service account key from env vars.
   if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. O backend não pode se autenticar.');
+      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida.');
   }
 
   try {
@@ -41,7 +41,7 @@ function initializeAdminApp(): FirebaseAdminServices {
       db: admin.firestore(app),
     };
   } catch (e: any) {
-    console.error('Falha crítica ao inicializar o Firebase Admin com a chave de serviço.', e.message);
+    console.error('Falha crítica ao inicializar o Firebase Admin com a chave de serviço. Verifique se o JSON é válido.', e.message);
     throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não é um JSON válido ou está corrompida.');
   }
 }
@@ -54,6 +54,7 @@ function getFirebaseAdmin(): FirebaseAdminServices {
 }
 
 // Export getters that lazily initialize the app on first use.
+// This is robust for serverless environments.
 export const db: Firestore = new Proxy({} as Firestore, {
   get: (target, prop) => {
     return Reflect.get(getFirebaseAdmin().db, prop);

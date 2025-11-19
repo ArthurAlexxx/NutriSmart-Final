@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
+import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 
 export default function DashboardPage() {
@@ -47,6 +48,31 @@ export default function DashboardPage() {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    // Client-side check to finalize payment
+    if (user && userProfile?.subscriptionStatus === 'free') {
+        const pendingChargeId = localStorage.getItem('pendingChargeId');
+        if (pendingChargeId) {
+            verifyAndFinalizeSubscription(user.uid, pendingChargeId)
+                .then(result => {
+                    if (result.success) {
+                        toast({ title: "Assinatura Ativada!", description: "Seu plano foi atualizado com sucesso." });
+                        localStorage.removeItem('pendingChargeId');
+                        // The userProfile will update via the onSnapshot listener in useUser
+                    } else {
+                        // Optional: handle cases where verification fails
+                        console.error("Falha na finalização da assinatura:", result.message);
+                        localStorage.removeItem('pendingChargeId'); // Clean up failed attempts
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro ao tentar finalizar assinatura:", err);
+                    localStorage.removeItem('pendingChargeId');
+                });
+        }
+    }
+  }, [user, userProfile, toast]);
 
   useEffect(() => {
     if (!user || !db) return;
