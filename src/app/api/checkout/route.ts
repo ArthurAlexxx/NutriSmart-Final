@@ -43,13 +43,17 @@ export async function POST(request: Request) {
     }
     const userData = userDoc.data();
 
+    // Validação dos dados do cliente
+    if (!userData?.fullName || !userData.email || !userData.phone || !userData.taxId) {
+        return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
+    }
+
     // Monta o objeto do cliente com os dados do usuário
     const customer = {
-      name: userData?.fullName || 'Usuário NutriSmart',
-      email: userData?.email,
-      // AbacatePay exige um CPF/CNPJ válido. Usaremos um placeholder para este exemplo.
-      // Em uma aplicação real, este dado seria coletado no cadastro.
-      taxId: '111.111.111-11', 
+      name: userData.fullName,
+      email: userData.email,
+      cellphone: userData.phone,
+      taxId: userData.taxId, 
     };
 
     const abacateApiUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';

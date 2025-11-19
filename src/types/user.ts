@@ -26,6 +26,10 @@ export interface UserProfile {
     profileType?: 'patient' | 'professional';
     role?: 'professional' | 'patient';
     
+    // Novos campos para pagamento
+    phone?: string;
+    taxId?: string;
+
     dashboardShareCode?: string;
     patientRoomId?: string;
     professionalRoomIds?: string[];

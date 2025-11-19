@@ -10,6 +10,8 @@
         "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The type of user profile." },
         "fullName": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "description": "User's email address.", "format": "email" },
+        "phone": { "type": "string", "description": "User's phone number." },
+        "taxId": { "type": "string", "description": "User's CPF or CNPJ." },
         "createdAt": { "type": "string", "format": "date-time" },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },

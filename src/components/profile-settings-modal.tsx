@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
+  phone: z.string().min(10, 'O celular é obrigatório.').optional(),
+  taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.').optional(),
 });
 
 type ProfileFormValues = z.infer<typeof formSchema>;
@@ -52,6 +54,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     if (userProfile) {
       form.reset({
         fullName: userProfile.fullName || '',
+        phone: userProfile.phone || '',
+        taxId: userProfile.taxId || '',
       });
     }
   }, [userProfile, form]);
@@ -74,9 +78,12 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
       return;
     }
     try {
-        await onProfileUpdate({
-            fullName: data.fullName,
-        });
+        const updatedProfile: Partial<UserProfile> = {};
+        if (form.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
+        if (form.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
+        if (form.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
+        
+        await onProfileUpdate(updatedProfile);
         toast({
             title: 'Perfil Atualizado',
             description: 'Seus dados foram salvos com sucesso.',
@@ -125,6 +132,12 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                           <FormField control={form.control} name="fullName" render={({ field }) => (
                               <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                           )}/>
+                           <FormField control={form.control} name="phone" render={({ field }) => (
+                              <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                           <FormField control={form.control} name="taxId" render={({ field }) => (
+                              <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
                         <div className="flex justify-end pt-2">
                             <Button type="submit" disabled={isSubmitting || !isDirty}>
                                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -152,7 +165,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     <div className="space-y-4 text-center">
                          <h3 className="font-semibold text-foreground">Sua Assinatura</h3>
                         <p className="text-sm">Status da sua assinatura:</p>
-                        <Badge variant={userProfile.subscriptionStatus === 'premium' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
+                        <Badge variant={userProfile.subscriptionStatus === 'premium' || userProfile.subscriptionStatus === 'professional' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
                             {userProfile.subscriptionStatus || 'Grátis'}
                         </Badge>
                         <div className="pt-4">

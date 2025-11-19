@@ -25,6 +25,8 @@ import type { UserProfile } from '@/types';
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   email: z.string().email('E-mail inválido.'),
+  phone: z.string().min(10, 'O celular é obrigatório.'),
+  taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
   confirmPassword: z.string(),
   profileType: z.enum(['patient', 'professional'], {
@@ -54,6 +56,8 @@ function RegisterForm() {
     defaultValues: {
       fullName: '',
       email: '',
+      phone: '',
+      taxId: '',
       password: '',
       confirmPassword: '',
       profileType: defaultProfileType,
@@ -90,6 +94,8 @@ function RegisterForm() {
       const newUserProfile: Omit<UserProfile, 'id'> = {
           fullName: data.fullName,
           email: data.email,
+          phone: data.phone,
+          taxId: data.taxId,
           createdAt: serverTimestamp(),
           profileType: data.profileType as 'patient' | 'professional',
           role: data.profileType,
@@ -191,6 +197,12 @@ function RegisterForm() {
 
                 <FormField control={registerForm.control} name="fullName" render={({ field }) => (
                     <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                 <FormField control={registerForm.control} name="phone" render={({ field }) => (
+                    <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField control={registerForm.control} name="taxId" render={({ field }) => (
+                    <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={registerForm.control} name="email" render={({ field }) => (
                     <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
