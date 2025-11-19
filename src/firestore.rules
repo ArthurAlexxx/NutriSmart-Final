@@ -1,0 +1,11 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras de desenvolvimento: Permite leitura e escrita para qualquer entidade.
+    // ATENÇÃO: Esta regra é insegura para produção.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
