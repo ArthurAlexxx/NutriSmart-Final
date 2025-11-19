@@ -127,8 +127,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     }
   }
 
-  const tabsToShow = userProfile.profileType === 'patient' ? ['personal-data', 'sharing', 'subscription'] : ['personal-data', 'subscription'];
-
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
     return (userProfile.subscriptionExpiresAt as any).toDate();
@@ -150,8 +148,9 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     return 'Expirando em breve';
   }, [expiryDate]);
   
-  const isTrial = userProfile?.profileType === 'professional' && userProfile.subscriptionStatus === 'free' && countdown;
+  const isTrial = effectiveSubscriptionStatus === 'professional' && userProfile.subscriptionStatus === 'free' && countdown;
 
+  const tabsToShow = effectiveSubscriptionStatus !== 'professional' ? ['personal-data', 'sharing', 'subscription'] : ['personal-data', 'subscription'];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -165,7 +164,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         <Tabs defaultValue="personal-data" className="w-full pt-4">
             <TabsList className={cn("grid w-full mx-auto max-w-[calc(100%-3rem)]", tabsToShow.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
                 <TabsTrigger value="personal-data"><UserIcon className="h-5 w-5"/></TabsTrigger>
-                {userProfile.profileType === 'patient' && <TabsTrigger value="sharing"><Share2 className="h-5 w-5"/></TabsTrigger>}
+                {effectiveSubscriptionStatus !== 'professional' && <TabsTrigger value="sharing"><Share2 className="h-5 w-5"/></TabsTrigger>}
                 <TabsTrigger value="subscription"><CreditCard className="h-5 w-5"/></TabsTrigger>
             </TabsList>
             <div className="p-6">

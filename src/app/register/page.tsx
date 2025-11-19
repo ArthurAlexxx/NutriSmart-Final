@@ -17,9 +17,6 @@ import { Loader2 } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Stethoscope } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/types';
 import { addDays } from 'date-fns';
 
@@ -31,9 +28,6 @@ const registerSchema = z.object({
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
   confirmPassword: z.string(),
-  profileType: z.enum(['patient', 'professional'], {
-    required_error: 'Selecione o tipo de perfil.',
-  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem.',
   path: ['confirmPassword'],
@@ -46,13 +40,10 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, userProfile, isUserLoading } = useUser();
+  const { user, effectiveSubscriptionStatus, isUserLoading } = useUser();
   
-  const defaultProfileType = searchParams.get('type') === 'pro' ? 'professional' : 'patient';
-
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -62,22 +53,20 @@ function RegisterForm() {
       taxId: '',
       password: '',
       confirmPassword: '',
-      profileType: defaultProfileType,
     },
   });
   
   useEffect(() => {
-    if (!isUserLoading && user && userProfile) {
+    if (!isUserLoading && user && effectiveSubscriptionStatus) {
         toast({
             title: "Bem-vindo(a)! 🎉",
             description: "Sua conta foi criada com sucesso.",
         });
-        const destination = userProfile.profileType === 'professional' ? '/pro/patients' : '/dashboard';
+        const destination = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.push(destination);
     }
-  }, [user, userProfile, isUserLoading, router, toast]);
+  }, [user, effectiveSubscriptionStatus, isUserLoading, router, toast]);
 
-  const profileType = registerForm.watch('profileType');
 
   const handleRegister = async (data: RegisterFormValues) => {
     setLoading(true);
@@ -92,6 +81,7 @@ function RegisterForm() {
       const user = userCredential.user;
       
       const userRef = doc(firestore, 'users', user.uid);
+      const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
       const newUserProfile: Omit<UserProfile, 'id'> = {
           fullName: data.fullName,
@@ -99,27 +89,14 @@ function RegisterForm() {
           phone: data.phone,
           taxId: data.taxId,
           createdAt: serverTimestamp(),
-          profileType: data.profileType as 'patient' | 'professional',
-          role: data.profileType,
+          dashboardShareCode: shareCode,
           subscriptionStatus: 'free',
       };
-      
-      if (data.profileType === 'patient') {
-          const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-          newUserProfile.dashboardShareCode = shareCode;
-      }
-
-      if (data.profileType === 'professional') {
-        // Set a 2-day trial period for new professionals
-        const trialEndDate = addDays(new Date(), 2);
-        newUserProfile.subscriptionExpiresAt = Timestamp.fromDate(trialEndDate);
-      }
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
       await updateProfile(user, { displayName: data.fullName });
       
       // The useEffect will now handle the redirection once the profile is loaded.
-      // No need to call router.push here.
 
     } catch (error: any) {
         setLoading(false); // Stop loading on error
@@ -154,55 +131,6 @@ function RegisterForm() {
         <Form {...registerForm}>
             <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                 
-                <FormField
-                    control={registerForm.control}
-                    name="profileType"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel>Qual é o seu objetivo?</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="grid grid-cols-2 gap-4"
-                                >
-                                <FormItem>
-                                    <FormControl>
-                                        <RadioGroupItem value="patient" id="patient" className="sr-only" />
-                                    </FormControl>
-                                    <FormLabel
-                                    htmlFor="patient"
-                                    className={cn(
-                                        "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                        field.value === 'patient' && "border-primary"
-                                    )}
-                                    >
-                                    <Users className="mb-3 h-6 w-6" />
-                                    Paciente
-                                    </FormLabel>
-                                </FormItem>
-                                 <FormItem>
-                                    <FormControl>
-                                        <RadioGroupItem value="professional" id="professional" className="sr-only" />
-                                    </FormControl>
-                                    <FormLabel
-                                    htmlFor="professional"
-                                    className={cn(
-                                        "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                        field.value === 'professional' && "border-primary"
-                                    )}
-                                    >
-                                    <Stethoscope className="mb-3 h-6 w-6" />
-                                    Profissional
-                                    </FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
                 <FormField control={registerForm.control} name="fullName" render={({ field }) => (
                     <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>

@@ -84,7 +84,7 @@ function GuidelineCard({ guideline, onDelete }: { guideline: Guideline, onDelete
 
 
 export default function LibraryPage() {
-    const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+    const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
     const router = useRouter();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -95,10 +95,10 @@ export default function LibraryPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        if (!isUserLoading && (!user || userProfile?.profileType !== 'professional')) {
+        if (!isUserLoading && (!user || effectiveSubscriptionStatus !== 'professional')) {
             router.push('/dashboard');
         }
-    }, [user, userProfile, isUserLoading, router]);
+    }, [user, effectiveSubscriptionStatus, isUserLoading, router]);
 
     const templatesQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;

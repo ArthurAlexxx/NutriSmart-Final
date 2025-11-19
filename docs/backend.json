@@ -7,7 +7,6 @@
       "description": "Represents a user, who can be a patient or a professional.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the user." },
-        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The type of user profile." },
         "fullName": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "description": "User's email address.", "format": "email" },
         "phone": { "type": "string", "description": "User's phone number." },
@@ -15,6 +14,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
+        "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },
         "patientRoomId": { "type": "string", "description": "ID of the room if the user is a patient being monitored." },
         "professionalRoomIds": { "type": "array", "items": { "type": "string" }, "description": "List of room IDs if the user is a professional." },
         "weight": { "type": "number" },
@@ -24,7 +24,7 @@
         "proteinGoal": { "type": "number" },
         "waterGoal": { "type": "number" }
       },
-      "required": ["id", "profileType", "fullName", "email", "createdAt"]
+      "required": ["id", "fullName", "email", "createdAt"]
     },
     "ActivePlan": {
       "title": "ActivePlan",
@@ -144,6 +144,18 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["title", "content", "createdAt"]
+    },
+    "WebhookLog": {
+        "title": "WebhookLog",
+        "type": "object",
+        "description": "Stores a record of each incoming webhook for debugging.",
+        "properties": {
+            "payload": { "type": "object" },
+            "status": { "type": "string", "enum": ["SUCCESS", "FAILURE"] },
+            "details": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["payload", "status", "createdAt"]
     }
   },
   "auth": {
@@ -212,6 +224,13 @@
         "definition": {
             "schema": { "$ref": "#/entities/FinancialTransaction" },
             "description": "Stores all financial transactions for a professional user."
+        }
+      },
+      {
+        "path": "/webhook_logs/{logId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/WebhookLog" },
+          "description": "Stores every incoming webhook for auditing and debugging."
         }
       }
     ]

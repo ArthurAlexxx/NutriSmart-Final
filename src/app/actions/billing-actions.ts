@@ -37,8 +37,6 @@ export async function updateUserSubscriptionAction(
         updatePayload.subscriptionStatus = 'premium';
     } else if (planName === 'PROFISSIONAL') {
         updatePayload.subscriptionStatus = 'professional';
-        updatePayload.profileType = 'professional'; // Upgrade the user to a professional
-        updatePayload.role = 'professional';
     } else {
         return { success: false, message: 'Nome do plano desconhecido.'};
     }

@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
 export default function ProPatientsPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -33,14 +33,14 @@ export default function ProPatientsPage() {
       router.push('/login');
       return;
     }
-    if (!isUserLoading && user && userProfile && userProfile.profileType !== 'professional') {
+    if (!isUserLoading && user && effectiveSubscriptionStatus !== 'professional') {
         router.push('/dashboard');
         return;
     }
-  }, [user, isUserLoading, userProfile, router]);
+  }, [user, isUserLoading, effectiveSubscriptionStatus, router]);
 
   useEffect(() => {
-    if (!user || !userProfile || !firestore || userProfile.profileType !== 'professional') {
+    if (!user || !firestore || effectiveSubscriptionStatus !== 'professional') {
       setLoading(false);
       return;
     }
@@ -65,7 +65,7 @@ export default function ProPatientsPage() {
       if (unsubRooms) unsubRooms();
     };
 
-  }, [user, userProfile, firestore, toast]);
+  }, [user, effectiveSubscriptionStatus, firestore, toast]);
 
   const filteredRooms = useMemo(() => {
     if (!rooms) return [];

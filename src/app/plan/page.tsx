@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import SubscriptionOverlay from '@/components/subscription-overlay';
 
 export default function PlanPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -31,7 +31,7 @@ export default function PlanPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   
   const isUnderProfessionalCare = !!userProfile?.patientRoomId;
-  const isFeatureLocked = userProfile?.subscriptionStatus === 'free';
+  const isFeatureLocked = effectiveSubscriptionStatus === 'free';
 
   const activePlanRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;

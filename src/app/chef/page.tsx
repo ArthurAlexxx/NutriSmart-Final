@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 
 export default function ChefPage() {
-  const { user, isUserLoading, userProfile, onProfileUpdate } = useUser();
+  const { user, isUserLoading, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -29,7 +29,7 @@ export default function ChefPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const { toast } = useToast();
   
-  const isFeatureLocked = userProfile?.subscriptionStatus === 'free';
+  const isFeatureLocked = effectiveSubscriptionStatus === 'free';
 
 
   useEffect(() => {

@@ -27,7 +27,7 @@ type Period = 7 | 15 | 30;
 const DEMO_USER_ID = 'z9Ru4QiC4Kf5Okf257OruaazvyF2';
 
 export default function AnalysisPage() {
-  const { user, isUserLoading, userProfile, onProfileUpdate } = useUser();
+  const { user, isUserLoading, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -40,7 +40,7 @@ export default function AnalysisPage() {
   const [isSeeding, setIsSeeding] = useState(false);
 
   const isDemoUser = user?.uid === DEMO_USER_ID;
-  const isFeatureLocked = userProfile?.subscriptionStatus === 'free';
+  const isFeatureLocked = effectiveSubscriptionStatus === 'free';
 
   useEffect(() => {
     if (!isUserLoading && !user) {

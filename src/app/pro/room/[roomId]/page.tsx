@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 
 
 export default function RoomDetailPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const [room, setRoom] = useState<Room | null>(null);
   const [mealLog, setMealLog] = useState<MealEntry[]>([]);
   const [hydrationLog, setHydrationLog] = useState<HydrationEntry | null>(null);
@@ -44,11 +44,11 @@ export default function RoomDetailPage() {
       router.push('/login');
       return;
     }
-    if (!isUserLoading && user && userProfile && userProfile.profileType !== 'professional') {
+    if (!isUserLoading && user && effectiveSubscriptionStatus !== 'professional') {
         router.push('/dashboard');
         return;
     }
-  }, [user, isUserLoading, userProfile, router]);
+  }, [user, isUserLoading, effectiveSubscriptionStatus, router]);
 
   useEffect(() => {
     if (!user || !userProfile || !firestore || !roomId) {

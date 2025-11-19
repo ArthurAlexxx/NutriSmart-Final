@@ -22,7 +22,7 @@ import { Loader2, PlusCircle, ArrowUpRight, ArrowDownLeft, TrendingUp, TrendingD
 import { cn } from '@/lib/utils';
 
 export default function FinanceiroPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -32,8 +32,8 @@ export default function FinanceiroPage() {
 
   useEffect(() => {
     if (!isUserLoading && !user) router.push('/login');
-    if (!isUserLoading && userProfile && userProfile.profileType !== 'professional') router.push('/dashboard');
-  }, [user, userProfile, isUserLoading, router]);
+    if (!isUserLoading && effectiveSubscriptionStatus !== 'professional') router.push('/dashboard');
+  }, [user, effectiveSubscriptionStatus, isUserLoading, router]);
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;

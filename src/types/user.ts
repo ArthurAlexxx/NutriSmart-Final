@@ -15,9 +15,6 @@ export interface UserProfile {
     email: string;
     createdAt: Timestamp | { seconds: number; nanoseconds: number; };
     
-    profileType?: 'patient' | 'professional';
-    role?: 'professional' | 'patient';
-    
     // Novos campos para pagamento
     phone?: string;
     taxId?: string;

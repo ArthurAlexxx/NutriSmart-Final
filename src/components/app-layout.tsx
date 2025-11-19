@@ -93,15 +93,15 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   const { effectiveSubscriptionStatus } = useUser();
-  const isProUserWithActivePlan = userProfile?.profileType === 'professional' && effectiveSubscriptionStatus === 'professional';
+  const isProUser = effectiveSubscriptionStatus === 'professional';
 
   useEffect(() => {
-    // If the user is a professional but their plan is not active,
-    // and they are trying to access a pro page, redirect them to the standard dashboard.
-    if (userProfile?.profileType === 'professional' && !isProUserWithActivePlan && pathname.startsWith('/pro')) {
+    // If the user is not a professional but is trying to access a pro page,
+    // redirect them to the standard dashboard.
+    if (!isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
-  }, [userProfile, isProUserWithActivePlan, pathname, router]);
+  }, [isProUser, pathname, router]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -125,7 +125,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     });
     
     // Show Professional menu ONLY if they have an active professional subscription
-    if (isProUserWithActivePlan) {
+    if (isProUser) {
         return (
           <>
             <NavSection title="Menu Profissional">

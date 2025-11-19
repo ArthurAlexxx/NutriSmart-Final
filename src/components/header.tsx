@@ -27,7 +27,7 @@ const LogoDisplay = () => {
 
 export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const { user, userProfile } = useUser();
+  const { user, effectiveSubscriptionStatus } = useUser();
 
   const navLinkStyle = "font-medium text-muted-foreground";
 
@@ -54,7 +54,7 @@ export default function Header() {
             <div className='hidden md:flex items-center gap-2'>
               {user ? (
                  <Button asChild className="rounded-full">
-                   <Link href={userProfile?.profileType === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
+                   <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
                 </Button>
               ) : (
                 <>
@@ -86,7 +86,7 @@ export default function Header() {
                   <div className='grid gap-4 pt-6 border-t'>
                       {user ? (
                          <Button asChild>
-                            <Link href={userProfile?.profileType === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
+                            <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
                          </Button>
                       ) : (
                         <>

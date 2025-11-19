@@ -54,7 +54,7 @@ function WebhookLogRow({ log }: { log: WebhookLog }) {
 }
 
 export default function WebhooksPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -65,7 +65,7 @@ export default function WebhooksPage() {
 
   const { data: webhookLogs, isLoading: isLoadingWebhooks } = useCollection<WebhookLog>(webhooksQuery);
   
-  if (isUserLoading || !userProfile) {
+  if (isUserLoading || !userProfile || effectiveSubscriptionStatus !== 'professional') {
     return (
       <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
         <div className="flex h-full w-full items-center justify-center">

@@ -102,7 +102,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 const profileData = { id: profileDoc.id, ...profileDoc.data() } as UserProfile;
                 
                 // BUG FIX: Check if a patient profile is missing a share code and generate one.
-                if (profileData.profileType === 'patient' && !profileData.dashboardShareCode) {
+                if (!profileData.dashboardShareCode) {
                     const newShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
                     console.log(`Generating missing share code for user ${profileData.id}: ${newShareCode}`);
                     // Non-blocking update. The listener will catch the change.
@@ -126,8 +126,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         fullName: userAuthState.user?.displayName || "Novo Usuário",
                         email: userAuthState.user?.email || "",
                         createdAt: serverTimestamp(),
-                        profileType: 'patient',
-                        role: 'patient',
                         dashboardShareCode: newShareCode, // Add share code on creation
                         subscriptionStatus: 'free',
                         calorieGoal: 2000,
@@ -188,9 +186,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         if (storedStatus === 'premium' && !isExpired) {
             effectiveStatus = 'premium';
         } else if (storedStatus === 'professional' && !isExpired) {
-            effectiveStatus = 'professional';
-        } else if (profile.profileType === 'professional' && storedStatus === 'free' && !isExpired) {
-            // Special case for professionals on trial
             effectiveStatus = 'professional';
         }
     }
