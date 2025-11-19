@@ -124,8 +124,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         profileType: 'patient',
                         role: 'patient',
                         dashboardShareCode: newShareCode, // Add share code on creation
-                        subscriptionStatus: 'premium', // New users are now premium
-                        trialEndsAt: undefined, // No more trial period
+                        subscriptionStatus: 'free', // New users start as free
                         calorieGoal: 2000,
                         proteinGoal: 140,
                         waterGoal: 2000,

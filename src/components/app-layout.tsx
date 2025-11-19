@@ -20,7 +20,6 @@ import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import ProfileSettingsModal from './profile-settings-modal';
-import SubscriptionOverlay from './subscription-overlay';
 
 interface AppLayoutProps {
   user: User | null;
@@ -135,9 +134,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         </NavSection>
     );
   };
-  
-  // All features are unlocked, so never show the overlay
-  const showOverlay = false; 
 
   return (
     <>
@@ -216,7 +212,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
           </header>
           <main className={cn("relative bg-muted/40 print:bg-white print:p-0 overflow-y-auto", isChefPage ? "flex-1 flex flex-col min-h-0" : "flex-1")}>
               <div className={cn("h-full", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
-                  {showOverlay && <SubscriptionOverlay />}
                   {children}
               </div>
           </main>

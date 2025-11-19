@@ -93,7 +93,7 @@ function RegisterForm() {
           createdAt: serverTimestamp(),
           profileType: data.profileType as 'patient' | 'professional',
           role: data.profileType,
-          subscriptionStatus: data.profileType === 'patient' ? 'premium' : 'professional',
+          subscriptionStatus: 'free',
       };
       
       if (data.profileType === 'patient') {

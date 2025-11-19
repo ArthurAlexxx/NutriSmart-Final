@@ -52,8 +52,8 @@ const plans = [
             'Acompanhamento de Tendências de Peso',
         ],
         description: 'A experiência completa com todo o poder da IA para acelerar seus resultados.',
-        buttonText: 'Começar Agora (Grátis)',
-        href: '/register',
+        buttonText: 'Fazer Upgrade',
+        href: '/checkout?plan=premium',
         isPopular: true,
     },
     {
@@ -79,18 +79,53 @@ const plans = [
 function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const { user, userProfile } = useUser();
+  const { user, userProfile, onProfileUpdate } = useUser();
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleCtaClick = (planHref: string) => {
-    if (user) {
-        // Se o usuário está logado, leva para o dashboard correspondente
-        const destination = userProfile?.profileType === 'professional' ? '/pro/patients' : '/dashboard';
+  const handleCtaClick = async (plan: typeof plans[0]) => {
+    if (!user || !userProfile) {
+        // Not logged in, redirect to register
+        router.push(plan.href);
+        return;
+    }
+    
+    // User is logged in
+    setLoadingPlan(plan.name);
+
+    if (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') {
+        toast({ title: "Você já é Premium!", description: "Sua assinatura já está ativa."});
+        setLoadingPlan(null);
+        return;
+    }
+    
+    if (plan.name === 'GRATUITO') {
+      router.push('/dashboard');
+      return;
+    }
+
+    try {
+        // Simulate payment & update subscription status
+        const newStatus = plan.name === 'PREMIUM' ? 'premium' : 'professional';
+        await onProfileUpdate({ subscriptionStatus: newStatus });
+        
+        toast({
+            title: "Assinatura Ativada!",
+            description: `Bem-vindo(a) ao plano ${plan.name}.`,
+        });
+
+        const destination = newStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.push(destination);
-    } else {
-        // Se não está logado, leva para a página de registro
-        router.push(planHref);
+
+    } catch (error: any) {
+        console.error("Subscription update failed:", error);
+        toast({
+            title: "Erro na Assinatura",
+            description: "Não foi possível atualizar sua assinatura. Tente novamente.",
+            variant: "destructive"
+        });
+    } finally {
+        setLoadingPlan(null);
     }
   };
 
@@ -119,7 +154,13 @@ function Pricing() {
           </div>
 
           <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3">
-            {plans.map((plan) => (
+            {plans.map((plan) => {
+              
+              const ctaText = user ? 
+                (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM' ? 'Plano Atual' : plan.buttonText) : 
+                'Começar Agora';
+
+              return (
                 <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl", plan.isPopular && "shadow-2xl border-primary")}>
                     <CardHeader>
                         <CardTitle>
@@ -154,8 +195,8 @@ function Pricing() {
                          <Button 
                             className="w-full gap-4" 
                             variant={plan.isPopular ? "default" : "outline"}
-                            onClick={() => plan.href && handleCtaClick(plan.href)}
-                            disabled={loadingPlan === plan.name}
+                            onClick={() => handleCtaClick(plan)}
+                            disabled={loadingPlan === plan.name || (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM')}
                          >
                             {loadingPlan === plan.name ? (
                                 <>
@@ -163,13 +204,13 @@ function Pricing() {
                                 </>
                             ) : (
                                 <>
-                                 {plan.buttonText} <MoveRight className="w-4 h-4" />
+                                 {ctaText} <MoveRight className="w-4 h-4" />
                                 </>
                             )}
                         </Button>
                     </CardFooter>
                 </Card>
-            ))}
+            )})}
           </div>
         </div>
       </div>
