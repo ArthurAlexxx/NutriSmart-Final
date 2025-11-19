@@ -40,7 +40,6 @@ const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
     { href: '/pro/library', label: 'Biblioteca', icon: Library },
     { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
-    { href: '/pro/webhooks', label: 'Webhooks', icon: Shield },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
@@ -213,7 +212,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 />
               </div>
           </header>
-          <main className={cn("relative bg-muted/40 print:bg-white print:p-0 overflow-y-auto", isChefPage ? "flex-1 flex flex-col min-h-0" : "flex-1")}>
+          <main className={cn("relative bg-muted/40 print:bg-white print:p-0 overflow-y-auto", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
               <div className={cn("h-full", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
                   {children}
               </div>

@@ -144,19 +144,6 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["title", "content", "createdAt"]
-    },
-    "WebhookLog": {
-        "title": "WebhookLog",
-        "type": "object",
-        "description": "Stores a log of an incoming webhook from AbacatePay.",
-        "properties": {
-            "payload": { "type": "object", "description": "The full JSON payload received from the webhook." },
-            "status": { "type": "string", "enum": ["PROCESSING", "SUCCESS", "ERROR", "IGNORED"], "description": "The processing status of the webhook." },
-            "receivedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the webhook was received." },
-            "errorDetails": { "type": "string", "description": "Details of the error if status is ERROR." },
-            "details": { "type": "string", "description": "Additional details about the processing." }
-        },
-        "required": ["payload", "status", "receivedAt"]
     }
   },
   "auth": {
@@ -225,13 +212,6 @@
         "definition": {
             "schema": { "$ref": "#/entities/FinancialTransaction" },
             "description": "Stores all financial transactions for a professional user."
-        }
-      },
-      {
-        "path": "/webhook_logs/{logId}",
-        "definition": {
-            "schema": { "$ref": "#/entities/WebhookLog" },
-            "description": "Stores logs of incoming webhooks for debugging purposes."
         }
       }
     ]
