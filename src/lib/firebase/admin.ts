@@ -15,8 +15,8 @@ let services: FirebaseAdminServices | null = null;
 
 function initializeAdminApp(): FirebaseAdminServices {
   // If services are already initialized, return them.
-  if (admin.apps.length > 0) {
-    const existingApp = admin.apps[0] as App;
+  if (admin.apps.length > 0 && admin.apps[0]) {
+    const existingApp = admin.apps[0];
     return {
       app: existingApp,
       auth: admin.auth(existingApp),
@@ -24,14 +24,32 @@ function initializeAdminApp(): FirebaseAdminServices {
     };
   }
 
-  // Vercel environment variables for Firebase Admin
+  // --- NEW LOGIC: Prefer a single service account key from env ---
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      const app = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      return {
+        app,
+        auth: admin.auth(app),
+        db: admin.firestore(app),
+      };
+    } catch (e: any) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
+      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não é um JSON válido.');
+    }
+  }
+
+  // --- FALLBACK LOGIC: Use separate environment variables ---
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   // Replace escaped newlines from the environment variable
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (!projectId || !clientEmail || !privateKey) {
-    throw new Error('As variáveis de ambiente do Firebase Admin (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) não estão definidas corretamente.');
+    throw new Error('As variáveis de ambiente do Firebase Admin (FIREBASE_SERVICE_ACCOUNT_KEY ou FIREBASE_PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) não estão definidas corretamente.');
   }
 
   try {
