@@ -19,7 +19,7 @@ export async function GET(
   }
 
   try {
-    const abacateApiUrl = `https://api.abacatepay.com/v1/pixQrCode/check/${chargeId}`;
+    const abacateApiUrl = `https://api.abacatepay.com/v1/pixQrCode/check?id=${chargeId}`;
 
     const response = await fetch(abacateApiUrl, {
       method: 'GET',
