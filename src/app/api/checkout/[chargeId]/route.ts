@@ -31,9 +31,11 @@ export async function GET(
 
     const data = await response.json();
     
-    if (data.error) {
+    if (!response.ok || data.error) {
       console.error('AbacatePay Check API Error:', data.error);
-      throw new Error(data.error.message || 'Erro ao verificar o status do pagamento.');
+      const errorMessage = data.error?.message || 'Erro ao verificar o status do pagamento no gateway.';
+      // Return a JSON error response instead of letting the server crash
+      return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
 
     const status = data.data.status;
@@ -69,6 +71,6 @@ export async function GET(
 
   } catch (error: any) {
     console.error('Checkout Status API Route Error:', error);
-    return NextResponse.json({ error: error.message || 'Erro interno do servidor.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Erro interno do servidor ao verificar pagamento.' }, { status: 500 });
   }
 }
