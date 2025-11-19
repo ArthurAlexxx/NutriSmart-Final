@@ -122,6 +122,7 @@
         "name": { "type": "string" },
         "description": { "type": "string" },
         "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
         "hydrationGoal": { "type": "number" },
         "meals": { 
           "type": "array", 
@@ -130,6 +131,17 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "calorieGoal", "hydrationGoal", "meals", "createdAt"]
+    },
+    "Guideline": {
+        "title": "Guideline",
+        "type": "object",
+        "description": "A reusable text-based guideline or document created by a professional.",
+        "properties": {
+            "title": { "type": "string" },
+            "content": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["title", "content", "createdAt"]
     }
   },
   "auth": {
@@ -156,6 +168,13 @@
         "definition": {
           "schema": { "$ref": "#/entities/PlanTemplate" },
           "description": "Stores reusable meal plan templates created by a professional user."
+        }
+      },
+      {
+        "path": "/users/{userId}/guidelines/{guidelineId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/Guideline" },
+          "description": "Stores reusable text-based guidelines created by a professional user."
         }
       },
       {

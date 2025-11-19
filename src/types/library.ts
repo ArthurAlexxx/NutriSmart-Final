@@ -2,6 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 interface MealItem {
+    id?: string;
     name: string;
     time: string;
     items: string;
@@ -12,6 +13,7 @@ export interface PlanTemplate {
     name: string;
     description: string;
     calorieGoal: number;
+    proteinGoal: number,
     hydrationGoal: number;
     meals: MealItem[];
     createdAt: Timestamp;
