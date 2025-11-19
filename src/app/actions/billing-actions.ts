@@ -22,26 +22,30 @@ export async function updateUserSubscriptionAction(
     return { success: false, message: 'User ID, nome do plano ou ciclo de cobrança inválido.' };
   }
 
-  let newSubscriptionStatus: 'premium' | 'professional';
-  if (planName === 'PREMIUM') {
-    newSubscriptionStatus = 'premium';
-  } else if (planName === 'PROFISSIONAL') {
-    newSubscriptionStatus = 'professional';
-  } else {
-    return { success: false, message: 'Nome do plano desconhecido.'};
-  }
-
   const now = new Date();
   const expirationDate = billingCycle === 'yearly' ? addYears(now, 1) : addMonths(now, 1);
   const expirationTimestamp = Timestamp.fromDate(expirationDate);
 
   try {
     const userRef = db.collection('users').doc(userId);
-    await userRef.update({ 
-        subscriptionStatus: newSubscriptionStatus,
+    
+    const updatePayload: Partial<UserProfile> = {
         subscriptionExpiresAt: expirationTimestamp,
-    });
-    const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus} até ${expirationDate.toLocaleDateString('pt-BR')}.`;
+    };
+
+    if (planName === 'PREMIUM') {
+        updatePayload.subscriptionStatus = 'premium';
+    } else if (planName === 'PROFISSIONAL') {
+        updatePayload.subscriptionStatus = 'professional';
+        updatePayload.profileType = 'professional'; // Upgrade the user to a professional
+        updatePayload.role = 'professional';
+    } else {
+        return { success: false, message: 'Nome do plano desconhecido.'};
+    }
+
+    await userRef.update(updatePayload);
+
+    const successMessage = `Assinatura do usuário ${userId} atualizada para ${updatePayload.subscriptionStatus} até ${expirationDate.toLocaleDateString('pt-BR')}.`;
     console.log(successMessage);
     return { success: true, message: successMessage };
   } catch (error: any) {
@@ -125,7 +129,7 @@ export async function cancelSubscriptionAction(userId: string): Promise<{ succes
     // Revert to 'free' and remove the expiration date.
     await userRef.update({ 
         subscriptionStatus: 'free',
-        subscriptionExpiresAt: null, // or FieldValue.delete()
+        subscriptionExpiresAt: null,
     });
     
     return { success: true, message: 'Assinatura cancelada com sucesso.' };
