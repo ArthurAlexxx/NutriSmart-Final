@@ -1,4 +1,3 @@
-
 // src/components/profile-settings-modal.tsx
 'use client';
 
@@ -130,6 +129,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     }
     return 'Expirando em breve';
   }, [expiryDate]);
+  
+  const isTrial = userProfile?.profileType === 'professional' && userProfile.subscriptionStatus === 'free' && countdown;
 
 
   return (
@@ -189,11 +190,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                          <h3 className="font-semibold text-foreground">Sua Assinatura</h3>
                         <p className="text-sm">Status da sua assinatura:</p>
                         <Badge variant={effectiveSubscriptionStatus !== 'free' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
-                            {effectiveSubscriptionStatus || 'Grátis'}
+                            {isTrial ? 'Teste Profissional' : effectiveSubscriptionStatus}
                         </Badge>
                         {countdown && (
                              <div className='p-3 rounded-lg bg-primary/10 text-primary text-center max-w-xs mx-auto'>
-                                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> Período de Teste</p>
+                                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> {isTrial ? 'Período de Teste' : 'Assinatura Ativa'}</p>
                                 <p className='text-xs font-medium'>Expira em: {countdown}</p>
                             </div>
                         )}
