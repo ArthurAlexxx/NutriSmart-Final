@@ -70,24 +70,29 @@ async function handlePayment(event: any) {
 export async function POST(request: NextRequest) {
   let rawBody;
   try {
-    // 1. LER O CORPO BRUTO (RAW BODY)
-    // Isso é crucial. request.json() iria quebrar a verificação da assinatura.
     rawBody = await request.text();
     
-    const signature = headers().get('abacate-signature');
+    const headerPayload = headers();
+    // Tentativa robusta de obter a assinatura, insensível a maiúsculas/minúsculas.
+    const signature = headerPayload.get('abacate-signature') || headerPayload.get('Abacate-Signature');
     const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
+      console.error('CRITICAL: ABACATE_PAY_WEBHOOK_SECRET não está configurado no ambiente.');
       return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
     }
 
     if (!signature) {
-      console.warn('Requisição de webhook recebida sem assinatura.');
+      // Log para depuração: mostrar todos os cabeçalhos recebidos se a assinatura estiver faltando.
+      const receivedHeaders: { [key: string]: string } = {};
+      headerPayload.forEach((value, key) => {
+        receivedHeaders[key] = value;
+      });
+      console.warn('Requisição de webhook recebida sem assinatura. Cabeçalhos recebidos:', JSON.stringify(receivedHeaders, null, 2));
+      
       return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
     }
 
-    // 2. VALIDAR A ASSINATURA USANDO O CORPO BRUTO
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody)
@@ -98,19 +103,13 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
     
-    // 3. PARSE DO JSON APENAS APÓS A VALIDAÇÃO
     const event = JSON.parse(rawBody);
     
-    // --- Assinatura validada, agora podemos processar ---
-
-    // Chame a função de processamento, mas não a aguarde (fire-and-forget).
-    // Isso garante que retornemos uma resposta 200 OK imediatamente.
     handlePayment(event).catch(err => {
       console.error("Erro no processamento do webhook em segundo plano:", err);
       saveWebhookLog(event, 'FAILURE', err.message || 'Erro desconhecido no processamento em segundo plano.');
     });
 
-    // 4. RETORNAR RESPOSTA DE SUCESSO IMEDIATAMENTE
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
@@ -122,10 +121,8 @@ export async function POST(request: NextRequest) {
         payloadForLog = { error: "Could not parse raw body.", body: rawBody };
     }
     
-    // Mesmo em caso de erro de parsing, é uma boa prática salvar o que recebemos.
     await saveWebhookLog(payloadForLog, 'FAILURE', `Erro de parsing ou inicial: ${error.message}`);
     
-    // Retorna 200 para evitar que o AbacatePay tente reenviar uma requisição malformada.
     return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 200 });
   }
 }
