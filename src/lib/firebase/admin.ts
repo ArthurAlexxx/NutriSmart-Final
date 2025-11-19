@@ -4,62 +4,67 @@ import type { App } from 'firebase-admin/app';
 import type { Auth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
 
-// Define a structure to hold our lazily initialized services
+// This interface defines the structure of our admin services singleton.
 interface FirebaseAdminServices {
   app: App;
   auth: Auth;
   db: Firestore;
 }
 
-let services: FirebaseAdminServices | null = null;
+// A global variable to hold the initialized services, ensuring it's a singleton.
+let adminServices: FirebaseAdminServices | null = null;
 
 /**
  * Initializes the Firebase Admin SDK using a service account key from environment variables.
  * This function follows a robust singleton pattern suitable for serverless environments like Vercel.
+ * It prioritizes the all-in-one FIREBASE_SERVICE_ACCOUNT_KEY for reliability.
+ *
  * @returns {FirebaseAdminServices} The initialized Firebase Admin services.
  */
-function initializeAdminApp(): FirebaseAdminServices {
-  // If services are already initialized, return them to avoid re-initializing.
-  if (services) {
-    return services;
+function initializeAdmin(): FirebaseAdminServices {
+  // If the services are already initialized, return the existing instance.
+  // This prevents re-initialization on subsequent function invocations.
+  if (adminServices) {
+    return adminServices;
   }
-  
-  // If the default app is already initialized, reuse it.
-  // This can happen if multiple serverless function invocations occur in close succession.
-  if (admin.apps.length > 0 && admin.apps[0]) {
-    const existingApp = admin.apps[0];
-    services = {
-      app: existingApp,
-      auth: admin.auth(existingApp),
-      db: admin.firestore(existingApp),
-    };
-    return services;
-  }
-  
-  // The recommended approach for Vercel: use a single service account key from env vars.
+
+  // Vercel's recommended approach: use a single environment variable
+  // containing the JSON of the service account key.
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
   if (!serviceAccountKey) {
-      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. Este é um JSON completo da chave de serviço do Firebase.');
+    throw new Error(
+      'A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. Este é o JSON completo da chave de serviço do Firebase.'
+    );
   }
 
   try {
-    // Parse the service account key from the environment variable.
     const serviceAccount = JSON.parse(serviceAccountKey);
+
+    // If there are no initialized apps, create a new one.
+    if (!admin.apps.length) {
+      const app = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+
+      // Store the initialized services in the global singleton variable.
+      adminServices = {
+        app,
+        auth: admin.auth(app),
+        db: admin.firestore(app),
+      };
+    } else {
+      // If an app is already initialized (can happen in serverless environments),
+      // get the default app and its associated services.
+      const app = admin.app();
+      adminServices = {
+        app,
+        auth: admin.auth(app),
+        db: admin.firestore(app),
+      };
+    }
     
-    // Initialize the Firebase Admin SDK with the parsed credentials.
-    const app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    
-    const newServices: FirebaseAdminServices = {
-      app,
-      auth: admin.auth(app),
-      db: admin.firestore(app),
-    };
-    
-    // Cache the newly initialized services.
-    services = newServices;
-    return newServices;
+    return adminServices;
 
   } catch (e: any) {
     console.error('Falha crítica ao inicializar o Firebase Admin. Verifique o JSON em FIREBASE_SERVICE_ACCOUNT_KEY.', e.message);
@@ -67,12 +72,16 @@ function initializeAdminApp(): FirebaseAdminServices {
   }
 }
 
-// Export getters that lazily initialize the app on first use.
-// This proxy ensures initializeAdminApp() is only called when 'db' or 'auth' is accessed.
+// These are proxies that ensure initializeAdmin() is called only when 'db' or 'auth' is accessed for the first time.
+// This lazy initialization is efficient and safe for serverless environments.
 export const db: Firestore = new Proxy({} as Firestore, {
-  get: (target, prop) => Reflect.get(initializeAdminApp().db, prop),
+  get: (target, prop) => {
+    return Reflect.get(initializeAdmin().db, prop);
+  },
 });
 
 export const auth: Auth = new Proxy({} as Auth, {
-  get: (target, prop) => Reflect.get(initializeAdminApp().auth, prop),
+  get: (target, prop) => {
+    return Reflect.get(initializeAdmin().auth, prop);
+  },
 });
