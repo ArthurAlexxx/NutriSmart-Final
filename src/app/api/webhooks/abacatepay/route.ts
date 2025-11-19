@@ -1,7 +1,13 @@
+
 // src/app/api/webhooks/abacatepay/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import * as crypto from 'crypto';
+import { headers } from 'next/headers';
+
+// CONFIGURAÇÃO CRÍTICA: Garante que o Next.js não processe o corpo da requisição
+// antes de nós, o que é essencial para a validação do webhook.
+export const dynamic = 'force-dynamic';
 
 async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', details: string) {
     try {
@@ -11,10 +17,10 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             details: details,
             createdAt: new Date(),
         };
-        // This is a fire-and-forget operation, we don't await it to respond quickly
-        db.collection('webhook_logs').add(logData);
-    } catch (logError) {
-        console.error("CRITICAL: Failed to save webhook log.", logError);
+        // Esta operação não é aguardada para responder rapidamente ao webhook.
+        await db.collection('webhook_logs').add(logData);
+    } catch (logError: any) {
+        console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
 }
 
@@ -38,7 +44,7 @@ async function handlePayment(event: any) {
           const message = `Plano desconhecido "${planName}" no webhook para o usuário ${userId}.`;
           console.warn(message);
           await saveWebhookLog(event, 'FAILURE', message);
-          return; // Stop processing
+          return; // Para o processamento
         }
 
         await userRef.update({
@@ -56,30 +62,32 @@ async function handlePayment(event: any) {
       }
     } else {
         const message = `Evento não processado: ${event.event}`;
-        await saveWebhookLog(event, 'SUCCESS', message); // Success because we received it, even if not processed
+        // Salva como sucesso porque recebemos, mesmo que não tenhamos uma ação para ele.
+        await saveWebhookLog(event, 'SUCCESS', message);
     }
 }
 
 export async function POST(request: NextRequest) {
   let rawBody;
   try {
+    // 1. LER O CORPO BRUTO (RAW BODY)
+    // Isso é crucial. request.json() iria quebrar a verificação da assinatura.
     rawBody = await request.text();
-    const event = JSON.parse(rawBody);
     
-    const signature = request.headers.get('abacate-signature');
+    const signature = headers().get('abacate-signature');
     const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
       console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
-      // Don't save log here because we can't even validate
-      return NextResponse.json({ error: 'Configuração de segurança do servidor incompleta.' }, { status: 500 });
+      return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
     }
 
     if (!signature) {
-      // Don't save log, request is invalid
-      return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 400 });
+      console.warn('Requisição de webhook recebida sem assinatura.');
+      return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
     }
 
+    // 2. VALIDAR A ASSINATURA USANDO O CORPO BRUTO
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody)
@@ -87,30 +95,37 @@ export async function POST(request: NextRequest) {
 
     if (signature !== expectedSignature) {
       console.warn('Assinatura de webhook inválida recebida.');
-      // Don't save log, request is forged
-      return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
+      return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
     
-    // --- Assinatura validada ---
-    // Responda imediatamente para evitar timeout do AbacatePay
-    // O processamento real acontece em segundo plano (fire-and-forget)
+    // 3. PARSE DO JSON APENAS APÓS A VALIDAÇÃO
+    const event = JSON.parse(rawBody);
+    
+    // --- Assinatura validada, agora podemos processar ---
+
+    // Chame a função de processamento, mas não a aguarde (fire-and-forget).
+    // Isso garante que retornemos uma resposta 200 OK imediatamente.
     handlePayment(event).catch(err => {
       console.error("Erro no processamento do webhook em segundo plano:", err);
       saveWebhookLog(event, 'FAILURE', err.message || 'Erro desconhecido no processamento em segundo plano.');
     });
 
-    // Return a 200 OK response immediately
+    // 4. RETORNAR RESPOSTA DE SUCESSO IMEDIATAMENTE
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Erro ao processar o webhook do AbacatePay:', error);
+    console.error('Erro fatal ao processar o webhook do AbacatePay:', error.message);
     let payloadForLog = {};
     try {
         if(rawBody) payloadForLog = JSON.parse(rawBody);
-    } catch {}
+    } catch {
+        payloadForLog = { error: "Could not parse raw body.", body: rawBody };
+    }
     
+    // Mesmo em caso de erro de parsing, é uma boa prática salvar o que recebemos.
     await saveWebhookLog(payloadForLog, 'FAILURE', `Erro de parsing ou inicial: ${error.message}`);
-    // Still return a 200 to prevent AbacatePay from retrying a malformed request
+    
+    // Retorna 200 para evitar que o AbacatePay tente reenviar uma requisição malformada.
     return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 200 });
   }
 }
