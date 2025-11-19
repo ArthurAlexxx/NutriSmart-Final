@@ -138,7 +138,7 @@ export default function PlanPage() {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-8">
-                  {userProfile && <PlanEditor userProfile={userProfile} onPlanSaved={() => setIsEditorOpen(false)} />}
+                  {userProfile && <PlanEditor userProfile={userProfile} onPlanSaved={() => setIsEditorOpen(false)} isProfessional={false} />}
               </CollapsibleContent>
             </Collapsible>
             

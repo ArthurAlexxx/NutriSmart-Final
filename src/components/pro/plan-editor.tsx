@@ -1,267 +1,194 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { type Room } from '@/types/room';
 import { type UserProfile } from '@/types/user';
+import { type PlanTemplate } from '@/types/library';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, User, Shield, Footprints, ChevronsRight, Sparkles, Wand2, ChevronsLeft, Save } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, BrainCircuit, Rocket, Library, Download, Target, Weight, CalendarIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, arrayRemove, collection, query, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
-import { generateMealPlanAction } from '@/app/actions/ai-actions';
-import { GeneratedPlan, GeneratePlanInputSchema } from '@/lib/ai-schemas';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Checkbox } from '../ui/checkbox';
+import { format } from 'date-fns';
+import AIPlanConfirmationModal from '../ai-plan-confirmation-modal';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
-import type { ActivePlan } from '@/types/user';
+import { Calendar } from '../ui/calendar';
+import { ptBR } from 'date-fns/locale';
+import { generateMealPlanAction } from '@/app/actions/ai-actions';
 
-type Step = 'goals' | 'confirmation' | 'result';
-
-const planGeneratorSchema = GeneratePlanInputSchema.extend({
-    height: z.coerce.number().positive('A altura deve ser positiva.').optional(),
-    age: z.coerce.number().positive('A idade deve ser positiva.').optional(),
+const mealPlanItemSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'O tipo de refeição é obrigatório.'),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
+  items: z.string().min(3, 'Descreva os itens da refeição.'),
 });
-type PlanGeneratorFormValues = z.infer<typeof planGeneratorSchema>;
 
+const formSchema = z.object({
+  calorieGoal: z.coerce.number().positive('A meta de calorias deve ser positiva.'),
+  proteinGoal: z.coerce.number().positive('A meta de proteínas deve ser positiva.'),
+  hydrationGoal: z.coerce.number().positive('A meta de hidratação deve ser positiva.'),
+  weight: z.coerce.number().min(1, 'O peso deve ser maior que 0.').optional().or(z.literal(NaN)),
+  targetWeight: z.coerce.number().min(1, 'A meta de peso deve ser maior que 0.').optional().or(z.literal(NaN)),
+  targetDate: z.date().optional(),
+  meals: z.array(mealPlanItemSchema).min(0, 'Adicione pelo menos uma refeição ao plano.'),
+});
 
-const activityLevels = [
-    { id: 'sedentary', label: 'Sedentário', description: 'Pouco ou nenhum exercício' },
-    { id: 'light', label: 'Leve', description: '1-3 dias/semana' },
-    { id: 'moderate', label: 'Moderado', description: '3-5 dias/semana' },
-    { id: 'active', label: 'Ativo', description: '6-7 dias/semana' },
-    { id: 'very_active', label: 'Muito Ativo', description: 'Trabalho físico/treino intenso' },
+type PlanEditorFormValues = z.infer<typeof formSchema>;
+
+interface PlanEditorProps {
+  room?: Room;
+  userProfile?: UserProfile;
+  isFeatureLocked?: boolean;
+  onPlanSaved?: () => void;
+  isProfessional?: boolean;
+}
+
+const defaultMealValues: Omit<z.infer<typeof mealPlanItemSchema>, 'id'> = { name: '', time: '00:00', items: '' };
+
+const mealTypeOptions = [
+    { value: 'Café da Manhã', label: 'Café da Manhã' },
+    { value: 'Lanche da Manhã', label: 'Lanche da Manhã' },
+    { value: 'Almoço', label: 'Almoço' },
+    { value: 'Lanche da Tarde', label: 'Lanche da Tarde' },
+    { value: 'Jantar', label: 'Jantar' },
+    { value: 'Ceia', label: 'Ceia' },
 ];
 
-const dietaryRestrictions = [
-    { id: 'vegetarian', label: 'Vegetariano' },
-    { id: 'vegan', label: 'Vegano' },
-    { id: 'gluten-free', label: 'Sem Glúten' },
-    { id: 'lactose-free', label: 'Sem Lactose' },
-    { id: 'pescetarian', label: 'Pescetariano' },
-];
-
-const allergyOptions = [
-    { id: 'peanuts', label: 'Amendoim' },
-    { id: 'shellfish', label: 'Frutos do mar' },
-    { id: 'milk', label: 'Leite' },
-    { id: 'eggs', label: 'Ovos' },
-    { id: 'fish', label: 'Peixe' },
-    { id: 'soy', label: 'Soja' },
-    { id: 'nuts', label: 'Nozes' },
-];
-
-
-const FormStep = ({ form, onNext }: { form: any, onNext: () => void }) => {
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onNext)} id="plan-generator-form" className="space-y-8">
-                <section>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Perfil Básico</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="weight" render={({ field }) => (<FormItem><FormLabel>Peso Atual (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 75.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="targetWeight" render={({ field }) => (<FormItem><FormLabel>Peso Meta (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 70" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="height" render={({ field }) => (<FormItem><FormLabel>Altura (cm)</FormLabel><FormControl><Input type="number" placeholder="Ex: 178" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="age" render={({ field }) => (<FormItem><FormLabel>Idade</FormLabel><FormControl><Input type="number" placeholder="Ex: 30" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Gênero</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2"><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="male" /></FormControl><FormLabel className="font-normal">Masculino</FormLabel></FormItem><FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="female" /></FormControl><FormLabel className="font-normal">Feminino</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                </section>
-                <Separator />
-                <section>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Footprints className="h-5 w-5 text-primary" /> Nível de Atividade Semanal</h3>
-                    <FormField
-                        control={form.control}
-                        name="activityLevel"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <RadioGroup
-                                        onValueChange={field.onChange}
-                                        value={field.value}
-                                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
-                                    >
-                                        {activityLevels.map((item) => (
-                                            <FormItem key={item.id}>
-                                                <FormControl>
-                                                    <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
-                                                </FormControl>
-                                                <FormLabel
-                                                    htmlFor={item.id}
-                                                    className={cn(
-                                                        "flex flex-col items-center text-center justify-center rounded-md border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full transition-colors",
-                                                        field.value === item.id && "border-primary bg-primary/5"
-                                                    )}
-                                                >
-                                                    <p className="font-semibold">{item.label}</p>
-                                                    <p className="text-xs text-muted-foreground">{item.description}</p>
-                                                </FormLabel>
-                                            </FormItem>
-                                        ))}
-                                    </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </section>
-                <Separator />
-                <section>
-                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Restrições e Preferências</h3>
-                     <div className="space-y-6">
-                        <FormField control={form.control} name="dietaryRestrictions" render={() => (<FormItem><div><FormLabel className="text-base">Restrições Alimentares</FormLabel><FormDescription>Selecione todas as dietas que você segue.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{dietaryRestrictions.map((item) => (<FormField key={`diet-${item.id}`} control={form.control} name="dietaryRestrictions" render={({ field }) => {return (<FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="allergies" render={() => (<FormItem><div><FormLabel className="text-base">Alergias</FormLabel><FormDescription>Selecione ingredientes aos quais você é alérgico.</FormDescription></div><div className='grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2'>{allergyOptions.map((item) => (<FormField key={`allergy-${item.id}`} control={form.control} name="allergies" render={({ field }) => {return (<FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-secondary/30"><FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))}}/></FormControl><FormLabel className="font-normal text-sm">{item.label}</FormLabel></FormItem>)} } />))}</div><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="preferences" render={({ field }) => (<FormItem><FormLabel>Preferências ou Aversões</FormLabel><FormControl><Textarea placeholder="Ex: 'Não gosto de coentro', 'Prefiro peixe a carne vermelha', 'Gostaria de opções de café da manhã rápidas'" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     </div>
-                </section>
-            </form>
-        </Form>
-    );
-};
-
-const ConfirmationStep = ({ data }: { data: PlanGeneratorFormValues }) => {
-    
-    const getLabel = (arr: {id: string, label: string}[], id?: string) => arr.find(item => item.id === id)?.label || 'Não informado';
-
-    const renderList = (items: string[] | undefined, options: {id: string, label: string}[], defaultText: string) => {
-        if (!items || items.length === 0) return defaultText;
-        return items.map(item => getLabel(options, item)).join(', ');
-    }
-
-    return (
-        <div className="space-y-4">
-            <InfoItem title="Peso" value={`${data.weight || 'N/A'} kg`} />
-            <InfoItem title="Meta de Peso" value={`${data.targetWeight || 'N/A'} kg`} />
-            <InfoItem title="Altura" value={`${data.height || 'N/A'} cm`} />
-            <InfoItem title="Idade" value={`${data.age || 'N/A'} anos`} />
-            <InfoItem title="Nível de Atividade" value={getLabel(activityLevels, data.activityLevel)} />
-            <InfoItem title="Restrições" value={renderList(data.dietaryRestrictions, dietaryRestrictions, 'Nenhuma')} />
-            <InfoItem title="Alergias" value={renderList(data.allergies, allergyOptions, 'Nenhuma')} />
-            {data.preferences && <InfoItem title="Preferências" value={data.preferences} />}
-        </div>
-    );
-};
-
-const InfoItem = ({title, value}: {title: string, value: string}) => (
-    <div className='p-4 rounded-lg border bg-secondary/30'>
-        <p className='text-sm text-muted-foreground'>{title}</p>
-        <p className='font-semibold text-foreground'>{value}</p>
-    </div>
-);
-
-
-const ResultStep = ({ plan }: { plan: GeneratedPlan }) => {
-    return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-                <InfoItem title="Meta de Calorias" value={`${plan.calorieGoal} kcal`} />
-                <InfoItem title="Meta de Proteínas" value={`${plan.proteinGoal} g`} />
-                <InfoItem title="Meta de Hidratação" value={`${plan.hydrationGoal / 1000} L`} />
-            </div>
-            <div>
-                <h3 className="text-lg font-semibold mb-2">Refeições Sugeridas</h3>
-                <div className="space-y-3">
-                    {plan.meals.map(meal => (
-                        <div key={meal.name} className="p-4 border rounded-lg bg-secondary/30">
-                            <p className="font-semibold">{meal.name} <span className="text-sm text-muted-foreground font-normal">({meal.time})</span></p>
-                            <p className="text-muted-foreground whitespace-pre-line">{meal.items}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    )
-};
-
-
-export default function PlanEditor({ userProfile, onPlanSaved }: { userProfile: UserProfile; onPlanSaved?: () => void; }) {
+export default function PlanEditor({ room, userProfile, isFeatureLocked = false, onPlanSaved, isProfessional = false }: PlanEditorProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const [step, setStep] = useState<Step>('goals');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
+  const [isAIModalOpen, setAIModalOpen] = useState(false);
+  const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  const form = useForm<PlanGeneratorFormValues>({
-    resolver: zodResolver(planGeneratorSchema),
+  const activePlan = isProfessional ? room?.activePlan : userProfile?.activePlan;
+  
+  const calculatedProteinGoal = (calories: number) => Math.round((calories * 0.35) / 4);
+
+  const getTargetDate = () => {
+    const targetDate = isProfessional ? room?.patientInfo?.targetDate : userProfile?.targetDate;
+    if (!targetDate) return undefined;
+    return targetDate instanceof Timestamp ? targetDate.toDate() : targetDate;
+  }
+
+  const initialGoals = {
+    calorieGoal: activePlan?.calorieGoal || userProfile?.calorieGoal || 2000,
+    proteinGoal: activePlan?.proteinGoal || userProfile?.proteinGoal || calculatedProteinGoal(activePlan?.calorieGoal || userProfile?.calorieGoal || 2000),
+    hydrationGoal: activePlan?.hydrationGoal || userProfile?.waterGoal || 2000,
+    weight: (isProfessional ? room?.patientInfo.weight : userProfile?.weight) || NaN,
+    targetWeight: (isProfessional ? room?.patientInfo.targetWeight : userProfile?.targetWeight) || NaN,
+    targetDate: getTargetDate(),
+  };
+
+
+  const form = useForm<PlanEditorFormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      weight: userProfile?.weight || undefined,
-      targetWeight: userProfile?.targetWeight || undefined,
-      height: userProfile?.height || undefined,
-      age: userProfile?.age || undefined,
-      gender: userProfile?.gender || undefined,
-      activityLevel: userProfile?.activityLevel || 'moderate',
-      dietaryRestrictions: userProfile?.dietaryRestrictions || [],
-      allergies: userProfile?.allergies || [],
-      preferences: userProfile?.preferences || '',
+      ...initialGoals,
+      meals: activePlan?.meals && activePlan.meals.length > 0 ? activePlan.meals : [],
     },
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'meals',
+  });
+  
   useEffect(() => {
-    if (userProfile) {
+    if (activePlan) {
+        const targetDate = getTargetDate();
         form.reset({
-            weight: userProfile.weight || undefined,
-            targetWeight: userProfile.targetWeight || undefined,
-            height: userProfile.height || undefined,
-            age: userProfile.age || undefined,
-            gender: userProfile.gender || undefined,
-            activityLevel: userProfile.activityLevel || 'moderate',
-            dietaryRestrictions: userProfile.dietaryRestrictions || [],
-            allergies: userProfile.allergies || [],
-            preferences: userProfile.preferences || '',
-        })
+            calorieGoal: activePlan.calorieGoal,
+            proteinGoal: activePlan.proteinGoal || calculatedProteinGoal(activePlan.calorieGoal),
+            hydrationGoal: activePlan.hydrationGoal,
+            weight: (isProfessional ? room?.patientInfo.weight : userProfile?.weight) || NaN,
+            targetWeight: (isProfessional ? room?.patientInfo.targetWeight : userProfile?.targetWeight) || NaN,
+            targetDate,
+            meals: activePlan.meals || [],
+        });
     }
-  }, [userProfile, form]);
-  
+  }, [activePlan, form, isProfessional, room, userProfile]);
 
-  const handleNextStep = () => setStep('confirmation');
 
-  const handleGeneratePlan = async () => {
-    setIsGenerating(true);
-    try {
-        const data = form.getValues();
-        const plan = await generateMealPlanAction(data);
-        setGeneratedPlan(plan);
-        setStep('result');
-    } catch(error: any) {
-        toast({ title: "Erro ao Gerar Plano", description: error.message, variant: "destructive" });
-        setStep('goals');
-    } finally {
-        setIsGenerating(false);
+  const watchedCalorieGoal = form.watch('calorieGoal');
+
+  useEffect(() => {
+      const isCalorieGoalDirty = form.formState.dirtyFields.calorieGoal;
+      if (watchedCalorieGoal > 0 && isCalorieGoalDirty) {
+          const newProteinGoal = calculatedProteinGoal(watchedCalorieGoal);
+          form.setValue('proteinGoal', newProteinGoal, { shouldDirty: true });
+      }
+  }, [watchedCalorieGoal, form]);
+
+  useEffect(() => {
+    if (!isProfessional || !userProfile?.id || !firestore) return;
+
+    const templatesQuery = query(collection(firestore, 'users', userProfile.id, 'plan_templates'));
+    const unsubscribe = onSnapshot(templatesQuery, snapshot => {
+      setPlanTemplates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlanTemplate)));
+    });
+
+    return () => unsubscribe();
+  }, [isProfessional, userProfile?.id, firestore]);
+
+
+  const { isSubmitting, isDirty } = form.formState;
+
+  const onSubmit = async (data: PlanEditorFormValues) => {
+    if (isProfessional && room) {
+        await handleProfessionalSubmit(data);
+    } else if (userProfile) {
+        await handlePatientSubmit(data);
     }
-  }
-  
-  const handleSavePlan = async () => {
-    if (!generatedPlan || !userProfile?.id || !firestore) return;
+  };
 
-    setIsSaving(true);
+  const handlePatientSubmit = async (data: PlanEditorFormValues) => {
+    if (!userProfile?.id || !firestore) return;
+    
     try {
-      const userRef = doc(firestore, 'users', userProfile.id);
-      const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
-      
-      const profileData = form.getValues();
-      await updateDoc(userRef, { ...profileData });
-      
-      const newActivePlan: ActivePlan = {
-          name: 'Plano Gerado por IA',
-          ...generatedPlan,
-          createdAt: serverTimestamp(),
-      };
+        const userRef = doc(firestore, 'users', userProfile.id);
+        const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
+        
+        await updateDoc(userRef, {
+            calorieGoal: data.calorieGoal,
+            proteinGoal: data.proteinGoal,
+            waterGoal: data.hydrationGoal,
+            weight: data.weight,
+            targetWeight: data.targetWeight,
+            targetDate: data.targetDate,
+        });
 
-      await setDoc(planRef, newActivePlan);
+        const newActivePlan = {
+            calorieGoal: data.calorieGoal,
+            proteinGoal: data.proteinGoal,
+            hydrationGoal: data.hydrationGoal,
+            meals: data.meals,
+            createdAt: serverTimestamp(),
+            name: "Meu Plano (IA)"
+        };
+        await setDoc(planRef, newActivePlan);
 
-      toast({
-          title: "Plano Salvo!",
-          description: `Seu novo plano alimentar foi salvo e ativado.`,
-      });
-      setStep('goals');
-      if (onPlanSaved) onPlanSaved();
+
+        toast({
+            title: "Plano Salvo!",
+            description: `Seu plano alimentar pessoal foi salvo com sucesso.`,
+        });
+        form.reset(data);
+        if (onPlanSaved) onPlanSaved();
 
     } catch (error: any) {
          toast({
@@ -269,64 +196,368 @@ export default function PlanEditor({ userProfile, onPlanSaved }: { userProfile: 
             description: error.message || "Não foi possível salvar seu plano.",
             variant: "destructive",
         });
+    }
+  }
+  
+  const handleProfessionalSubmit = async (data: PlanEditorFormValues) => {
+     if(!room || !firestore) return;
+     try {
+        const roomRef = doc(firestore, 'rooms', room.id);
+        const roomDoc = await getDoc(roomRef);
+        if (!roomDoc.exists()) {
+            throw new Error("Sala não encontrada.");
+        }
+        const roomData = roomDoc.data();
+        const oldPlan = roomData.activePlan;
+
+        const updatedActivePlan = {
+            name: `Plano de ${room.patientInfo.name}`,
+            calorieGoal: data.calorieGoal,
+            proteinGoal: data.proteinGoal,
+            hydrationGoal: data.hydrationGoal,
+            meals: data.meals,
+            createdAt: serverTimestamp(),
+        };
+
+        await updateDoc(roomRef, {
+            activePlan: updatedActivePlan,
+            planHistory: oldPlan && oldPlan.meals.length > 0 ? arrayUnion(oldPlan) : arrayUnion(),
+            'patientInfo.weight': data.weight,
+            'patientInfo.targetWeight': data.targetWeight,
+            'patientInfo.targetDate': data.targetDate ? Timestamp.fromDate(data.targetDate) : null,
+        });
+
+        toast({
+            title: "Plano Atualizado!",
+            description: `O plano de ${room.patientInfo.name} foi salvo com sucesso.`,
+        });
+        form.reset(data);
+    } catch(error: any) {
+        toast({
+            title: "Erro ao atualizar",
+            description: error.message || "Não foi possível salvar o plano.",
+            variant: "destructive",
+        });
+    }
+  };
+  
+    const handleRemoveMeal = (index: number) => {
+    if (!firestore) return;
+    
+    const mealToRemove = { ...fields[index] };
+    
+    remove(index);
+
+    const dataToSave = form.getValues();
+    const newMeals = dataToSave.meals.filter((_, i) => i !== index);
+
+    if (isProfessional && room) {
+        const roomRef = doc(firestore, 'rooms', room.id);
+        updateDoc(roomRef, { 'activePlan.meals': newMeals }).catch(error => {
+            append(mealToRemove, { shouldFocus: false }); 
+            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
+        });
+    } else if (!isProfessional && userProfile) {
+        const userRef = doc(firestore, 'users', userProfile.id);
+        updateDoc(userRef, { 'activePlan.meals': newMeals }).catch(error => {
+            append(mealToRemove, { shouldFocus: false });
+            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
+        });
+    }
+
+    toast({
+        title: "Refeição Removida",
+        description: "A refeição foi removida do seu plano.",
+    });
+  };
+
+  const handleClearPlan = async () => {
+    if (!isProfessional || !room || !firestore) return;
+    try {
+        const roomRef = doc(firestore, 'rooms', room.id);
+        const roomDoc = await getDoc(roomRef);
+        if (!roomDoc.exists()) throw new Error("Sala não encontrada.");
+
+        const roomData = roomDoc.data();
+        const oldPlan = roomData.activePlan;
+        
+        const patientRef = doc(firestore, 'users', roomData.patientId);
+        const patientDoc = await getDoc(patientRef);
+        const patientData = patientDoc.exists() ? patientDoc.data() : {};
+
+        const newActivePlan = {
+          meals: [],
+          calorieGoal: patientData?.calorieGoal || 2000,
+          proteinGoal: patientData?.proteinGoal || 140,
+          hydrationGoal: patientData?.waterGoal || 2000,
+          createdAt: serverTimestamp(),
+        };
+
+        await updateDoc(roomRef, {
+            activePlan: newActivePlan,
+            planHistory: arrayUnion(oldPlan),
+        });
+        
+        form.reset({
+            calorieGoal: newActivePlan.calorieGoal,
+            proteinGoal: newActivePlan.proteinGoal,
+            hydrationGoal: newActivePlan.hydrationGoal,
+            meals: [],
+        });
+
+        toast({
+            title: "Plano Limpo!",
+            description: "O plano alimentar foi removido. O paciente voltará a usar suas metas pessoais.",
+        });
+
+    } catch (error: any) {
+        toast({
+            title: "Erro ao Limpar Plano",
+            description: error.message || "Não foi possível remover o plano.",
+            variant: "destructive",
+        });
+    }
+  };
+
+  const handleConfirmAIPlan = async () => {
+    setAIModalOpen(false);
+    setIsGenerating(true);
+    toast({
+        title: "Gerando seu plano...",
+        description: "Aguarde enquanto a IA prepara um plano alimentar personalizado."
+    });
+    
+    try {
+        const formValues = form.getValues();
+        
+        const payload = {
+            calorieGoal: formValues.calorieGoal,
+            proteinGoal: formValues.proteinGoal,
+            hydrationGoal: formValues.hydrationGoal,
+            weight: formValues.weight,
+            targetWeight: formValues.targetWeight,
+            targetDate: formValues.targetDate ? formValues.targetDate.toISOString().split('T')[0] : undefined,
+        };
+
+        const generatedPlan = await generateMealPlanAction(payload);
+        
+        const parsedPlan = formSchema.safeParse(generatedPlan);
+
+        if (parsedPlan.success) {
+            const data = parsedPlan.data;
+            await onSubmit(data);
+            
+            toast({
+                title: "Plano Gerado e Salvo!",
+                description: "O novo plano foi criado e salvo.",
+            });
+        } else {
+             console.error("Zod validation error:", parsedPlan.error);
+             throw new Error('Os dados retornados pela IA não estão no formato correto.');
+        }
+
+    } catch (error: any) {
+        console.error("Erro ao gerar plano com IA:", error);
+        toast({
+            title: "Erro na Geração do Plano",
+            description: error.message || "Não foi possível gerar o plano. Tente novamente.",
+            variant: "destructive",
+        });
     } finally {
-        setIsSaving(false);
+        setIsGenerating(false);
     }
   };
 
 
-  const stepTitles = {
-      goals: { title: "Assistente de Plano IA", description: "Siga as etapas para que nossa IA crie o plano alimentar perfeito para você." },
-      confirmation: { title: "Confirme seus Dados", description: "Revise as informações antes de gerarmos seu plano." },
-      result: { title: "Plano Gerado pela IA", description: "Este é o plano que a IA criou. Você pode salvá-lo ou gerar um novo." },
-  }
+    const handleApplyTemplate = () => {
+        if (!selectedTemplate) return;
+        const template = planTemplates.find(t => t.id === selectedTemplate);
+        if (!template) return;
 
-  const currentStepInfo = stepTitles[step];
+        form.setValue('calorieGoal', template.calorieGoal, { shouldDirty: true });
+        form.setValue('proteinGoal', calculatedProteinGoal(template.calorieGoal), { shouldDirty: true });
+        form.setValue('hydrationGoal', template.hydrationGoal, { shouldDirty: true });
+        form.setValue('meals', template.meals, { shouldDirty: true });
 
+        toast({
+            title: "Modelo Aplicado!",
+            description: `O modelo "${template.name}" foi carregado no editor.`,
+        });
+    };
 
   return (
+    <>
     <div className="animate-fade-in max-w-4xl mx-auto">
-        <Card>
-            <CardHeader className="text-center">
-                <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-3 mb-3 mx-auto w-fit">
-                    <Wand2 className="h-7 w-7" />
-                </div>
-                <CardTitle className="text-3xl font-bold font-heading">{currentStepInfo.title}</CardTitle>
-                <CardDescription className="max-w-2xl mx-auto">{currentStepInfo.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {step === 'goals' && <FormStep form={form} onNext={handleNextStep} />}
-                {step === 'confirmation' && <ConfirmationStep data={form.getValues()} />}
-                {step === 'result' && generatedPlan && <ResultStep plan={generatedPlan} />}
-            </CardContent>
-            <CardFooter className="flex justify-between items-center border-t pt-6">
-                <div>
-                   {step !== 'goals' && (
-                        <Button variant="outline" onClick={() => setStep(step === 'result' ? 'confirmation' : 'goals')} disabled={isGenerating || isSaving}>
-                             <ChevronsLeft className="mr-2 h-4 w-4" /> Voltar
-                        </Button>
-                   )}
-                </div>
-                <div>
-                    {step === 'goals' && <Button type="submit" form="plan-generator-form">Próximo <ChevronsRight className="ml-2 h-4 w-4" /></Button>}
-                    {step === 'confirmation' && (
-                        <Button onClick={handleGeneratePlan} disabled={isGenerating}>
-                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                            Gerar Plano com IA
-                        </Button>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                 <Tabs defaultValue="goals" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                        <TabsTrigger value="goals"><Target className="mr-2 h-4 w-4"/>Metas</TabsTrigger>
+                        <TabsTrigger value="meals"><Utensils className="mr-2 h-4 w-4"/>Refeições</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="goals">
+                        <Card className="shadow-sm rounded-2xl">
+                            <CardHeader>
+                                <CardTitle>Definição de Metas</CardTitle>
+                                <CardDescription>Ajuste as metas diárias e de peso. Estes dados serão usados para gerar planos com a IA.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <h4 className='font-semibold text-foreground flex items-center gap-2'><Weight className='h-5 w-5' /> Acompanhamento de Peso</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="weight" render={({ field }) => (
+                                        <FormItem><FormLabel>Peso Atual (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 75.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="targetWeight" render={({ field }) => (
+                                        <FormItem><FormLabel>Peso Meta (kg)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="Ex: 70" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
+                                <FormField control={form.control} name="targetDate" render={({ field }) => (
+                                    <FormItem className='flex flex-col py-1'><FormLabel>Data para Atingir a Meta</FormLabel>
+                                    <Popover><PopoverTrigger asChild><FormControl>
+                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")} disabled={isFeatureLocked}>
+                                            {field.value ? (format(field.value, "PPP", { locale: ptBR })) : (<span>Escolha uma data</span>)}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date() || date < new Date("1900-01-01")} initialFocus/>
+                                    </PopoverContent></Popover><FormMessage /></FormItem>
+                                )}/>
+                                <Separator />
+                                <h4 className='font-semibold text-foreground pt-2 flex items-center gap-2'><Target className='h-5 w-5' /> Metas Diárias de Consumo</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <FormField control={form.control} name="calorieGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="proteinGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Droplet className='h-4 w-4 text-sky-500'/>Água (ml)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        {!isProfessional && (
+                          <div className='flex justify-end pt-6'>
+                              <Button type="button" onClick={() => setAIModalOpen(true)} disabled={isGenerating || isFeatureLocked}>
+                                  {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
+                                  Gerar Refeições com IA
+                              </Button>
+                          </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="meals">
+                        <Card className="shadow-sm rounded-2xl">
+                             <CardHeader>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <CardTitle>Editor de Refeições</CardTitle>
+                                        <CardDescription>Adicione, edite ou remova as refeições do plano.</CardDescription>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => append(defaultMealValues)} disabled={isFeatureLocked}><Plus className="mr-2 h-4 w-4" /> Nova Refeição</Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {fields.length === 0 ? (
+                                    <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed min-h-[200px] flex flex-col justify-center items-center">
+                                        <p className="font-medium text-muted-foreground">Nenhuma refeição adicionada.</p>
+                                        <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Refeição" ou use a IA na aba "Metas" para começar.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {fields.map((field, index) => (
+                                            <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-background shadow-sm">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <FormField control={form.control} name={`meals.${index}.name`} render={({ field }) => (
+                                                        <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFeatureLocked}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um tipo" /></SelectTrigger></FormControl><SelectContent>{mealTypeOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                                                    )}/>
+                                                    <FormField control={form.control} name={`meals.${index}.time`} render={({ field }) => (
+                                                        <FormItem><FormLabel>Horário</FormLabel><FormControl><Input type="time" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                                    )}/>
+                                                </div>
+                                                <FormField control={form.control} name={`meals.${index}.items`} render={({ field }) => (
+                                                    <FormItem><FormLabel>Itens da Refeição</FormLabel><FormControl><Textarea placeholder="Ex: 2 ovos, 1 fatia de pão integral com abacate..." {...field} rows={3} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
+                                                )}/>
+                                                {fields.length > 0 && (
+                                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveMeal(index)} disabled={isFeatureLocked}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {form.formState.errors.meals?.root && <FormMessage>{form.formState.errors.meals.root.message}</FormMessage>}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                        {isProfessional && (
+                             <Card className="mt-6 shadow-sm rounded-2xl">
+                                <CardHeader>
+                                     <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-semibold text-foreground">Carregar Modelo</h3>
+                                            <p className="text-sm text-muted-foreground">Poupe tempo aplicando um plano da sua biblioteca.</p>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <Select onValueChange={setSelectedTemplate} disabled={planTemplates.length === 0 || isFeatureLocked}>
+                                        <SelectTrigger><SelectValue placeholder="Selecione um modelo..." /></SelectTrigger>
+                                        <SelectContent>{planTemplates.map(template => (<SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>))}</SelectContent>
+                                    </Select>
+                                     <AlertDialog><AlertDialogTrigger asChild>
+                                        <Button type="button" className="w-full" disabled={!selectedTemplate || isFeatureLocked}><Download className="mr-2 h-4 w-4" /> Carregar Modelo</Button>
+                                     </AlertDialogTrigger><AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Confirmar Ação</AlertDialogTitle><AlertDialogDescription>Isso substituirá as refeições atuais não salvas pelas informações do modelo selecionado. As metas não serão alteradas. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => {if(selectedTemplate) {const template = planTemplates.find(t=>t.id===selectedTemplate); if(template) {form.setValue('meals', template.meals, {shouldDirty: true}); toast({title: "Modelo Aplicado!", description: `As refeições do modelo "${template.name}" foram carregadas.`});}}}}>Continuar</AlertDialogAction></AlertDialogFooter>
+                                     </AlertDialogContent></AlertDialog>
+                                </CardContent>
+                             </Card>
+                         )}
+                    </TabsContent>
+                 </Tabs>
+
+                <div className='flex flex-col-reverse sm:flex-row sm:justify-end sm:items-center gap-4 mt-8'>
+                    {isProfessional && (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                 <Button type="button" variant="destructive" className="mr-auto" disabled={isFeatureLocked}>
+                                    <RotateCcw className="mr-2 h-4 w-4" /> Limpar Plano
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação removerá todas as refeições do plano ativo e reverterá as metas de calorias e hidratação para as definidas pelo paciente. O plano atual será salvo no histórico.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleClearPlan} className="bg-destructive hover:bg-destructive/90">Confirmar Limpeza</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
-                    {step === 'result' && (
-                         <div className="flex gap-2">
-                             <Button variant="outline" onClick={() => setStep('confirmation')} disabled={isSaving}>Gerar Novamente</Button>
-                             <Button onClick={handleSavePlan} disabled={isSaving}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Salvar Plano
-                            </Button>
-                         </div>
-                    )}
+                    
+                    <Button type="submit" disabled={isSubmitting || !isDirty || isFeatureLocked}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Salvar Alterações
+                    </Button>
                 </div>
-            </CardFooter>
-        </Card>
+            </form>
+        </Form>
     </div>
+    <AIPlanConfirmationModal
+        isOpen={isAIModalOpen}
+        onOpenChange={setAIModalOpen}
+        onConfirm={handleConfirmAIPlan}
+        data={form.getValues()}
+        isLoading={isGenerating}
+        form={form}
+    />
+    </>
   );
 }

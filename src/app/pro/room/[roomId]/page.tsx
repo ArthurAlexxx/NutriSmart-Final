@@ -229,7 +229,7 @@ export default function RoomDetailPage() {
                 />
             </TabsContent>
             <TabsContent value="plan">
-                {room && userProfile && <PlanEditor room={room} userProfile={userProfile} />}
+                {room && userProfile && <PlanEditor room={room} isProfessional={true} />}
             </TabsContent>
              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0">
                  {room && user && userProfile && <ChatRoom 
