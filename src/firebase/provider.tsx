@@ -101,8 +101,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                     const newShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
                     console.log(`Generating missing share code for user ${profileData.id}: ${newShareCode}`);
                     await updateDoc(userRef, { dashboardShareCode: newShareCode });
-                    // The onSnapshot listener will re-trigger with the updated data, so no need to set state here.
-                    return; // Exit to avoid setting state with incomplete data
+                    // The onSnapshot listener will re-trigger with the updated data, so we just return here.
+                    // This prevents the app from using the incomplete profile for a fraction of a second.
+                    return; 
                 }
                 
                 setUserAuthState(prevState => ({ 
