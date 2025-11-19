@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
@@ -16,10 +16,10 @@ import DashboardHeader from './dashboard-header';
 import { Separator } from './ui/separator';
 import { Skeleton } from './ui/skeleton';
 import { signOut } from 'firebase/auth';
-import { useAuth } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import ProfileSettingsModal from './profile-settings-modal';
+import { differenceInDays, differenceInHours } from 'date-fns';
 
 interface AppLayoutProps {
   user: User | null;
@@ -81,6 +81,30 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
     </div>
 );
 
+const TrialCountdown = ({ expiryDate }: { expiryDate: Date }) => {
+    const now = new Date();
+    const daysLeft = differenceInDays(expiryDate, now);
+    const hoursLeft = differenceInHours(expiryDate, now) % 24;
+
+    let countdownText = '';
+    if (daysLeft > 0) {
+        countdownText = `${daysLeft}d ${hoursLeft}h restantes`;
+    } else if (hoursLeft > 0) {
+        countdownText = `${hoursLeft}h restantes`;
+    } else {
+        countdownText = 'Trial expirado';
+    }
+
+    return (
+        <div className='px-6 mt-auto mb-4'>
+            <div className='p-3 rounded-lg bg-primary/10 text-primary text-center'>
+                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> Período de Teste</p>
+                <p className='text-xs font-medium'>{countdownText}</p>
+            </div>
+        </div>
+    )
+}
+
 const LogoDisplay = () => {
     return <span className="text-xl font-semibold">NutriSmart</span>;
 };
@@ -92,6 +116,15 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const auth = useAuth();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+
+  const { effectiveSubscriptionStatus } = useUser();
+
+  useEffect(() => {
+    // Redirect expired professionals from pro pages to the standard dashboard
+    if (userProfile?.profileType === 'professional' && effectiveSubscriptionStatus === 'free' && pathname.startsWith('/pro')) {
+        router.replace('/dashboard');
+    }
+  }, [userProfile, effectiveSubscriptionStatus, pathname, router]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -106,7 +139,10 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   const isProUser = userProfile?.profileType === 'professional';
   const isChefPage = pathname === '/chef';
-  const isFreeUser = userProfile?.subscriptionStatus === 'free';
+  const isFreeUser = effectiveSubscriptionStatus === 'free';
+  
+  const expiryDate = useMemo(() => userProfile?.subscriptionExpiresAt ? (userProfile.subscriptionExpiresAt as any).toDate() : null, [userProfile]);
+  const isTrialingPro = isProUser && userProfile?.subscriptionStatus === 'free' && expiryDate && expiryDate > new Date();
   
   const renderNavLinks = (isMobile = false) => {
     const navLinkProps = (item: any) => ({
@@ -116,13 +152,13 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       disabled: false 
     });
 
-    const isSubscribedPro = userProfile?.subscriptionStatus === 'professional';
+    const isProSubscribed = effectiveSubscriptionStatus === 'professional';
 
     if (isProUser) {
         return (
           <>
             <NavSection title="Menu Profissional">
-              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isSubscribedPro && item.href !== '/pro/webhooks'}/>)}
+              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isProSubscribed && !isTrialingPro}/>)}
             </NavSection>
             <Separator className="my-4" />
             <NavSection title="Uso Pessoal">
@@ -139,20 +175,25 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     );
   };
 
+  const SidebarContent = ({ isMobile = false }) => (
+    <>
+      <div className="flex-1 py-4 overflow-y-auto">
+        {renderNavLinks(isMobile)}
+      </div>
+      {isTrialingPro && expiryDate && <TrialCountdown expiryDate={expiryDate} />}
+    </>
+  );
+
   return (
     <>
       <div className={cn("grid h-screen w-full md:grid-cols-[260px_1fr]", isChefPage ? "min-h-dvh" : "")}>
-        <div className="hidden border-r bg-sidebar-background md:block no-print">
-          <div className="flex h-full max-h-screen flex-col">
+        <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
               <Link href="/" className="flex items-center gap-2 font-semibold">
                 <LogoDisplay />
               </Link>
             </div>
-            <div className="flex-1 py-4 overflow-y-auto">
-              {renderNavLinks()}
-            </div>
-          </div>
+            <SidebarContent />
         </div>
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print">
@@ -178,9 +219,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                           </SheetClose>
                           <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
                       </SheetHeader>
-                      <div className="flex-1 overflow-y-auto py-4">
-                          {renderNavLinks(true)}
-                      </div>
+                      <SidebarContent isMobile />
                        <div className="mt-auto border-t p-2">
                            <button 
                                 onClick={() => {
@@ -210,7 +249,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 <DashboardHeader
                     user={user}
                     userProfile={userProfile}
-                    onProfileUpdate={onProfileUpdate}
                 />
               </div>
           </header>

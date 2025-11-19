@@ -8,12 +8,18 @@ import { Firestore, doc, onSnapshot, updateDoc, setDoc, serverTimestamp, Timesta
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 import type { UserProfile } from '@/types/user';
+import { addDays } from 'date-fns';
 
 interface FirebaseProviderProps {
   children: ReactNode;
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
+}
+
+// Define uma interface para o estado derivado da assinatura
+interface EffectiveSubscriptionState {
+  effectiveSubscriptionStatus: 'free' | 'premium' | 'professional';
 }
 
 // Internal state for user authentication
@@ -25,7 +31,7 @@ interface UserAuthState {
 }
 
 // Combined state for the Firebase context
-export interface FirebaseContextState extends UserAuthState {
+export interface FirebaseContextState extends UserAuthState, EffectiveSubscriptionState {
   areServicesAvailable: boolean; 
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
@@ -34,7 +40,7 @@ export interface FirebaseContextState extends UserAuthState {
 }
 
 // Return type for useUser() - specific to user auth state
-export interface UserHookResult extends UserAuthState { 
+export interface UserHookResult extends UserAuthState, EffectiveSubscriptionState { 
   onProfileUpdate: (updatedProfile: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -170,6 +176,27 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
+    
+    // Calculate effective subscription status
+    const profile = userAuthState.userProfile;
+    let effectiveStatus: EffectiveSubscriptionState['effectiveSubscriptionStatus'] = 'free';
+
+    if (profile) {
+        const storedStatus = profile.subscriptionStatus || 'free';
+        const expiresAt = profile.subscriptionExpiresAt ? (profile.subscriptionExpiresAt as any).toDate() : null;
+
+        if (storedStatus !== 'free') {
+            if (expiresAt && expiresAt > new Date()) {
+                effectiveStatus = storedStatus;
+            }
+        }
+        // Special case for professionals on trial
+        else if (profile.profileType === 'professional' && storedStatus === 'free' && expiresAt && expiresAt > new Date()) {
+            effectiveStatus = 'professional'; // Grant pro access during trial
+        }
+    }
+
+
     return {
       areServicesAvailable: servicesAvailable,
       firebaseApp: servicesAvailable ? firebaseApp : null,
@@ -179,6 +206,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       userProfile: userAuthState.userProfile,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
+      effectiveSubscriptionStatus: effectiveStatus,
       onProfileUpdate: handleProfileUpdate,
     };
   }, [firebaseApp, firestore, auth, userAuthState]);
@@ -203,7 +231,7 @@ export const useFirebaseContext = (): FirebaseContextState => {
     return context;
 }
 
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'userProfile' | 'isUserLoading' | 'userError' | 'onProfileUpdate' | 'areServicesAvailable'> => {
+export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'userProfile' | 'isUserLoading' | 'userError' | 'onProfileUpdate' | 'areServicesAvailable' | 'effectiveSubscriptionStatus'> => {
   const context = useFirebaseContext();
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
@@ -250,6 +278,6 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
  * @returns {UserHookResult} Object with user, userProfile, isUserLoading, userError, and onProfileUpdate.
  */
 export const useUser = (): UserHookResult => {
-  const { user, userProfile, isUserLoading, userError, onProfileUpdate } = useFirebaseContext();
-  return { user, userProfile, isUserLoading, userError, onProfileUpdate };
+  const { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus } = useFirebaseContext();
+  return { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus };
 };

@@ -44,6 +44,7 @@ export interface UserProfile {
     waterGoal?: number;
 
     subscriptionStatus?: 'premium' | 'free' | 'professional';
+    subscriptionExpiresAt?: Timestamp | { seconds: number; nanoseconds: number; };
     photoAnalysisCount?: number;
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
 }

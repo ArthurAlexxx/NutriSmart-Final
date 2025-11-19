@@ -1,3 +1,4 @@
+
 // src/app/register/page.tsx
 'use client';
 
@@ -15,11 +16,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2 } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Users, Stethoscope } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/types';
+import { addDays } from 'date-fns';
 
 
 const registerSchema = z.object({
@@ -105,6 +107,12 @@ function RegisterForm() {
       if (data.profileType === 'patient') {
           const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
           newUserProfile.dashboardShareCode = shareCode;
+      }
+
+      if (data.profileType === 'professional') {
+        // Set a 2-day trial period for new professionals
+        const trialEndDate = addDays(new Date(), 2);
+        newUserProfile.subscriptionExpiresAt = Timestamp.fromDate(trialEndDate);
       }
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});

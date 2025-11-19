@@ -1,3 +1,4 @@
+
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
@@ -16,10 +17,9 @@ import ProfileSettingsModal from './profile-settings-modal';
 interface DashboardHeaderProps {
   user: User | null;
   userProfile: UserProfile | null;
-  onProfileUpdate: (updatedProfile: Partial<UserProfile>) => void;
 }
 
-export default function DashboardHeader({ user, userProfile, onProfileUpdate }: DashboardHeaderProps) {
+export default function DashboardHeader({ user, userProfile }: DashboardHeaderProps) {
   const router = useRouter();
   const auth = useAuth();
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);

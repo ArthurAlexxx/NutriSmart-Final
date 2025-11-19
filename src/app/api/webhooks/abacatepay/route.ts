@@ -1,3 +1,4 @@
+
 // src/app/api/webhooks/abacatepay/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -66,22 +67,23 @@ function verifyAbacateSignature(rawBody: string, signatureFromHeader: string): b
 /**
  * Busca de forma flexível pelos metadados dentro do payload do evento.
  */
-function findMetadata(eventData: any): { externalId: string, plan: 'PREMIUM' | 'PROFISSIONAL' } | null {
+function findMetadata(eventData: any): { externalId: string, plan: 'PREMIUM' | 'PROFISSIONAL', billingCycle: 'monthly' | 'yearly' } | null {
     if (!eventData) return null;
 
     // Based on the AbacatePay docs, the metadata for a PIX payment is here:
     const metadataPath = eventData.pixQrCode?.metadata;
     
-    if (metadataPath && metadataPath.externalId && metadataPath.plan) {
+    if (metadataPath && metadataPath.externalId && metadataPath.plan && metadataPath.billingCycle) {
         return {
             externalId: metadataPath.externalId,
             plan: metadataPath.plan,
+            billingCycle: metadataPath.billingCycle,
         };
     }
     
     // Fallback for other potential structures, though less likely for billing.paid
     const fallbackPath = eventData.metadata || eventData.charge?.metadata;
-     if (fallbackPath && fallbackPath.externalId && fallbackPath.plan) {
+     if (fallbackPath && fallbackPath.externalId && fallbackPath.plan && fallbackPath.billingCycle) {
         return fallbackPath;
     }
     
@@ -101,13 +103,14 @@ async function handlePayment(event: any) {
 
     const metadata = findMetadata(event.data);
     
-    if (metadata && metadata.externalId && metadata.plan) {
+    if (metadata && metadata.externalId && metadata.plan && metadata.billingCycle) {
         const userId = metadata.externalId;
         const planName = metadata.plan;
+        const billingCycle = metadata.billingCycle;
 
         try {
             // Use the Server Action to ensure we are using the admin context
-            const updateResult = await updateUserSubscriptionAction(userId, planName);
+            const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
             } else {
@@ -122,7 +125,7 @@ async function handlePayment(event: any) {
         }
 
     } else {
-        const message = 'Metadados cruciais (externalId ou plan) não encontrados no payload do webhook.';
+        const message = 'Metadados cruciais (externalId, plan ou billingCycle) não encontrados no payload do webhook.';
         console.warn(message, { payloadData: event.data });
         await saveWebhookLog(event, 'FAILURE', message);
         throw new Error(message);

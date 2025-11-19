@@ -1,32 +1,48 @@
+
 // src/app/actions/billing-actions.ts
 'use server';
 import { db } from '@/lib/firebase/admin';
 import type { UserProfile } from '@/types/user';
-
+import { Timestamp } from 'firebase-admin/firestore';
+import { addMonths, addYears } from 'date-fns';
 
 /**
  * Updates a user's subscription status in Firestore.
  * This action is called by a trusted server process (like a webhook) which has admin privileges.
  * @param userId - The ID of the user to update.
  * @param planName - The name of the plan to assign ('PREMIUM' or 'PROFISSIONAL').
+ * @param billingCycle - The billing cycle ('monthly' or 'yearly').
  * @returns An object indicating success or failure.
  */
-export async function updateUserSubscriptionAction(userId: string, planName: 'PREMIUM' | 'PROFISSIONAL'): Promise<{ success: boolean; message: string }> {
-  if (!userId || !planName) {
-    return { success: false, message: 'User ID ou nome do plano inválido.' };
+export async function updateUserSubscriptionAction(
+    userId: string, 
+    planName: 'PREMIUM' | 'PROFISSIONAL',
+    billingCycle: 'monthly' | 'yearly'
+): Promise<{ success: boolean; message: string }> {
+  if (!userId || !planName || !billingCycle) {
+    return { success: false, message: 'User ID, nome do plano ou ciclo de cobrança inválido.' };
   }
 
-  let newSubscriptionStatus: 'premium' | 'professional' = 'premium';
+  let newSubscriptionStatus: 'premium' | 'professional';
   if (planName === 'PREMIUM') {
     newSubscriptionStatus = 'premium';
   } else if (planName === 'PROFISSIONAL') {
     newSubscriptionStatus = 'professional';
+  } else {
+    return { success: false, message: 'Nome do plano desconhecido.'};
   }
+
+  const now = new Date();
+  const expirationDate = billingCycle === 'yearly' ? addYears(now, 1) : addMonths(now, 1);
+  const expirationTimestamp = Timestamp.fromDate(expirationDate);
 
   try {
     const userRef = db.collection('users').doc(userId);
-    await userRef.update({ subscriptionStatus: newSubscriptionStatus });
-    const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`;
+    await userRef.update({ 
+        subscriptionStatus: newSubscriptionStatus,
+        subscriptionExpiresAt: expirationTimestamp,
+    });
+    const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus} até ${expirationDate.toLocaleDateString('pt-BR')}.`;
     console.log(successMessage);
     return { success: true, message: successMessage };
   } catch (error: any) {
@@ -76,10 +92,11 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         }
         
         const planName = metadata.plan as 'PREMIUM' | 'PROFISSIONAL';
+        const billingCycle = metadata.billingCycle as 'monthly' | 'yearly';
         
         // 2. Update user document in Firestore using the Admin SDK
         // This leverages the server's admin privileges via our robust admin initialization.
-        const updateResult = await updateUserSubscriptionAction(userId, planName);
+        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
 
         if (updateResult.success) {
             return { success: true, message: `Assinatura atualizada para ${planName} com sucesso.` };
