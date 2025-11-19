@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
@@ -20,6 +20,8 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { cancelSubscriptionAction } from '@/app/actions/billing-actions';
 
 const formSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -43,6 +45,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const router = useRouter();
 
   const [isCopied, setIsCopied] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(formSchema),
@@ -106,6 +109,23 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     toast({ title: 'Código Copiado!', description: 'Você pode enviar este código para seu nutricionista.'});
     setTimeout(() => setIsCopied(false), 3000);
   };
+  
+  const handleCancelSubscription = async () => {
+    setIsCancelling(true);
+    try {
+        const result = await cancelSubscriptionAction(userId);
+        if (result.success) {
+            toast({ title: "Assinatura Cancelada", description: "Seu plano foi revertido para gratuito." });
+            onOpenChange(false);
+        } else {
+            throw new Error(result.message);
+        }
+    } catch(error: any) {
+         toast({ title: "Erro ao Cancelar", description: error.message || "Não foi possível cancelar a assinatura.", variant: 'destructive' });
+    } finally {
+        setIsCancelling(false);
+    }
+  }
 
   const tabsToShow = userProfile.profileType === 'patient' ? ['personal-data', 'sharing', 'subscription'] : ['personal-data', 'subscription'];
 
@@ -203,6 +223,36 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 <Link href="/pricing">Gerenciar Assinatura</Link>
                             </Button>
                         </div>
+                         {effectiveSubscriptionStatus !== 'free' && (
+                             <div className='pt-6 border-t mt-6'>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" className="text-destructive hover:text-destructive">
+                                            <XCircle className="mr-2 h-4 w-4" />
+                                            Cancelar Assinatura
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Ao cancelar, você perderá o acesso aos recursos premium no final do ciclo de cobrança atual. Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleCancelSubscription}
+                                                disabled={isCancelling}
+                                                className='bg-destructive hover:bg-destructive/90'
+                                            >
+                                                {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Confirmar Cancelamento'}
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        )}
                     </div>
                 </TabsContent>
             </div>

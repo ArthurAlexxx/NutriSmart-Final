@@ -1,4 +1,3 @@
-
 // src/app/actions/billing-actions.ts
 'use server';
 import { db } from '@/lib/firebase/admin';
@@ -108,4 +107,31 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         console.error("Erro ao finalizar a assinatura:", error);
         return { success: false, message: error.message || "Erro desconhecido ao finalizar a assinatura." };
     }
+}
+
+
+/**
+ * Cancels a user's subscription, reverting them to the 'free' plan.
+ * @param userId - The ID of the user to update.
+ * @returns An object indicating success or failure.
+ */
+export async function cancelSubscriptionAction(userId: string): Promise<{ success: boolean; message: string }> {
+  if (!userId) {
+    return { success: false, message: 'ID do usuário não fornecido.' };
+  }
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    // Revert to 'free' and remove the expiration date.
+    await userRef.update({ 
+        subscriptionStatus: 'free',
+        subscriptionExpiresAt: null, // or FieldValue.delete()
+    });
+    
+    return { success: true, message: 'Assinatura cancelada com sucesso.' };
+  } catch (error: any) {
+    const errorMessage = `Falha ao cancelar a assinatura para o usuário ${userId}: ${error.message}`;
+    console.error(errorMessage, error);
+    return Promise.reject(new Error(errorMessage));
+  }
 }
