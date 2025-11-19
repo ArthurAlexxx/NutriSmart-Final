@@ -1,3 +1,4 @@
+
 declare module "lucide-react" {
     import {SVGProps, FC} from "react";
   
@@ -28,6 +29,7 @@ declare module "lucide-react" {
     export const CalendarX: Icon;
     export const CaseSensitive: Icon;
     export const Check: Icon;
+    export const CheckCircle: Icon;
     export const CheckSquare: Icon;
     export const ChefHat: Icon;
     export const ChevronDown: Icon;
@@ -94,6 +96,7 @@ declare module "lucide-react" {
     export const UserX: Icon;
     export const Users: Icon;
     export const Utensils: Icon;
+    export const Webhook: Icon;
     export const Weight: Icon;
     export const Wheat: Icon;
     export const X: Icon;

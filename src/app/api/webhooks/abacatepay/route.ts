@@ -1,38 +1,34 @@
+// src/app/api/webhooks/abacatepay/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import * as crypto from 'crypto';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
+  const webhookLogRef = db.collection('webhook_logs').doc();
+
   try {
     const signature = request.headers.get('abacate-signature');
     const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
-      return NextResponse.json({ error: 'Configuração de segurança do servidor incompleta.' }, { status: 500 });
+        console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
+        return NextResponse.json({ error: 'Configuração de segurança do servidor incompleta.' }, { status: 500 });
     }
 
     if (!signature) {
-      return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 400 });
+      throw new Error('Assinatura do webhook ausente.');
     }
 
-    // PEGAR RAW BODY NO APP ROUTER
-    const rawBodyBuffer = Buffer.from(await request.arrayBuffer());
-    const rawBody = rawBodyBuffer.toString('utf8');
-
-    // VALIDAR ASSINATURA
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(rawBody)
-      .digest('hex');
+    const rawBody = await request.text();
+    const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
 
     if (signature !== expectedSignature) {
-      console.warn('Assinatura de webhook inválida recebida.');
-      return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
+      throw new Error('Assinatura de webhook inválida.');
     }
 
     const event = JSON.parse(rawBody);
-
+    
     console.log('Webhook do AbacatePay recebido e verificado:', JSON.stringify(event, null, 2));
 
     // PROCESSAMENTO
@@ -45,26 +41,41 @@ export async function POST(request: NextRequest) {
         const planName = metadata.plan;
 
         const userRef = db.collection('users').doc(userId);
-
+        
         let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
-        if (planName === 'PREMIUM') newSubscriptionStatus = 'premium';
-        if (planName === 'PROFISSIONAL') newSubscriptionStatus = 'professional';
+        if (planName === 'PREMIUM') {
+          newSubscriptionStatus = 'premium';
+        } else if (planName === 'PROFISSIONAL') {
+          newSubscriptionStatus = 'professional';
+        } else {
+            console.warn(`Plano desconhecido "${planName}" recebido no webhook para o usuário ${userId}.`);
+            return NextResponse.json({ received: true, message: 'Plano desconhecido.' }, { status: 200 });
+        }
 
         await userRef.update({
           subscriptionStatus: newSubscriptionStatus,
         });
 
+        await webhookLogRef.update({
+          status: 'SUCCESS',
+          details: `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`,
+        });
+
         console.log(`Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`);
+      } else {
+        console.warn('Webhook de pagamento recebido sem o externalId no metadata:', charge.id);
       }
+    } else {
+        await webhookLogRef.update({
+            status: 'IGNORED',
+            details: `Evento "${event.event}" não é 'billing.paid' ou não contém pixQrCode.`,
+        });
     }
 
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
     console.error('Erro ao processar o webhook do AbacatePay:', error);
-    return NextResponse.json(
-      { error: 'Falha no processamento do webhook' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 500 });
   }
 }

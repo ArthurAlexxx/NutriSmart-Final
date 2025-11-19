@@ -1,0 +1,239 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user, who can be a patient or a professional.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The type of user profile." },
+        "fullName": { "type": "string", "description": "User's full name." },
+        "email": { "type": "string", "description": "User's email address.", "format": "email" },
+        "phone": { "type": "string", "description": "User's phone number." },
+        "taxId": { "type": "string", "description": "User's CPF or CNPJ." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
+        "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
+        "patientRoomId": { "type": "string", "description": "ID of the room if the user is a patient being monitored." },
+        "professionalRoomIds": { "type": "array", "items": { "type": "string" }, "description": "List of room IDs if the user is a professional." },
+        "weight": { "type": "number" },
+        "targetWeight": { "type": "number" },
+        "targetDate": { "type": "string", "format": "date-time" },
+        "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "waterGoal": { "type": "number" }
+      },
+      "required": ["id", "profileType", "fullName", "email", "createdAt"]
+    },
+    "ActivePlan": {
+      "title": "ActivePlan",
+      "type": "object",
+      "description": "Represents a structured meal plan for a user.",
+      "properties": {
+        "name": { "type": "string" },
+        "meals": { 
+          "type": "array", 
+          "items": { "$ref": "#/entities/MealPlanItem" }
+        },
+        "hydrationGoal": { "type": "number" },
+        "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
+    },
+    "MealPlanItem": {
+      "title": "MealPlanItem",
+      "type": "object",
+      "description": "A single meal within a meal plan.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "time": { "type": "string", "format": "time" },
+        "items": { "type": "string" }
+      },
+      "required": ["name", "time", "items"]
+    },
+    "Room": {
+        "title": "Room",
+        "type": "object",
+        "description": "A virtual room connecting a professional with a patient.",
+        "properties": {
+            "id": { "type": "string" },
+            "professionalId": { "type": "string" },
+            "patientId": { "type": "string" },
+            "roomName": { "type": "string" }
+        },
+        "required": ["id", "professionalId", "patientId", "roomName"]
+    },
+    "MealEntry": {
+      "title": "MealEntry",
+      "type": "object",
+      "description": "Represents a meal entry recorded by a user.",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "mealType": { "type": "string", "enum": ["cafe-da-manha", "almoco", "jantar", "lanche"] },
+        "mealData": { "type": "object" }
+      },
+      "required": ["userId", "date", "mealType", "mealData"]
+    },
+    "HydrationEntry": {
+        "title": "HydrationEntry",
+        "description": "Represents a hydration entry for a user on a specific day.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "intake": { "type": "number", "description": "Total water intake in ml." }
+        },
+        "required": ["userId", "date", "intake"]
+    },
+    "ChefMessage": {
+      "title": "ChefMessage",
+      "type": "object",
+      "description": "Represents a message in the conversation with the virtual chef.",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "recipe": { "type": "object" }
+      },
+      "required": ["userId", "role", "content"]
+    },
+    "FinancialTransaction": {
+        "title": "FinancialTransaction",
+        "type": "object",
+        "description": "Represents a single financial transaction (income or expense) for a professional user.",
+        "properties": {
+            "userId": { "type": "string" },
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "type": { "type": "string", "enum": ["income", "expense"] },
+            "category": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "description", "amount", "type", "category", "date"]
+    },
+    "PlanTemplate": {
+      "title": "PlanTemplate",
+      "type": "object",
+      "description": "A reusable meal plan template created by a professional.",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "calorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "hydrationGoal": { "type": "number" },
+        "meals": { 
+          "type": "array", 
+          "items": { "$ref": "#/entities/MealPlanItem" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "calorieGoal", "hydrationGoal", "meals", "createdAt"]
+    },
+    "Guideline": {
+        "title": "Guideline",
+        "type": "object",
+        "description": "A reusable text-based guideline or document created by a professional.",
+        "properties": {
+            "title": { "type": "string" },
+            "content": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["title", "content", "createdAt"]
+    },
+    "WebhookLog": {
+        "title": "WebhookLog",
+        "type": "object",
+        "description": "Stores a log of an incoming webhook from AbacatePay.",
+        "properties": {
+            "payload": { "type": "object", "description": "The full JSON payload received from the webhook." },
+            "status": { "type": "string", "enum": ["PROCESSING", "SUCCESS", "ERROR", "IGNORED"], "description": "The processing status of the webhook." },
+            "receivedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the webhook was received." },
+            "errorDetails": { "type": "string", "description": "Details of the error if status is ERROR." },
+            "details": { "type": "string", "description": "Additional details about the processing." }
+        },
+        "required": ["payload", "status", "receivedAt"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/UserProfile" },
+          "description": "Stores all user profiles, whether patient or professional."
+        }
+      },
+      {
+        "path": "/users/{userId}/plans/{planId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ActivePlan" },
+          "description": "Stores user-specific meal plans, such as the active plan."
+        }
+      },
+      {
+        "path": "/users/{userId}/plan_templates/{templateId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/PlanTemplate" },
+          "description": "Stores reusable meal plan templates created by a professional user."
+        }
+      },
+      {
+        "path": "/users/{userId}/guidelines/{guidelineId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/Guideline" },
+          "description": "Stores reusable text-based guidelines created by a professional user."
+        }
+      },
+      {
+        "path": "/rooms/{roomId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/Room" },
+            "description": "Stores the connection between a professional and a patient."
+        }
+      },
+      {
+        "path": "/users/{userId}/meal_entries/{mealEntryId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/MealEntry" },
+          "description": "Stores individual meal entries for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/hydration_entries/{hydrationEntryId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/HydrationEntry" },
+            "description": "Stores daily hydration records for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/chef_messages/{messageId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ChefMessage" },
+          "description": "Stores the chat history between a user and the virtual chef."
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/FinancialTransaction" },
+            "description": "Stores all financial transactions for a professional user."
+        }
+      },
+      {
+        "path": "/webhook_logs/{logId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/WebhookLog" },
+            "description": "Stores logs of incoming webhooks for debugging purposes."
+        }
+      }
+    ]
+  }
+}
