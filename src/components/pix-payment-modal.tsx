@@ -7,7 +7,7 @@ import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon, 
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { Button } from './ui/button';
-import { onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import confetti from 'canvas-confetti';
@@ -39,9 +39,7 @@ interface PixPaymentModalProps {
 export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, userProfile }: PixPaymentModalProps) {
   const [step, setStep] = useState<'form' | 'qrcode'>('form');
   const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
-  const [chargeId, setChargeId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [brCode, setBrCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +69,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setPaymentStatus('PENDING');
         setQrCode(null);
         setBrCode(null);
-        setChargeId(null);
         setError(null);
         setIsLoading(false);
     }
@@ -80,7 +77,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const generateQrCode = async (customerData: any) => {
     setIsLoading(true);
     setError(null);
-    setChargeId(null);
 
     try {
         const response = await fetch('/api/checkout', {
@@ -102,7 +98,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         
         setQrCode(data.brCodeBase64);
         setBrCode(data.brCode);
-        setChargeId(data.id);
         setStep('qrcode');
 
     } catch (err: any) {
@@ -118,7 +113,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     setIsLoading(true);
     try {
         const { fullName, phone, taxId } = data;
-        // Only update if data has changed
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
@@ -155,53 +149,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }, 2500);
   }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
   
-  const handleManualCheck = async () => {
-    if (!chargeId || isChecking) return;
-    setIsChecking(true);
-    try {
-        const response = await fetch(`/api/checkout/${chargeId}`);
-        const data = await response.json();
-        
-        if (data.status === 'PAID') {
-          handleSuccessfulPayment();
-        } else {
-            toast({
-                title: 'Pagamento Pendente',
-                description: 'Ainda não recebemos a confirmação do seu pagamento. Tente novamente em alguns segundos.',
-            });
-        }
-      } catch (pollError) {
-        console.error('Manual check error:', pollError);
-        toast({
-            title: 'Erro na Verificação',
-            description: 'Não foi possível verificar o status do pagamento no momento.',
-            variant: 'destructive',
-        });
-      } finally {
-          setIsChecking(false);
-      }
-  }
-
-  useEffect(() => {
-    if (step !== 'qrcode' || !chargeId || paymentStatus === 'PAID') return;
-
-    const intervalId = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/checkout/${chargeId}`);
-        const data = await response.json();
-        
-        if (data.status === 'PAID') {
-          handleSuccessfulPayment();
-        }
-      } catch (pollError) {
-        console.error('Polling error:', pollError);
-      }
-    }, 5000); 
-
-    return () => clearInterval(intervalId);
-
-  }, [step, chargeId, paymentStatus, handleSuccessfulPayment]);
-
   useEffect(() => {
     if (step !== 'qrcode' || !firestore || !userProfile || paymentStatus === 'PAID') return;
     
@@ -326,13 +273,9 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                     </DialogFooter>
                 ) : (
                     <DialogFooter className="flex-col gap-2">
-                        <Button onClick={handleManualCheck} disabled={isChecking} className="w-full">
-                            {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
-                            Já paguei, verificar
-                        </Button>
-                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                         <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">Aguardando pagamento...</p>
+                            <p className="text-sm">Aguardando confirmação do pagamento...</p>
                         </div>
                     </DialogFooter>
                 )}

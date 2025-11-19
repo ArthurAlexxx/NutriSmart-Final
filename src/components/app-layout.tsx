@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -40,6 +39,7 @@ const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
     { href: '/pro/library', label: 'Biblioteca', icon: Library },
     { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
+    { href: '/pro/webhooks', label: 'Webhooks', icon: Webhook },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
@@ -120,7 +120,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         return (
           <>
             <NavSection title="Menu Profissional">
-              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isSubscribedPro}/>)}
+              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isSubscribedPro && item.href !== '/pro/webhooks'}/>)}
             </NavSection>
             <Separator className="my-4" />
             <NavSection title="Uso Pessoal">

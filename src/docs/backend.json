@@ -144,6 +144,18 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["title", "content", "createdAt"]
+    },
+    "WebhookLog": {
+        "title": "WebhookLog",
+        "type": "object",
+        "description": "Stores a record of each incoming webhook for debugging.",
+        "properties": {
+            "payload": { "type": "object" },
+            "status": { "type": "string", "enum": ["SUCCESS", "FAILURE"] },
+            "details": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["payload", "status", "createdAt"]
     }
   },
   "auth": {
@@ -212,6 +224,13 @@
         "definition": {
             "schema": { "$ref": "#/entities/FinancialTransaction" },
             "description": "Stores all financial transactions for a professional user."
+        }
+      },
+      {
+        "path": "/webhook_logs/{logId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/WebhookLog" },
+          "description": "Stores every incoming webhook for auditing and debugging."
         }
       }
     ]
