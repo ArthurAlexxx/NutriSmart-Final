@@ -2,14 +2,15 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 
+// Definindo os preços e planos de forma estruturada.
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
   PREMIUM: {
-    monthly: 1990, // R$ 19,90 in cents
-    yearly: 19080, // R$ 15.90 * 12 in cents
+    monthly: 1990, // R$ 19,90 em centavos
+    yearly: 19080, // R$ 15.90 * 12 em centavos
   },
   CLINICO: {
-    monthly: 9990,
-    yearly: 95880, // R$ 79.90 * 12
+    monthly: 9990, // R$ 99,90 em centavos
+    yearly: 95880, // R$ 79.90 * 12 em centavos
   }
 };
 
@@ -27,29 +28,31 @@ export async function POST(request: Request) {
   
   const amount = isYearly ? plan.yearly : plan.monthly;
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - NutriSmart`;
+  const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
+
+  if (!abacateApiKey) {
+      console.error('ABACATE_PAY_API_KEY não está configurada no servidor.');
+      return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
+  }
 
   try {
-    // Fetch user data from Firestore to create the customer
+    // Busca os dados do usuário no Firestore para criar o cliente na AbacatePay
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
       return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
     }
     const userData = userDoc.data();
 
+    // Monta o objeto do cliente com os dados do usuário
     const customer = {
       name: userData?.fullName || 'Usuário NutriSmart',
       email: userData?.email,
-      // AbacatePay requires a valid TaxID. We'll use a placeholder for now.
-      // In a real app, you would collect this during registration.
+      // AbacatePay exige um CPF/CNPJ válido. Usaremos um placeholder para este exemplo.
+      // Em uma aplicação real, este dado seria coletado no cadastro.
       taxId: '111.111.111-11', 
     };
 
     const abacateApiUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';
-    const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
-
-    if (!abacateApiKey) {
-        throw new Error('A chave da API do AbacatePay não está configurada no servidor.');
-    }
 
     const response = await fetch(abacateApiUrl, {
       method: 'POST',
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
         amount,
         description,
         customer,
-        expiresIn: 3600, // 1 hour
+        expiresIn: 3600, // QR Code expira em 1 hora
         metadata: {
           externalId: userId,
           plan: planName,
@@ -77,6 +80,7 @@ export async function POST(request: Request) {
       throw new Error(data.error.message || 'Erro ao comunicar com o gateway de pagamento.');
     }
 
+    // Retorna os dados necessários para o frontend renderizar o QR Code
     return NextResponse.json({
       id: data.data.id,
       brCode: data.data.brCode,

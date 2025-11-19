@@ -10,49 +10,53 @@ export async function POST(request: NextRequest) {
 
     if (!webhookSecret) {
         console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
-        return NextResponse.json({ error: 'Configuração de servidor incompleta.' }, { status: 500 });
+        return NextResponse.json({ error: 'Configuração de segurança do servidor incompleta.' }, { status: 500 });
     }
 
     if (!signature) {
       return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 400 });
     }
 
+    // É crucial ler o corpo da requisição como texto bruto para a verificação da assinatura
     const rawBody = await request.text();
     const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
 
+    // Compara a assinatura gerada com a assinatura enviada pelo AbacatePay
     if (signature !== expectedSignature) {
       return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
     }
     
     const event = JSON.parse(rawBody);
     
-    // Log the event for debugging
-    console.log('Received and verified AbacatePay Webhook:', JSON.stringify(event, null, 2));
+    // Log do evento para depuração
+    console.log('Webhook do AbacatePay recebido e verificado:', JSON.stringify(event, null, 2));
 
-    // For now, we only care about successful PIX payments
+    // Processa apenas eventos de PIX pago com sucesso
     if (event.event === 'pixQrCode.paid') {
       const charge = event.data;
       const metadata = charge.metadata;
 
+      // Garante que o metadata com o ID do nosso usuário exista
       if (metadata && metadata.externalId) {
         const userId = metadata.externalId;
         const userRef = db.collection('users').doc(userId);
 
-        // Update user's subscription status in Firestore
+        // Atualiza o status da assinatura do usuário no Firestore
         await userRef.update({
-          subscriptionStatus: 'premium',
+          subscriptionStatus: 'premium', // Ou poderia ser `metadata.plan` se houvesse mais planos
         });
 
-        console.log(`User ${userId} subscription updated to premium.`);
+        console.log(`Assinatura do usuário ${userId} atualizada para premium.`);
       } else {
-        console.warn('Webhook received without externalId in metadata:', charge.id);
+        console.warn('Webhook de pagamento recebido sem o externalId no metadata:', charge.id);
       }
     }
 
+    // Retorna uma resposta de sucesso para o AbacatePay
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Error processing AbacatePay webhook:', error);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    console.error('Erro ao processar o webhook do AbacatePay:', error);
+    return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 500 });
   }
 }
