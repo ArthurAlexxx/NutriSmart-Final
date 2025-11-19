@@ -144,8 +144,8 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     if (paymentStatus === 'PAID') return;
     
     setPaymentStatus('PAID');
-    // Store charge ID in localStorage for client-side finalization on the dashboard.
-    localStorage.setItem('pendingChargeId', paidChargeId);
+    // Store charge ID in localStorage, scoped to the user, for client-side finalization on the dashboard.
+    localStorage.setItem(`pendingChargeId_${userProfile.id}`, paidChargeId);
 
     confetti({
       particleCount: 150,
@@ -165,7 +165,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         // We no longer redirect from here. The dashboard will handle the final update.
     }, 3000);
 
-  }, [onOpenChange, paymentStatus, toast]);
+  }, [onOpenChange, paymentStatus, toast, userProfile.id]);
   
   const handleCheckPayment = useCallback(async () => {
     if (!chargeId || isVerifying || paymentStatus === 'PAID') return;

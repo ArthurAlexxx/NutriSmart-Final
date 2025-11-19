@@ -52,23 +52,23 @@ export default function DashboardPage() {
     // Client-side check to finalize payment from localStorage
     const finalizePayment = async () => {
         if (user && userProfile?.subscriptionStatus === 'free') {
-            const pendingChargeId = localStorage.getItem('pendingChargeId');
+            const pendingChargeId = localStorage.getItem(`pendingChargeId_${user.uid}`);
             if (pendingChargeId) {
                 try {
                     const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
                     if (result.success) {
                         toast({ title: "Assinatura Ativada!", description: "Seu plano foi atualizado com sucesso." });
-                        localStorage.removeItem('pendingChargeId');
+                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
                         // The userProfile will update via the onSnapshot listener in useUser
                     } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
                         // Only show error if it's not a pending payment, to avoid annoying the user.
                         toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
-                        localStorage.removeItem('pendingChargeId'); // Clean up failed/invalid attempts
+                        localStorage.removeItem(`pendingChargeId_${user.uid}`); // Clean up failed/invalid attempts
                     }
                 } catch (err: any) {
                     console.error("Erro ao tentar finalizar assinatura:", err);
                     toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
-                    localStorage.removeItem('pendingChargeId');
+                    localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 }
             }
         }
