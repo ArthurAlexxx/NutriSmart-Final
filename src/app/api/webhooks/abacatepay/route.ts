@@ -1,13 +1,33 @@
 // src/app/api/webhooks/abacatepay/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
+import * as crypto from 'crypto';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const event = await request.json();
+    const signature = request.headers.get('abacate-signature');
+    const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+        console.error('ABACATE_PAY_WEBHOOK_SECRET não está configurado.');
+        return NextResponse.json({ error: 'Configuração de servidor incompleta.' }, { status: 500 });
+    }
+
+    if (!signature) {
+      return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 400 });
+    }
+
+    const rawBody = await request.text();
+    const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+
+    if (signature !== expectedSignature) {
+      return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
+    }
+    
+    const event = JSON.parse(rawBody);
     
     // Log the event for debugging
-    console.log('Received AbacatePay Webhook:', JSON.stringify(event, null, 2));
+    console.log('Received and verified AbacatePay Webhook:', JSON.stringify(event, null, 2));
 
     // For now, we only care about successful PIX payments
     if (event.event === 'pixQrCode.paid') {
