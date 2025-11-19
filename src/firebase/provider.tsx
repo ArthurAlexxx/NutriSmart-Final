@@ -100,18 +100,18 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 if (profileData.profileType === 'patient' && !profileData.dashboardShareCode) {
                     const newShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
                     console.log(`Generating missing share code for user ${profileData.id}: ${newShareCode}`);
-                    await updateDoc(userRef, { dashboardShareCode: newShareCode });
-                    // The onSnapshot listener will re-trigger with the updated data, so we just return here.
-                    // This prevents the app from using the incomplete profile for a fraction of a second.
-                    return; 
+                    // Non-blocking update. The listener will catch the change.
+                    updateDoc(userRef, { dashboardShareCode: newShareCode }).catch(e => console.error("Failed to update share code", e));
+                    // We don't return here, let the UI update with current data and it will refresh shortly.
                 }
                 
                 setUserAuthState(prevState => ({ 
-                    user: prevState.user, // Explicitly preserve user object
+                    ...prevState,
                     userProfile: profileData, 
                     isUserLoading: false, 
                     userError: null 
                 }));
+
             } else {
                 // Profile doesn't exist, let's create one.
                 console.log(`Profile for user ${userAuthState.user?.uid} not found. Creating one.`);

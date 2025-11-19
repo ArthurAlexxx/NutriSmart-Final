@@ -2,7 +2,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import * as crypto from 'crypto';
-import { headers, ReadonlyHeaders } from 'next/headers';
+import { headers } from 'next/headers';
 
 // CONFIGURAÇÃO CRÍTICA: Garante que o Next.js não processe o corpo da requisição
 // antes de nós, o que é essencial para a validação do webhook.
@@ -18,12 +18,11 @@ const ABACATEPAY_PUBLIC_KEY = "t9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfX
 async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', details: string) {
     try {
         const logData = {
-            payload: payload,
+            payload: payload || { info: 'Payload not available' },
             status: status,
             details: details,
             createdAt: new Date(),
         };
-        // Esta operação não é aguardada para responder rapidamente ao webhook.
         await db.collection('webhook_logs').add(logData);
     } catch (logError: any) {
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
@@ -63,14 +62,21 @@ function verifyAbacateSignature(rawBody: string, signatureFromHeader: string): b
 /**
  * Busca de forma flexível pelos metadados dentro do payload do evento.
  */
-function findMetadata(eventData: any) {
+function findMetadata(eventData: any): { externalId: string, plan: string } | null {
     if (!eventData) return null;
-    // Caminho 1: Padrão observado em billing.paid para pixQrCode
-    if (eventData.pixQrCode?.metadata) return eventData.pixQrCode.metadata;
-    // Caminho 2: Padrão observado em 'charge'
-    if (eventData.charge?.metadata) return eventData.charge.metadata;
-    // Fallback
-    if (eventData.metadata) return eventData.metadata;
+
+    const potentialPaths = [
+        eventData.pixQrCode?.metadata,
+        eventData.charge?.metadata,
+        eventData.metadata
+    ];
+
+    for (const path of potentialPaths) {
+        if (path && path.externalId && path.plan) {
+            return path;
+        }
+    }
+    
     return null;
 }
 
@@ -80,12 +86,13 @@ function findMetadata(eventData: any) {
 async function handlePayment(event: any) {
     if (event.event !== 'billing.paid') {
         const message = `Evento não processado: ${event.event || 'desconhecido'}`;
-        await saveWebhookLog(event, 'SUCCESS', message);
+        // Não salvamos log para eventos não processados para evitar poluição.
+        console.log(message);
         return;
     }
 
     const metadata = findMetadata(event.data);
-
+    
     if (metadata && metadata.externalId && metadata.plan) {
         const userId = metadata.externalId;
         const planName = metadata.plan;
@@ -113,12 +120,15 @@ async function handlePayment(event: any) {
             const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
+             // Re-throw a aposta para que a chamada de origem saiba que falhou
+            throw new Error(errorMessage);
         }
 
     } else {
         const message = 'Metadados cruciais (externalId ou plan) não encontrados no payload do webhook.';
         console.warn(message, { payloadData: event.data });
         await saveWebhookLog(event, 'FAILURE', message);
+        throw new Error(message);
     }
 }
 
@@ -126,67 +136,61 @@ async function handlePayment(event: any) {
  * Função principal para lidar com as requisições POST do webhook.
  */
 export async function POST(request: NextRequest) {
+  let rawBody;
+  let event;
+  try {
+    rawBody = await request.text();
+    event = JSON.parse(rawBody);
+  } catch (error: any) {
+      console.error('Erro fatal ao fazer parse do corpo do webhook:', error.message);
+      return new NextResponse('Payload malformado.', { status: 400 });
+  }
+
+  // Camada 1: Validação do Secret na URL
   const webhookSecretFromEnv = process.env.ABACATE_PAY_WEBHOOK_SECRET;
-  
-  // 1. Validação do Secret na URL
   const webhookSecretFromUrl = request.nextUrl.searchParams.get('webhookSecret');
   
   if (!webhookSecretFromEnv) {
     console.error('CRITICAL: ABACATE_PAY_WEBHOOK_SECRET não está configurado no ambiente.');
+    // Não salve o log aqui porque o problema é de configuração do servidor
     return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
   }
 
   if (webhookSecretFromUrl !== webhookSecretFromEnv) {
       console.warn('Requisição de webhook recebida com secret inválido na URL.');
+      // Não salve o log, pois a requisição é provavelmente maliciosa.
       return new NextResponse('Webhook secret inválido.', { status: 401 });
   }
 
-  let rawBody;
+  // Camada 2: Validação da Assinatura HMAC no Cabeçalho
+  const headerPayload = headers();
+  const signature = headerPayload.get('x-webhook-signature');
+  
+  if (!signature) {
+     console.warn('Requisição de webhook recebida sem assinatura no cabeçalho.');
+     // Salve um log, pois pode ser uma falha de configuração do AbacatePay
+     await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC ausente no cabeçalho.');
+     return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
+  }
+
+  const isSignatureValid = verifyAbacateSignature(rawBody, signature);
+
+  if (!isSignatureValid) {
+    console.warn('Assinatura de webhook inválida recebida.');
+    await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC inválida.');
+    return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
+  }
+    
+  // Se ambas as validações passaram, processa o pagamento
   try {
-    rawBody = await request.text();
-    
-    // 2. Validação da Assinatura HMAC no Cabeçalho
-    const headerPayload = headers();
-    // Normaliza para minúsculas para evitar problemas de case-sensitivity
-    const signature = headerPayload.get('x-webhook-signature');
-    
-    if (!signature) {
-       console.warn('Requisição de webhook recebida sem assinatura no cabeçalho.');
-      return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
-    }
-
-    const isSignatureValid = verifyAbacateSignature(rawBody, signature);
-
-    if (!isSignatureValid) {
-      console.warn('Assinatura de webhook inválida recebida.');
-      await saveWebhookLog(JSON.parse(rawBody), 'FAILURE', 'Assinatura HMAC inválida.');
-      return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
-    }
-    
-    const event = JSON.parse(rawBody);
-    
-    // Processa o pagamento em segundo plano para responder rapidamente.
-    handlePayment(event).catch(err => {
-      console.error("Erro no processamento do webhook em segundo plano:", err);
-      saveWebhookLog(event, 'FAILURE', err.message || 'Erro desconhecido no processamento em segundo plano.');
-    });
-
-    // Retorna 200 OK imediatamente para o AbacatePay saber que recebemos.
-    return NextResponse.json({ received: true }, { status: 200 });
-
+      await handlePayment(event);
+      // Retorna 200 OK imediatamente para o AbacatePay saber que recebemos.
+      return NextResponse.json({ received: true }, { status: 200 });
   } catch (error: any) {
-    console.error('Erro fatal ao processar o webhook do AbacatePay:', error.message);
-    let payloadForLog = {};
-    try {
-        if(rawBody) payloadForLog = JSON.parse(rawBody);
-    } catch {
-        payloadForLog = { error: "Could not parse raw body.", body: rawBody };
-    }
-    
-    await saveWebhookLog(payloadForLog, 'FAILURE', `Erro de parsing ou inicial: ${error.message}`);
-    
-    // Responde com 200 para evitar que o AbacatePay fique tentando reenviar um payload malformado.
-    return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 200 });
+      // Erros durante o handlePayment (ex: DB offline) são logados lá dentro.
+      // Aqui, respondemos com 500 para sinalizar ao AbacatePay para tentar novamente mais tarde.
+      console.error("Erro no processamento do webhook em segundo plano:", error);
+      return new NextResponse('Erro interno ao processar o webhook.', { status: 500 });
   }
 }
 

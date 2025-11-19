@@ -7,9 +7,7 @@ import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon, 
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { Button } from './ui/button';
-import { onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 import confetti from 'canvas-confetti';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -47,8 +45,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const router = useRouter();
   const { onProfileUpdate } = useUser();
 
 
@@ -148,12 +144,12 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       zIndex: 9999,
     });
     
-    // Don't redirect. Just show success. The webhook will handle the update.
     setTimeout(() => {
         onOpenChange(false);
         toast({
             title: "Pagamento Confirmado!",
-            description: "Sua assinatura será ativada em instantes. Você pode precisar recarregar a página."
+            description: "Sua assinatura será ativada em instantes. Agradecemos a confiança!",
+            duration: 5000,
         })
     }, 3000);
 
@@ -172,7 +168,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         } else if (!response.ok) {
             toast({ title: 'Erro ao Verificar', description: data.error || 'Não foi possível verificar o pagamento no momento.', variant: 'destructive'});
         } else {
-             toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente. Tente novamente em alguns segundos.' });
+             toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente. O sistema será atualizado automaticamente assim que o pagamento for processado.' });
         }
     } catch (e: any) {
         console.error("Verification failed", e);
@@ -198,7 +194,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
             <div className='flex flex-col items-center gap-4 text-green-600 animate-in fade-in'>
                 <CheckCircle className="h-16 w-16" />
                 <p className='text-xl font-bold'>Pagamento Aprovado!</p>
-                <p className='text-sm text-muted-foreground max-w-xs'>Sua assinatura será atualizada em instantes. Agradecemos a sua confiança!</p>
+                <p className='text-sm text-muted-foreground max-w-xs'>Sua assinatura será atualizada em instantes. Você pode fechar esta janela.</p>
             </div>
           )
       }
@@ -293,11 +289,11 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                     <DialogFooter className="flex-col gap-2">
                         <Button onClick={handleCheckPayment} disabled={isVerifying} className="w-full">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
-                             Já Paguei, Verificar
+                             Já Paguei, Verificar Status
                         </Button>
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">Clique para confirmar após o pagamento.</p>
+                            <p className="text-sm">A atualização é automática via webhook.</p>
                         </div>
                     </DialogFooter>
                 )}

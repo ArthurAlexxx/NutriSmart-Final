@@ -1,27 +1,5 @@
 // src/app/api/checkout/[chargeId]/route.ts
 import { NextResponse, NextRequest } from 'next/server';
-import { db } from '@/lib/firebase/admin';
-
-/**
- * Busca de forma flexível pelos metadados dentro da resposta da API de verificação.
- * @param {any} responseData O objeto de dados da API do AbacatePay.
- * @returns Os metadados se encontrados, caso contrário, null.
- */
-function findMetadataInCheckResponse(responseData: any) {
-    if (!responseData) return null;
-
-    // Caminho 1: Padrão observado em webhook
-    if (responseData.pixQrCode?.metadata) {
-        return responseData.pixQrCode.metadata;
-    }
-    // Caminho 2: Metadados diretamente no objeto
-    if (responseData.metadata) {
-        return responseData.metadata;
-    }
-    // Adicione outros caminhos possíveis aqui se forem descobertos
-
-    return null;
-}
 
 export async function GET(request: NextRequest, { params }: { params: { chargeId: string } }) {
   const chargeId = params.chargeId;
@@ -55,13 +33,13 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
        throw new Error(errorMessage);
     }
     
-    // A API de /check retorna um objeto `data` com o status, não o payload completo.
+    // A API de /check retorna um objeto `data` com o status.
     const status = data.data?.status;
 
     if (status === 'PAID') {
         // A rota de verificação manual NÃO deve atualizar o banco.
         // Ela apenas confirma o status para o frontend.
-        // O webhook é a única fonte de verdade para a atualização.
+        // O webhook é a única fonte de verdade para a atualização do banco de dados.
         return NextResponse.json({ status: 'PAID' });
     }
 
