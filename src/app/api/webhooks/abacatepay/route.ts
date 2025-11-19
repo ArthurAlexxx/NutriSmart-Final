@@ -17,11 +17,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 400 });
     }
 
-    // É crucial ler o corpo da requisição como texto bruto para a verificação da assinatura
     const rawBody = await request.text();
     const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
 
-    // Compara a assinatura gerada com a assinatura enviada pelo AbacatePay
     if (signature !== expectedSignature) {
       console.warn('Assinatura de webhook inválida recebida.');
       return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
@@ -29,15 +27,12 @@ export async function POST(request: NextRequest) {
     
     const event = JSON.parse(rawBody);
     
-    // Log do evento para depuração
     console.log('Webhook do AbacatePay recebido e verificado:', JSON.stringify(event, null, 2));
 
-    // Processa apenas eventos de pagamento de cobrança com sucesso (billing.paid)
     if (event.event === 'billing.paid' && event.data?.pixQrCode) {
       const charge = event.data.pixQrCode;
       const metadata = charge.metadata;
 
-      // Garante que o metadata com o ID do nosso usuário exista
       if (metadata && metadata.externalId) {
         const userId = metadata.externalId;
         const planName = metadata.plan;
@@ -53,8 +48,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ received: true, message: 'Plano desconhecido.' }, { status: 200 });
         }
 
-
-        // Atualiza o status da assinatura do usuário no Firestore
         await userRef.update({
           subscriptionStatus: newSubscriptionStatus,
         });
@@ -65,7 +58,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Retorna uma resposta de sucesso para o AbacatePay
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
