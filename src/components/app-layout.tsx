@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -94,13 +93,15 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   const { effectiveSubscriptionStatus } = useUser();
+  const isProUserWithActivePlan = userProfile?.profileType === 'professional' && effectiveSubscriptionStatus === 'professional';
 
   useEffect(() => {
-    // Redirect expired professionals from pro pages to the standard dashboard
-    if (userProfile?.profileType === 'professional' && effectiveSubscriptionStatus === 'free' && pathname.startsWith('/pro')) {
+    // If the user is a professional but their plan is not active,
+    // and they are trying to access a pro page, redirect them to the standard dashboard.
+    if (userProfile?.profileType === 'professional' && !isProUserWithActivePlan && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
-  }, [userProfile, effectiveSubscriptionStatus, pathname, router]);
+  }, [userProfile, isProUserWithActivePlan, pathname, router]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -113,37 +114,32 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     }
   };
 
-  const isProUser = userProfile?.profileType === 'professional';
   const isChefPage = pathname === '/chef';
   const isFreeUser = effectiveSubscriptionStatus === 'free';
-  
-  const expiryDate = useMemo(() => userProfile?.subscriptionExpiresAt ? (userProfile.subscriptionExpiresAt as any).toDate() : null, [userProfile]);
-  const isTrialingPro = isProUser && userProfile?.subscriptionStatus === 'free' && expiryDate && expiryDate > new Date();
   
   const renderNavLinks = (isMobile = false) => {
     const navLinkProps = (item: any) => ({
       ...item,
       pathname: pathname,
       onClick: () => isMobile && setSheetOpen(false),
-      disabled: false 
     });
-
-    const isProSubscribed = effectiveSubscriptionStatus === 'professional';
-
-    if (isProUser) {
+    
+    // Show Professional menu ONLY if they have an active professional subscription
+    if (isProUserWithActivePlan) {
         return (
           <>
             <NavSection title="Menu Profissional">
-              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isProSubscribed && !isTrialingPro}/>)}
+              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
             </NavSection>
             <Separator className="my-4" />
             <NavSection title="Uso Pessoal">
-              {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={item.premium && isFreeUser} />)}
+              {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
             </NavSection>
           </>
         );
     }
 
+    // Default to patient menu for everyone else
     return (
         <NavSection title="Menu">
             {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={item.premium && isFreeUser} />)}
