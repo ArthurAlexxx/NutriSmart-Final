@@ -1,15 +1,16 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 
 // Definindo os preços e planos de forma estruturada.
-const plans: { [key: string]: { monthly: number, yearly: number } } = {
+const plans: { [key: string]: { monthly: number, yearlyDiscountedMonthly: number } } = {
   PREMIUM: {
     monthly: 1990, // R$ 19,90 em centavos
-    yearly: 19080, // R$ 15.90 * 12 em centavos
+    yearlyDiscountedMonthly: 1590, // R$ 15,90 em centavos (com desconto anual)
   },
   PROFISSIONAL: {
     monthly: 4990, // R$ 49,90 em centavos
-    yearly: 47880, // R$ 39.90 * 12 em centavos
+    yearlyDiscountedMonthly: 3990, // R$ 39,90 em centavos (com desconto anual)
   }
 };
 
@@ -36,7 +37,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  const amount = isYearly ? plan.yearly : plan.monthly;
+  // CORREÇÃO: Calcula o valor anual total multiplicando o valor mensal com desconto por 12.
+  const amount = isYearly ? plan.yearlyDiscountedMonthly * 12 : plan.monthly;
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - NutriSmart`;
 
   try {

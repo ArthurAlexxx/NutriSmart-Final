@@ -1,3 +1,4 @@
+
 // src/components/ui/pricing.tsx
 "use client";
 
@@ -81,7 +82,7 @@ function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-  const { user, userProfile } = useUser();
+  const { user, userProfile, effectiveSubscriptionStatus } = useUser();
   const { toast } = useToast();
 
   const handleCtaClick = (plan: typeof plans[0]) => {
@@ -97,8 +98,8 @@ function Pricing() {
       return;
     }
 
-    const isCurrentPlan = (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') || 
-                          (userProfile.subscriptionStatus === 'professional' && plan.name === 'PROFISSIONAL');
+    const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
+
     if (isCurrentPlan) return;
     
     setSelectedPlan(plan);
@@ -133,7 +134,7 @@ function Pricing() {
           <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3">
             {plans.map((plan) => {
               
-              const isCurrentPlan = (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') || (userProfile?.subscriptionStatus === 'professional' && plan.name === 'PROFISSIONAL');
+              const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
               const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
 
               return (
