@@ -62,7 +62,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   
   useEffect(() => {
     if(isOpen) {
-        // Reset state when modal opens, always starting with the form
         form.reset({
             fullName: userProfile.fullName || '',
             phone: userProfile.phone || '',
@@ -79,36 +78,43 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   }, [isOpen, userProfile, form]);
 
   const generateQrCode = async (customerData: any) => {
-        setIsLoading(true);
-        setError(null);
-        setChargeId(null);
-        try {
-          const response = await fetch('/api/checkout', {
+    setIsLoading(true);
+    setError(null);
+    setChargeId(null);
+
+    try {
+        const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId: userProfile.id,
-              planName: plan.name,
-              isYearly: isYearly,
-              customerData: customerData,
+                userId: userProfile.id,
+                planName: plan.name,
+                isYearly: isYearly,
+                customerData: customerData,
             }),
-          });
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Falha ao gerar o QR Code.');
-          }
-          setQrCode(data.brCodeBase64);
-          setBrCode(data.brCode);
-          setChargeId(data.id);
-          setStep('qrcode');
-        } catch (err: any) {
-          setError(err.message);
-          setPaymentStatus('ERROR');
-          toast({ title: 'Erro', description: err.message, variant: 'destructive' });
-        } finally {
-          setIsLoading(false);
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // A API de backend retornou um erro, vamos exibi-lo.
+            throw new Error(data.error || 'Falha ao gerar o QR Code. Tente novamente.');
         }
-  };
+        
+        // Sucesso, vamos para a próxima etapa.
+        setQrCode(data.brCodeBase64);
+        setBrCode(data.brCode);
+        setChargeId(data.id);
+        setStep('qrcode');
+
+    } catch (err: any) {
+        setError(err.message);
+        setPaymentStatus('ERROR');
+        toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
   const handleFormSubmit = async (data: CustomerDataFormValues) => {
     setIsLoading(true);
@@ -118,7 +124,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
-        // Prepare customer data for the API, including the email
+        // Prepare customer data for the API, including the email from the user's profile
         const customerDataForApi = {
             name: fullName,
             email: userProfile.email,
@@ -132,7 +138,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         toast({ title: "Erro ao salvar dados", description: "Não foi possível atualizar seu perfil. Tente novamente.", variant: "destructive"});
         setIsLoading(false);
     }
-    // setIsLoading is handled by generateQrCode
   }
 
   const handleSuccessfulPayment = useCallback(() => {
@@ -255,7 +260,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       if (qrCode && brCode) {
           return (
              <div className='flex flex-col items-center gap-4 animate-in fade-in'>
-              <Image src={qrCode} alt="PIX QR Code" width={200} height={200} />
+              <Image src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
               <Button onClick={handleCopyCode} variant="outline">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Código
               </Button>
