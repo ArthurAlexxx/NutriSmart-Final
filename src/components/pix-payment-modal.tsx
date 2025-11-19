@@ -97,11 +97,9 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         const data = await response.json();
 
         if (!response.ok) {
-            // A API de backend retornou um erro, vamos exibi-lo.
             throw new Error(data.error || 'Falha ao gerar o QR Code. Tente novamente.');
         }
         
-        // Sucesso, vamos para a próxima etapa.
         setQrCode(data.brCodeBase64);
         setBrCode(data.brCode);
         setChargeId(data.id);
@@ -120,11 +118,9 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     setIsLoading(true);
     try {
         const { fullName, phone, taxId } = data;
-        // Update profile only if data has changed
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
-        // Prepare customer data for the API, including the email from the user's profile
         const customerDataForApi = {
             name: fullName,
             email: userProfile.email,
@@ -158,7 +154,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }, 2500);
   }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
 
-  // Effect for polling payment status
   useEffect(() => {
     if (step !== 'qrcode' || !chargeId || paymentStatus === 'PAID') return;
 
@@ -179,7 +174,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
   }, [step, chargeId, paymentStatus, handleSuccessfulPayment]);
 
-  // Effect for real-time Firestore listener
   useEffect(() => {
     if (step !== 'qrcode' || !firestore || !userProfile || paymentStatus === 'PAID') return;
     

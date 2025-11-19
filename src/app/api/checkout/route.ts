@@ -15,14 +15,14 @@ const plans: { [key: string]: { monthly: number, yearly: number } } = {
 
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData } = await request.json();
-
-  const plan = plans[planName as keyof typeof plans];
   const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
 
   if (!abacateApiKey) {
       console.error('ABACATE_PAY_API_KEY não está configurada no servidor.');
       return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
   }
+
+  const plan = plans[planName as keyof typeof plans];
   
   if (!userId || !planName || !customerData) {
     return NextResponse.json({ error: 'Dados insuficientes para gerar a cobrança (usuário, plano ou dados do cliente).' }, { status: 400 });
@@ -32,9 +32,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Plano não encontrado.' }, { status: 404 });
   }
   
-  // Validação robusta dos dados do cliente recebidos do frontend
   if (!customerData.name || !customerData.email || !customerData.cellphone || !customerData.taxId) {
-      return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, preencha todos os campos.' }, { status: 400 });
+      return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
   const amount = isYearly ? plan.yearly : plan.monthly;
@@ -66,12 +65,10 @@ export async function POST(request: Request) {
 
     if (!response.ok || data.error) {
       console.error('AbacatePay API Error:', data.error);
-      // Garante que uma mensagem de erro útil seja retornada
       const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
       throw new Error(errorMessage);
     }
 
-    // Retorna os dados necessários para o frontend renderizar o QR Code
     return NextResponse.json({
       id: data.data.id,
       brCode: data.data.brCode,
