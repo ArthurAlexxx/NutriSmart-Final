@@ -44,11 +44,23 @@ export async function GET(
       if (userId) {
         const userRef = db.collection('users').doc(userId);
         const userDoc = await userRef.get();
-        if (userDoc.exists && userDoc.data()?.subscriptionStatus !== 'premium') {
-            await userRef.update({
-                subscriptionStatus: 'premium',
-            });
-            console.log(`Assinatura do usuário ${userId} atualizada para premium via polling.`);
+        if (userDoc.exists && userDoc.data()?.subscriptionStatus !== 'premium' && userDoc.data()?.subscriptionStatus !== 'professional') {
+            
+            const planName = data.data.metadata?.plan;
+            let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
+            
+            if (planName === 'PREMIUM') {
+              newSubscriptionStatus = 'premium';
+            } else if (planName === 'PROFISSIONAL') {
+              newSubscriptionStatus = 'professional';
+            }
+            
+            if (newSubscriptionStatus !== 'free') {
+                await userRef.update({
+                    subscriptionStatus: newSubscriptionStatus,
+                });
+                console.log(`Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus} via polling.`);
+            }
         }
       }
     }
