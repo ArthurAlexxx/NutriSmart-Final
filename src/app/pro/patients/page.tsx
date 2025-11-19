@@ -2,19 +2,20 @@
 // src/app/pro/patients/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Users } from 'lucide-react';
+import { Loader2, PlusCircle, Users, Search } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import type { Room } from '@/types/room';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import CreateRoomModal from '@/components/pro/create-room-modal';
 import RoomCard from '@/components/pro/room-card';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 export default function ProPatientsPage() {
   const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
@@ -25,6 +26,7 @@ export default function ProPatientsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -65,6 +67,14 @@ export default function ProPatientsPage() {
 
   }, [user, userProfile, firestore, toast]);
 
+  const filteredRooms = useMemo(() => {
+    if (!rooms) return [];
+    return rooms.filter(room =>
+      room.roomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      room.patientInfo.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [rooms, searchTerm]);
+
   if (isUserLoading || loading || !userProfile) {
     return (
        <AppLayout
@@ -98,9 +108,20 @@ export default function ProPatientsPage() {
                 </Button>
             </div>
 
-             {rooms.length > 0 ? (
+            <div className="mb-8 relative max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar por nome do paciente ou sala..."
+                  className="w-full rounded-lg bg-background pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+             {filteredRooms.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {user && rooms.map(room => (
+                    {user && filteredRooms.map(room => (
                         <RoomCard key={room.id} room={room} professionalId={user.uid} />
                     ))}
                 </div>
@@ -109,9 +130,9 @@ export default function ProPatientsPage() {
                     <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in border-dashed" style={{animationDelay: '150ms'}}>
                         <CardHeader className="text-center p-8">
                             <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-                            <CardTitle className="text-2xl font-heading">Nenhum Paciente Adicionado</CardTitle>
+                            <CardTitle className="text-2xl font-heading">{rooms.length > 0 ? 'Nenhum Paciente Encontrado' : 'Nenhum Paciente Adicionado'}</CardTitle>
                             <CardDescription className="mt-2">
-                                Clique no botão "Criar Nova Sala" para convidar seu primeiro paciente e iniciar o acompanhamento.
+                                {rooms.length > 0 ? 'Tente uma busca diferente.' : 'Clique no botão "Criar Nova Sala" para convidar seu primeiro paciente e iniciar o acompanhamento.'}
                             </CardDescription>
                         </CardHeader>
                     </Card>

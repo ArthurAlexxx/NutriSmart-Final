@@ -1,7 +1,7 @@
 // src/app/pro/library/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
@@ -10,9 +10,10 @@ import CreatePlanTemplateModal from '@/components/pro/create-plan-template-modal
 import type { PlanTemplate } from '@/types/library';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2, PlusCircle, Library, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Library, FileText, Pencil, Trash2, Search } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 function TemplateCard({ template, onEdit, onDelete }: { template: PlanTemplate, onEdit: () => void, onDelete: () => void }) {
     return (
@@ -58,6 +59,7 @@ export default function LibraryPage() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplate | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (!isUserLoading && (!user || userProfile?.profileType !== 'professional')) {
@@ -71,6 +73,14 @@ export default function LibraryPage() {
     }, [user, firestore]);
 
     const { data: templates, isLoading } = useCollection<PlanTemplate>(templatesQuery);
+
+    const filteredTemplates = useMemo(() => {
+        if (!templates) return [];
+        return templates.filter(template => 
+            template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            template.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [templates, searchTerm]);
 
     const handleEdit = (template: PlanTemplate) => {
         setSelectedTemplate(template);
@@ -111,9 +121,20 @@ export default function LibraryPage() {
                     <Button onClick={handleAddNew}><PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Modelo</Button>
                 </div>
 
-                {templates && templates.length > 0 ? (
+                <div className="mb-8 relative max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Buscar modelos por nome ou descrição..."
+                      className="w-full rounded-lg bg-background pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                {filteredTemplates && filteredTemplates.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {templates.map(template => (
+                        {filteredTemplates.map(template => (
                             <TemplateCard
                                 key={template.id}
                                 template={template}
@@ -127,9 +148,9 @@ export default function LibraryPage() {
                          <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in border-dashed">
                             <CardHeader className="text-center p-8">
                                 <Library className="h-12 w-12 text-primary mx-auto mb-4" />
-                                <CardTitle className="text-2xl font-heading">Sua Biblioteca está vazia</CardTitle>
+                                <CardTitle className="text-2xl font-heading">{templates && templates.length > 0 ? 'Nenhum Modelo Encontrado' : 'Sua Biblioteca está vazia'}</CardTitle>
                                 <CardDescription className="mt-2">
-                                    Crie seu primeiro modelo de plano para reutilizá-lo com seus pacientes e poupar tempo.
+                                     {templates && templates.length > 0 ? 'Tente uma busca diferente.' : 'Crie seu primeiro modelo de plano para reutilizá-lo com seus pacientes e poupar tempo.'}
                                 </CardDescription>
                             </CardHeader>
                         </Card>

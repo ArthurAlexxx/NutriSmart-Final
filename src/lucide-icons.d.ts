@@ -54,6 +54,7 @@ declare module "lucide-react" {
     export const Instagram: Icon;
     export const LayoutDashboard: Icon;
     export const Leaf: Icon;
+    export const Library: Icon;
     export const Loader2: Icon;
     export const LogOut: Icon;
     export const Mail: Icon;
