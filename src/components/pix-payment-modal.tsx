@@ -1,9 +1,9 @@
 // src/components/pix-payment-modal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Loader2, Copy, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, Copy, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import Image from 'next/image';
@@ -22,6 +22,7 @@ interface PixPaymentModalProps {
 
 export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, userProfile }: PixPaymentModalProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [chargeId, setChargeId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [brCode, setBrCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +30,18 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const firestore = useFirestore();
   const router = useRouter();
 
+  const handleSuccessfulPayment = useCallback(() => {
+    onOpenChange(false);
+    router.push('/checkout?status=success');
+  }, [onOpenChange, router]);
+
+  // Effect to generate QR Code
   useEffect(() => {
     if (isOpen) {
       const generateQrCode = async () => {
         setIsLoading(true);
         setError(null);
+        setChargeId(null);
         try {
           const response = await fetch('/api/checkout', {
             method: 'POST',
@@ -50,6 +58,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
           }
           setQrCode(data.brCodeBase64);
           setBrCode(data.brCode);
+          setChargeId(data.id);
         } catch (err: any) {
           setError(err.message);
           toast({ title: 'Erro', description: err.message, variant: 'destructive' });
@@ -61,20 +70,42 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }
   }, [isOpen, plan, isYearly, userProfile.id, toast]);
 
+  // Effect for polling payment status
+  useEffect(() => {
+    if (!isOpen || !chargeId) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/checkout/${chargeId}`);
+        const data = await response.json();
+        
+        if (data.status === 'PAID') {
+          handleSuccessfulPayment();
+        }
+      } catch (pollError) {
+        console.error('Polling error:', pollError);
+        // Don't show toast for polling errors to avoid spamming user
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(intervalId);
+
+  }, [isOpen, chargeId, handleSuccessfulPayment]);
+
+  // Effect for real-time Firestore listener (webhook backup)
   useEffect(() => {
     if (!isOpen || !firestore || !userProfile) return;
 
-    // Listen for subscription status changes
     const unsub = onSnapshot(doc(firestore, 'users', userProfile.id), (doc) => {
       const data = doc.data() as UserProfile;
       if (data && data.subscriptionStatus === 'premium') {
-        onOpenChange(false); // Close modal
-        router.push('/checkout?status=success'); // Redirect to success page
+        handleSuccessfulPayment();
       }
     });
 
     return () => unsub();
-  }, [isOpen, firestore, userProfile, onOpenChange, router]);
+  }, [isOpen, firestore, userProfile, handleSuccessfulPayment]);
+
 
   const handleCopyCode = () => {
     if (!brCode) return;
