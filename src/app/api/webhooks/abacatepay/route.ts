@@ -3,6 +3,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import * as crypto from 'crypto';
 import { headers } from 'next/headers';
+import { updateUserSubscriptionAction } from '@/app/actions/billing-actions';
+
 
 // CONFIGURAÇÃO CRÍTICA: Garante que o Next.js não processe o corpo da requisição
 // antes de nós, o que é essencial para a validação do webhook.
@@ -23,6 +25,10 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             details: details,
             createdAt: new Date(),
         };
+        // Use a Server Action which has the correct context to write to DB
+        // This is a workaround for serverless environments where admin init can be tricky
+        // For simplicity in this context, we will log to console and attempt DB write.
+        console.log(`Webhook Log (${status}): ${details}`, logData);
         await db.collection('webhook_logs').add(logData);
     } catch (logError: any) {
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
@@ -62,7 +68,7 @@ function verifyAbacateSignature(rawBody: string, signatureFromHeader: string): b
 /**
  * Busca de forma flexível pelos metadados dentro do payload do evento.
  */
-function findMetadata(eventData: any): { externalId: string, plan: string } | null {
+function findMetadata(eventData: any): { externalId: string, plan: 'PREMIUM' | 'PROFISSIONAL' } | null {
     if (!eventData) return null;
 
     const potentialPaths = [
@@ -96,31 +102,20 @@ async function handlePayment(event: any) {
     if (metadata && metadata.externalId && metadata.plan) {
         const userId = metadata.externalId;
         const planName = metadata.plan;
-        const userRef = db.collection('users').doc(userId);
-
-        let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
-
-        if (planName === 'PREMIUM') {
-            newSubscriptionStatus = 'premium';
-        } else if (planName === 'PROFISSIONAL') {
-            newSubscriptionStatus = 'professional';
-        } else {
-            const message = `Plano desconhecido "${planName}" no webhook para o usuário ${userId}.`;
-            console.warn(message);
-            await saveWebhookLog(event, 'FAILURE', message);
-            return;
-        }
 
         try {
-            await userRef.update({ subscriptionStatus: newSubscriptionStatus });
-            const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`;
-            console.log(successMessage);
-            await saveWebhookLog(event, 'SUCCESS', successMessage);
+            // Use the Server Action to update the user's subscription
+            const updateResult = await updateUserSubscriptionAction(userId, planName);
+            if (updateResult.success) {
+                await saveWebhookLog(event, 'SUCCESS', updateResult.message);
+            } else {
+                throw new Error(updateResult.message);
+            }
         } catch (dbError: any) {
-            const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${dbError.message}`;
+            const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
-             // Re-throw a aposta para que a chamada de origem saiba que falhou
+            // Re-throw a aposta para que a chamada de origem saiba que falhou
             throw new Error(errorMessage);
         }
 
@@ -152,13 +147,11 @@ export async function POST(request: NextRequest) {
   
   if (!webhookSecretFromEnv) {
     console.error('CRITICAL: ABACATE_PAY_WEBHOOK_SECRET não está configurado no ambiente.');
-    // Não salve o log aqui porque o problema é de configuração do servidor
     return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
   }
 
   if (webhookSecretFromUrl !== webhookSecretFromEnv) {
       console.warn('Requisição de webhook recebida com secret inválido na URL.');
-      // Não salve o log, pois a requisição é provavelmente maliciosa.
       return new NextResponse('Webhook secret inválido.', { status: 401 });
   }
 
@@ -168,7 +161,6 @@ export async function POST(request: NextRequest) {
   
   if (!signature) {
      console.warn('Requisição de webhook recebida sem assinatura no cabeçalho.');
-     // Salve um log, pois pode ser uma falha de configuração do AbacatePay
      await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC ausente no cabeçalho.');
      return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
   }
