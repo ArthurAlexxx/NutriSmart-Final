@@ -51,17 +51,15 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
     const data = await response.json();
 
     if (!response.ok || data.error) {
-       // CORREÇÃO: Extrai a mensagem de erro do objeto aninhado
        const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
        console.error(`AbacatePay API Error for chargeId ${chargeId}:`, errorMessage);
        throw new Error(errorMessage);
     }
     
-    const status = data.data?.status;
+    const status = data.data?.pixQrCode?.status;
 
     if (status === 'PAID') {
-        // CORREÇÃO: Extrai metadados do local correto no objeto de resposta
-        const metadata = data.data?.metadata;
+        const metadata = data.data?.pixQrCode?.metadata;
         if (metadata && metadata.externalId && metadata.plan) {
             await updateSubscriptionStatus(metadata.externalId, metadata.plan);
             return NextResponse.json({ status: 'PAID' });

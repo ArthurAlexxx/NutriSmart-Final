@@ -73,7 +73,6 @@ export async function POST(request: NextRequest) {
     rawBody = await request.text();
     
     const headerPayload = headers();
-    // CORREÇÃO: Procurar pelo cabeçalho 'x-webhook-signature' que é o enviado pela Vercel.
     const signature = headerPayload.get('x-webhook-signature');
     const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
 
@@ -83,7 +82,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!signature) {
-      // Log para depuração: mostrar todos os cabeçalhos recebidos se a assinatura estiver faltando.
       const receivedHeaders: { [key: string]: string } = {};
       headerPayload.forEach((value, key) => {
         receivedHeaders[key] = value;
