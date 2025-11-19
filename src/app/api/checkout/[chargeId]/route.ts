@@ -1,4 +1,3 @@
-
 // src/app/api/checkout/[chargeId]/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -11,7 +10,7 @@ import { db } from '@/lib/firebase/admin';
 function findMetadataInCheckResponse(responseData: any) {
     if (!responseData) return null;
 
-    // Caminho 1: Padrão observado
+    // Caminho 1: Padrão observado em webhook
     if (responseData.pixQrCode?.metadata) {
         return responseData.pixQrCode.metadata;
     }
@@ -23,27 +22,6 @@ function findMetadataInCheckResponse(responseData: any) {
 
     return null;
 }
-
-async function updateSubscriptionStatus(userId: string, planName: string) {
-    let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
-
-    if (planName === 'PREMIUM') {
-        newSubscriptionStatus = 'premium';
-    } else if (planName === 'PROFISSIONAL') {
-        newSubscriptionStatus = 'professional';
-    } else {
-        // Se o plano não for reconhecido, não alteramos o status
-        throw new Error(`Plano desconhecido: ${planName}`);
-    }
-
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-        subscriptionStatus: newSubscriptionStatus,
-    });
-    
-    return newSubscriptionStatus;
-}
-
 
 export async function GET(request: NextRequest, { params }: { params: { chargeId: string } }) {
   const chargeId = params.chargeId;
@@ -77,20 +55,14 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
        throw new Error(errorMessage);
     }
     
-    const status = data.data?.pixQrCode?.status || data.data?.status;
+    // A API de /check retorna um objeto `data` com o status, não o payload completo.
+    const status = data.data?.status;
 
     if (status === 'PAID') {
-        const metadata = findMetadataInCheckResponse(data.data);
-        
-        if (metadata && metadata.externalId && metadata.plan) {
-            await updateSubscriptionStatus(metadata.externalId, metadata.plan);
-            return NextResponse.json({ status: 'PAID' });
-        } else {
-             console.error("Metadados ausentes ou inválidos na resposta do AbacatePay:", data.data);
-             // Retorna PENDING para que o cliente continue tentando, caso os metadados apareçam depois.
-             // Se fosse um erro definitivo, poderíamos retornar um erro 400.
-             return NextResponse.json({ status: 'PENDING', error: 'Metadados da cobrança ausentes ou inválidos.' });
-        }
+        // A rota de verificação manual NÃO deve atualizar o banco.
+        // Ela apenas confirma o status para o frontend.
+        // O webhook é a única fonte de verdade para a atualização.
+        return NextResponse.json({ status: 'PAID' });
     }
 
     // Se o status não for 'PAID', retorna 'PENDING'

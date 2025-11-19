@@ -15,20 +15,13 @@ let services: FirebaseAdminServices | null = null;
 
 function initializeAdminApp(): FirebaseAdminServices {
   // If services are already initialized, return them.
-  if (services) {
-    return services;
-  }
-  
-  // If the admin app is already initialized (e.g., by another part of the system or a previous request),
-  // use it to create our services object.
   if (admin.apps.length > 0) {
-    const app = admin.apps[0] as App;
-    services = {
-      app,
-      auth: admin.auth(app),
-      db: admin.firestore(app),
+    const existingApp = admin.apps[0] as App;
+    return {
+      app: existingApp,
+      auth: admin.auth(existingApp),
+      db: admin.firestore(existingApp),
     };
-    return services;
   }
 
   // Vercel environment variables for Firebase Admin
@@ -50,12 +43,11 @@ function initializeAdminApp(): FirebaseAdminServices {
       }),
     });
 
-    services = {
+    return {
       app,
       auth: admin.auth(app),
       db: admin.firestore(app),
     };
-    return services;
 
   } catch (error: any) {
     console.error("Falha crítica ao inicializar o Firebase Admin SDK:", error.message);
@@ -63,20 +55,22 @@ function initializeAdminApp(): FirebaseAdminServices {
   }
 }
 
-// Create getters that initialize the app on first use.
-// This lazy initialization prevents the code from running during the build process.
-const db = new Proxy({} as Firestore, {
+function getFirebaseAdmin(): FirebaseAdminServices {
+    if (!services) {
+        services = initializeAdminApp();
+    }
+    return services;
+}
+
+// Export getters that lazily initialize the app on first use.
+export const db: Firestore = new Proxy({} as Firestore, {
   get: (target, prop) => {
-    return Reflect.get(initializeAdminApp().db, prop);
+    return Reflect.get(getFirebaseAdmin().db, prop);
   },
 });
 
-const auth = new Proxy({} as Auth, {
+export const auth: Auth = new Proxy({} as Auth, {
   get: (target, prop) => {
-    return Reflect.get(initializeAdminApp().auth, prop);
+    return Reflect.get(getFirebaseAdmin().auth, prop);
   },
 });
-
-
-// Export the proxied instances.
-export { db, auth };

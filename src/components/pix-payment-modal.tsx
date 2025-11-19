@@ -147,13 +147,17 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       origin: { y: 0.6 },
       zIndex: 9999,
     });
-
+    
+    // Don't redirect. Just show success. The webhook will handle the update.
     setTimeout(() => {
         onOpenChange(false);
-        const destination = userProfile.profileType === 'professional' ? '/pro/patients' : '/dashboard';
-        router.push(destination);
-    }, 2500);
-  }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
+        toast({
+            title: "Pagamento Confirmado!",
+            description: "Sua assinatura será ativada em instantes. Você pode precisar recarregar a página."
+        })
+    }, 3000);
+
+  }, [onOpenChange, paymentStatus, toast]);
   
   const handleCheckPayment = useCallback(async () => {
     if (!chargeId || isVerifying || paymentStatus === 'PAID') return;
@@ -194,7 +198,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
             <div className='flex flex-col items-center gap-4 text-green-600 animate-in fade-in'>
                 <CheckCircle className="h-16 w-16" />
                 <p className='text-xl font-bold'>Pagamento Aprovado!</p>
-                <p className='text-sm text-muted-foreground'>Redirecionando para seu painel...</p>
+                <p className='text-sm text-muted-foreground max-w-xs'>Sua assinatura será atualizada em instantes. Agradecemos a sua confiança!</p>
             </div>
           )
       }
@@ -289,11 +293,11 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                     <DialogFooter className="flex-col gap-2">
                         <Button onClick={handleCheckPayment} disabled={isVerifying} className="w-full">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
-                             Verificar Pagamento
+                             Já Paguei, Verificar
                         </Button>
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">Aguardando confirmação do pagamento...</p>
+                            <p className="text-sm">Clique para confirmar após o pagamento.</p>
                         </div>
                     </DialogFooter>
                 )}
