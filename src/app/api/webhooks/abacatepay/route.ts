@@ -25,9 +25,10 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             details: details,
             createdAt: new Date(),
         };
+        // We use the firestore instance from firebase/admin to ensure we have write permissions
         await db.collection('webhook_logs').add(logData);
     } catch (logError: any) {
-        // Se a escrita do log falhar (ex: permissão), logue no console para não perder a informação.
+        // If writing the log fails (e.g., permissions), log to the console to not lose the info.
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
 }
@@ -101,7 +102,7 @@ async function handlePayment(event: any) {
         const planName = metadata.plan;
 
         try {
-            // Use a Server Action para ter certeza que estamos usando o admin context
+            // Use the Server Action to ensure we are using the admin context
             const updateResult = await updateUserSubscriptionAction(userId, planName);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
@@ -112,7 +113,7 @@ async function handlePayment(event: any) {
             const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
-            // Re-throw para que a chamada de origem saiba que falhou
+            // Re-throw so the calling function knows it failed
             throw new Error(errorMessage);
         }
 
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Payload malformado.', { status: 400 });
   }
 
-  // Camada 1: Validação do Secret na URL
+  // Layer 1: Secret validation in the URL
   const webhookSecretFromEnv = process.env.ABACATE_PAY_WEBHOOK_SECRET;
   const webhookSecretFromUrl = request.nextUrl.searchParams.get('webhookSecret');
   
@@ -152,13 +153,13 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Webhook secret inválido.', { status: 401 });
   }
 
-  // Camada 2: Validação da Assinatura HMAC no Cabeçalho
+  // Layer 2: HMAC Signature validation in the Header
   const headerPayload = headers();
   const signature = headerPayload.get('x-webhook-signature');
   
   if (!signature) {
      console.warn('Requisição de webhook recebida sem assinatura no cabeçalho.');
-     await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC ausente no cabeçalho.');
+     // Do not save log here as it could be a malicious request
      return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
   }
 
@@ -170,20 +171,21 @@ export async function POST(request: NextRequest) {
     return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
   }
     
-  // Se ambas as validações passaram, processa o pagamento
+  // If both validations passed, process the payment
   try {
       await handlePayment(event);
-      // Retorna 200 OK imediatamente para o AbacatePay saber que recebemos.
+      // Return 200 OK immediately for AbacatePay to know we received it.
+      // The payment processing happens in the background.
       return NextResponse.json({ received: true }, { status: 200 });
   } catch (error: any) {
-      // Erros durante o handlePayment são logados lá dentro.
-      // Aqui, respondemos com 500 para sinalizar ao AbacatePay para tentar novamente mais tarde.
+      // Errors during handlePayment are logged inside it.
+      // Here, we respond with 500 to signal AbacatePay to retry later.
       console.error("Erro no processamento do webhook em segundo plano:", error);
       return new NextResponse('Erro interno ao processar o webhook.', { status: 500 });
   }
 }
 
-// Handler para GET para evitar erros de "Method Not Allowed" e fornecer feedback
+// Handler for GET to avoid "Method Not Allowed" errors and provide feedback
 export async function GET() {
     return NextResponse.json({ message: 'Endpoint de webhook do AbacatePay. Use POST para enviar dados.' }, { status: 200 });
 }
