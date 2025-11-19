@@ -18,7 +18,6 @@ import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import PixPaymentModal from "../pix-payment-modal";
-import ProfileSettingsModal from "../profile-settings-modal";
 import { useToast } from "@/hooks/use-toast";
 
 const plans = [
@@ -82,7 +81,6 @@ function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { user, userProfile } = useUser();
   const { toast } = useToast();
 
@@ -102,18 +100,6 @@ function Pricing() {
     const isCurrentPlan = (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') || 
                           (userProfile.subscriptionStatus === 'professional' && plan.name === 'PROFISSIONAL');
     if (isCurrentPlan) return;
-
-    // Check if profile data is complete before proceeding to payment
-    const { fullName, phone, taxId } = userProfile;
-    if (!fullName || !phone || !taxId) {
-        toast({
-            title: "Dados Incompletos",
-            description: "Por favor, complete seu nome, celular e CPF/CNPJ para continuar com a assinatura.",
-            variant: "default",
-        });
-        setIsProfileModalOpen(true);
-        return;
-    }
     
     setSelectedPlan(plan);
     setIsPixModalOpen(true);
@@ -206,14 +192,6 @@ function Pricing() {
             plan={selectedPlan}
             isYearly={isYearly}
             userProfile={userProfile}
-        />
-    )}
-    {user && userProfile && (
-        <ProfileSettingsModal
-            isOpen={isProfileModalOpen}
-            onOpenChange={setIsProfileModalOpen}
-            userProfile={userProfile}
-            userId={user.uid}
         />
     )}
     </>
