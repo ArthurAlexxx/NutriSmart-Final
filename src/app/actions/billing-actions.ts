@@ -31,7 +31,7 @@ export async function updateUserSubscriptionAction(userId: string, planName: 'PR
     return { success: true, message: successMessage };
   } catch (error: any) {
     const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${error.message}`;
-    console.error(errorMessage);
+    console.error(errorMessage, error); // Log the full error for more context
     return Promise.reject(new Error(errorMessage));
   }
 }
@@ -76,17 +76,16 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         }
         
         const planName = metadata.plan as 'PREMIUM' | 'PROFISSIONAL';
-        let newSubscriptionStatus: 'premium' | 'professional' = 'premium'; // Default to premium
-        if (planName === 'PROFISSIONAL') {
-            newSubscriptionStatus = 'professional';
-        }
-
-        // 2. Update user document in Firestore using the Admin SDK
-        // This leverages the server's admin privileges.
-        const userRef = db.collection('users').doc(userId);
-        await userRef.update({ subscriptionStatus: newSubscriptionStatus });
         
-        return { success: true, message: `Assinatura atualizada para ${newSubscriptionStatus} com sucesso.` };
+        // 2. Update user document in Firestore using the Admin SDK
+        // This leverages the server's admin privileges via our robust admin initialization.
+        const updateResult = await updateUserSubscriptionAction(userId, planName);
+
+        if (updateResult.success) {
+            return { success: true, message: `Assinatura atualizada para ${planName} com sucesso.` };
+        } else {
+            throw new Error(updateResult.message);
+        }
 
     } catch (error: any) {
         console.error("Erro ao finalizar a assinatura:", error);

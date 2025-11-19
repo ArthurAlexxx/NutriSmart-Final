@@ -13,35 +13,40 @@ interface FirebaseAdminServices {
 
 let services: FirebaseAdminServices | null = null;
 
+/**
+ * Initializes the Firebase Admin SDK using a service account key from environment variables.
+ * This function follows a robust singleton pattern suitable for serverless environments like Vercel.
+ * @returns {FirebaseAdminServices} The initialized Firebase Admin services.
+ */
 function initializeAdminApp(): FirebaseAdminServices {
   // If services are already initialized, return them to avoid re-initializing.
   if (services) {
     return services;
   }
   
-  // If the app is already initialized (e.g., by a previous serverless invocation), reuse it.
+  // If the default app is already initialized, reuse it.
+  // This can happen if multiple serverless function invocations occur in close succession.
   if (admin.apps.length > 0 && admin.apps[0]) {
     const existingApp = admin.apps[0];
-    const existingServices: FirebaseAdminServices = {
+    services = {
       app: existingApp,
       auth: admin.auth(existingApp),
       db: admin.firestore(existingApp),
     };
-    // Cache the services
-    services = existingServices;
-    return existingServices;
+    return services;
   }
   
-  // Vercel-recommended approach: Use a single service account key from env vars.
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida.');
+  // The recommended approach for Vercel: use a single service account key from env vars.
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey) {
+      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. Este é um JSON completo da chave de serviço do Firebase.');
   }
 
   try {
     // Parse the service account key from the environment variable.
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    const serviceAccount = JSON.parse(serviceAccountKey);
     
-    // Initialize the Firebase Admin SDK.
+    // Initialize the Firebase Admin SDK with the parsed credentials.
     const app = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
@@ -57,12 +62,13 @@ function initializeAdminApp(): FirebaseAdminServices {
     return newServices;
 
   } catch (e: any) {
-    console.error('Falha crítica ao inicializar o Firebase Admin com a chave de serviço. Verifique se o JSON é válido.', e.message);
+    console.error('Falha crítica ao inicializar o Firebase Admin. Verifique o JSON em FIREBASE_SERVICE_ACCOUNT_KEY.', e.message);
     throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não é um JSON válido ou está corrompida.');
   }
 }
 
 // Export getters that lazily initialize the app on first use.
+// This proxy ensures initializeAdminApp() is only called when 'db' or 'auth' is accessed.
 export const db: Firestore = new Proxy({} as Firestore, {
   get: (target, prop) => Reflect.get(initializeAdminApp().db, prop),
 });

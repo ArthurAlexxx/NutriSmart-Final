@@ -69,16 +69,20 @@ function verifyAbacateSignature(rawBody: string, signatureFromHeader: string): b
 function findMetadata(eventData: any): { externalId: string, plan: 'PREMIUM' | 'PROFISSIONAL' } | null {
     if (!eventData) return null;
 
-    const potentialPaths = [
-        eventData.pixQrCode?.metadata,
-        eventData.charge?.metadata,
-        eventData.metadata
-    ];
-
-    for (const path of potentialPaths) {
-        if (path && path.externalId && path.plan) {
-            return path;
-        }
+    // Based on the AbacatePay docs, the metadata for a PIX payment is here:
+    const metadataPath = eventData.pixQrCode?.metadata;
+    
+    if (metadataPath && metadataPath.externalId && metadataPath.plan) {
+        return {
+            externalId: metadataPath.externalId,
+            plan: metadataPath.plan,
+        };
+    }
+    
+    // Fallback for other potential structures, though less likely for billing.paid
+    const fallbackPath = eventData.metadata || eventData.charge?.metadata;
+     if (fallbackPath && fallbackPath.externalId && fallbackPath.plan) {
+        return fallbackPath;
     }
     
     return null;
