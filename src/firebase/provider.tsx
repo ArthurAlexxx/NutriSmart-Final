@@ -8,7 +8,6 @@ import { Firestore, doc, onSnapshot, updateDoc, setDoc, serverTimestamp, Timesta
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 import type { UserProfile } from '@/types/user';
-import { addDays } from 'date-fns';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -124,7 +123,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         profileType: 'patient',
                         role: 'patient',
                         dashboardShareCode: newShareCode, // Add share code on creation
-                        subscriptionStatus: 'free', // New users start as free
+                        subscriptionStatus: 'free',
                         calorieGoal: 2000,
                         proteinGoal: 140,
                         waterGoal: 2000,

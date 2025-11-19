@@ -295,7 +295,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
 
         await updateDoc(roomRef, {
             activePlan: newActivePlan,
-            planHistory: arrayUnion(oldPlan),
+            planHistory: oldPlan && oldPlan.meals.length > 0 ? arrayUnion(oldPlan) : arrayUnion(),
         });
         
         form.reset({
