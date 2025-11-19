@@ -39,7 +39,6 @@ const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
     { href: '/pro/library', label: 'Biblioteca', icon: Library },
     { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
-    { href: '/pro/webhooks', label: 'Webhooks', icon: Webhook },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
@@ -98,10 +97,10 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   useEffect(() => {
     // If the user is not a professional but is trying to access a pro page,
     // redirect them to the standard dashboard.
-    if (!isProUser && pathname.startsWith('/pro')) {
+    if (user && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
-  }, [isProUser, pathname, router]);
+  }, [isProUser, pathname, router, user]);
 
   const handleSignOut = async () => {
     if (!auth) return;
