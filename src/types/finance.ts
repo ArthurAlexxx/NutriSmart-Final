@@ -3,7 +3,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 export interface FinancialTransaction {
     id: string;
-    tenantId: string;
+    userId: string;
     description: string;
     amount: number;
     type: 'income' | 'expense';
@@ -11,5 +11,3 @@ export interface FinancialTransaction {
     date: Timestamp;
     createdAt: Timestamp;
 }
-
-    

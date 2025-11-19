@@ -39,6 +39,7 @@ const navItemsPatient = [
 
 const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
+    { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {

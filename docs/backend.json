@@ -99,6 +99,20 @@
         "recipe": { "type": "object" }
       },
       "required": ["userId", "role", "content"]
+    },
+    "FinancialTransaction": {
+        "title": "FinancialTransaction",
+        "type": "object",
+        "description": "Represents a single financial transaction (income or expense) for a professional user.",
+        "properties": {
+            "userId": { "type": "string" },
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "type": { "type": "string", "enum": ["income", "expense"] },
+            "category": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "description", "amount", "type", "category", "date"]
     }
   },
   "auth": {
@@ -146,6 +160,13 @@
         "definition": {
           "schema": { "$ref": "#/entities/ChefMessage" },
           "description": "Stores the chat history between a user and the virtual chef."
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+            "schema": { "$ref": "#/entities/FinancialTransaction" },
+            "description": "Stores all financial transactions for a professional user."
         }
       }
     ]
