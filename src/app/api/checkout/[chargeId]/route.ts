@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/[chargeId]/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -10,6 +11,7 @@ async function updateSubscriptionStatus(userId: string, planName: string) {
     } else if (planName === 'PROFISSIONAL') {
         newSubscriptionStatus = 'professional';
     } else {
+        // Se o plano não for reconhecido, não alteramos o status
         throw new Error(`Plano desconhecido: ${planName}`);
     }
 
@@ -43,11 +45,13 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
         'Authorization': `Bearer ${abacateApiKey}`,
         'Content-Type': 'application/json',
       },
+      cache: 'no-store', // Garante que a verificação sempre busque o status mais recente
     });
 
     const data = await response.json();
 
     if (!response.ok || data.error) {
+       // CORREÇÃO: Extrai a mensagem de erro do objeto aninhado
        const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
        console.error(`AbacatePay API Error for chargeId ${chargeId}:`, errorMessage);
        throw new Error(errorMessage);
@@ -56,15 +60,18 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
     const status = data.data?.status;
 
     if (status === 'PAID') {
+        // CORREÇÃO: Extrai metadados do local correto no objeto de resposta
         const metadata = data.data?.metadata;
         if (metadata && metadata.externalId && metadata.plan) {
             await updateSubscriptionStatus(metadata.externalId, metadata.plan);
             return NextResponse.json({ status: 'PAID' });
         } else {
+             console.error("Metadados ausentes ou inválidos na resposta do AbacatePay:", data.data);
              return NextResponse.json({ error: 'Metadados da cobrança ausentes ou inválidos.' }, { status: 400 });
         }
     }
 
+    // Se o status não for 'PAID', retorna 'PENDING'
     return NextResponse.json({ status: 'PENDING' });
 
   } catch (error: any) {

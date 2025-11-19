@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
     rawBody = await request.text();
     
     const headerPayload = headers();
-    // Tentativa robusta de obter a assinatura, insensível a maiúsculas/minúsculas.
-    const signature = headerPayload.get('abacate-signature') || headerPayload.get('Abacate-Signature');
+    // CORREÇÃO: Procurar pelo cabeçalho 'x-webhook-signature' que é o enviado pela Vercel.
+    const signature = headerPayload.get('x-webhook-signature');
     const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
@@ -105,11 +105,13 @@ export async function POST(request: NextRequest) {
     
     const event = JSON.parse(rawBody);
     
+    // Processa o pagamento em segundo plano para responder rapidamente.
     handlePayment(event).catch(err => {
       console.error("Erro no processamento do webhook em segundo plano:", err);
       saveWebhookLog(event, 'FAILURE', err.message || 'Erro desconhecido no processamento em segundo plano.');
     });
 
+    // Retorna 200 OK imediatamente para o AbacatePay saber que recebemos.
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
@@ -123,6 +125,7 @@ export async function POST(request: NextRequest) {
     
     await saveWebhookLog(payloadForLog, 'FAILURE', `Erro de parsing ou inicial: ${error.message}`);
     
+    // Responde com 200 para evitar que o AbacatePay fique tentando reenviar um payload malformado.
     return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 200 });
   }
 }
