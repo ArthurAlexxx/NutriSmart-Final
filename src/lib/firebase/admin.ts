@@ -1,3 +1,4 @@
+
 // src/lib/firebase/admin.ts
 import * as admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
@@ -14,18 +15,19 @@ interface FirebaseAdminServices {
 let services: FirebaseAdminServices | null = null;
 
 function initializeAdminApp(): FirebaseAdminServices {
-  // If services are already initialized, return them
+  // If services are already initialized, return them.
   if (services) {
     return services;
   }
   
-  // If admin.apps has already been populated, use the existing app
+  // If the admin app is already initialized (e.g., by another part of the system or a previous request),
+  // use it to create our services object.
   if (admin.apps.length > 0) {
     const app = admin.apps[0] as App;
     services = {
-        app,
-        auth: admin.auth(app),
-        db: admin.firestore(app),
+      app,
+      auth: admin.auth(app),
+      db: admin.firestore(app),
     };
     return services;
   }
@@ -62,15 +64,20 @@ function initializeAdminApp(): FirebaseAdminServices {
   }
 }
 
-// Create getters that initialize the app on first use
-function getDb(): Firestore {
-    return initializeAdminApp().db;
-}
+// Create getters that initialize the app on first use.
+// This lazy initialization prevents the code from running during the build process.
+const db = new Proxy({} as Firestore, {
+  get: (target, prop) => {
+    return Reflect.get(initializeAdminApp().db, prop);
+  },
+});
 
-function getAuth(): Auth {
-    return initializeAdminApp().auth;
-}
+const auth = new Proxy({} as Auth, {
+  get: (target, prop) => {
+    return Reflect.get(initializeAdminApp().auth, prop);
+  },
+});
 
-// Export getters that will be evaluated at runtime
-export const db = getDb();
-export const auth = getAuth();
+
+// Export the proxied instances.
+export { db, auth };
