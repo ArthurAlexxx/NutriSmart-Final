@@ -42,7 +42,7 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
 
   const onSubmit = async (data: CreateRoomFormValues) => {
     if (!firestore) {
-        toast({ title: 'Erro', description: 'Serviço de banco de dados não disponível.' });
+        toast({ title: 'Erro de Conexão', description: 'Serviço de banco de dados não disponível. Tente mais tarde.', variant: 'destructive'});
         return;
     }
     try {
@@ -67,8 +67,8 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
             name: patientData.fullName,
             email: patientData.email,
         };
-        if (patientData.age) patientInfo.age = patientData.age;
-        if (patientData.weight) patientInfo.weight = patientData.weight;
+        if (patientData.age !== undefined) patientInfo.age = patientData.age;
+        if (patientData.weight !== undefined) patientInfo.weight = patientData.weight;
         
         const newRoomData: Omit<Room, 'id'> = {
           roomName: data.roomName,
@@ -111,13 +111,9 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
         onOpenChange(false);
     } catch (error: any) {
       console.error("Failed to create room:", error);
-      let errorMessage = error.message || "Verifique o código e tente novamente.";
-       if (error.code === 'invalid-argument') {
-            errorMessage = 'Ocorreu um erro com os dados fornecidos. Certifique-se de que o paciente tenha um perfil completo.';
-       }
       toast({
         title: "Erro ao Criar Sala",
-        description: errorMessage,
+        description: error.message || "Não foi possível criar a sala. Verifique o código e tente novamente.",
         variant: "destructive",
       });
     }

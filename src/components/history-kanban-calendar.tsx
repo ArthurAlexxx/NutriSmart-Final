@@ -31,8 +31,8 @@ export default function HistoryKanbanCalendar({ selectedDate, onDateSelect }: Hi
   };
   
   const isNextDisabled = () => {
-      const tomorrow = startOfDay(addDays(new Date(), 1));
-      return daysToDisplay.some(day => isEqual(startOfDay(day), tomorrow) || startOfDay(day) > tomorrow) || daysToDisplay.some(day => isToday(day));
+      const today = startOfDay(new Date());
+      return daysToDisplay.some(day => isEqual(startOfDay(day), today) || startOfDay(day) > today);
   }
 
   return (

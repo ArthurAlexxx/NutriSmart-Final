@@ -132,7 +132,7 @@ function RegisterForm() {
             <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                 
                 <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                    <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                  <FormField control={registerForm.control} name="phone" render={({ field }) => (
                     <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
