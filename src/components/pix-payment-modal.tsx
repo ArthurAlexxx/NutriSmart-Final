@@ -1,9 +1,9 @@
 // src/components/pix-payment-modal.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon, RefreshCw } from 'lucide-react';
+import { Loader2, Copy, Clock, CheckCircle, ArrowRight, User as UserIcon, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { Button } from './ui/button';
@@ -136,10 +136,10 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const handleSuccessfulPayment = useCallback((paidChargeId: string) => {
     if (paymentStatus === 'PAID') return;
     
-    // Store charge ID for client-side finalization
+    setPaymentStatus('PAID');
+    // Store charge ID in localStorage for client-side finalization on the dashboard.
     localStorage.setItem('pendingChargeId', paidChargeId);
 
-    setPaymentStatus('PAID');
     confetti({
       particleCount: 150,
       spread: 80,
@@ -147,13 +147,15 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       zIndex: 9999,
     });
     
+    toast({
+        title: "Pagamento Confirmado!",
+        description: "Sua assinatura será ativada em instantes. Redirecionando...",
+        duration: 4000,
+    });
+    
     setTimeout(() => {
         onOpenChange(false);
-        toast({
-            title: "Pagamento Confirmado!",
-            description: "Sua assinatura será ativada em instantes. Agradecemos a confiança!",
-            duration: 5000,
-        })
+        // We no longer redirect from here. The dashboard will handle the final update.
     }, 3000);
 
   }, [onOpenChange, paymentStatus, toast]);
@@ -296,7 +298,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                         </Button>
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">Aguarde. A atualização da assinatura será feita aqui.</p>
+                            <p className="text-sm">A atualização da assinatura é automática via webhook.</p>
                         </div>
                     </DialogFooter>
                 )}

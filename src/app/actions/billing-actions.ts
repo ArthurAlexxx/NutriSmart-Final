@@ -1,10 +1,12 @@
 // src/app/actions/billing-actions.ts
 'use server';
 import { db } from '@/lib/firebase/admin';
+import type { UserProfile } from '@/types/user';
+
 
 /**
  * Updates a user's subscription status in Firestore.
- * This action is intended to be called by a trusted server-side process, like a webhook handler.
+ * This action is called by a trusted server process (like a webhook) which has admin privileges.
  * @param userId - The ID of the user to update.
  * @param planName - The name of the plan to assign ('PREMIUM' or 'PROFISSIONAL').
  * @returns An object indicating success or failure.
@@ -14,13 +16,11 @@ export async function updateUserSubscriptionAction(userId: string, planName: 'PR
     return { success: false, message: 'User ID ou nome do plano inválido.' };
   }
 
-  let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
+  let newSubscriptionStatus: 'premium' | 'professional' = 'premium';
   if (planName === 'PREMIUM') {
     newSubscriptionStatus = 'premium';
   } else if (planName === 'PROFISSIONAL') {
     newSubscriptionStatus = 'professional';
-  } else {
-    return { success: false, message: `Plano desconhecido: ${planName}` };
   }
 
   try {
@@ -32,14 +32,14 @@ export async function updateUserSubscriptionAction(userId: string, planName: 'PR
   } catch (error: any) {
     const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${error.message}`;
     console.error(errorMessage);
-    // Return a failed promise to be caught by the caller
     return Promise.reject(new Error(errorMessage));
   }
 }
 
 /**
- * Verifies a chargeId and updates the user's subscription if the payment is confirmed.
- * This action is called from the client-side and uses the user's own permissions.
+ * Verifies a chargeId against the payment gateway and, if successful,
+ * updates the user's subscription status in Firestore.
+ * This action is initiated from the client-side but runs on the server.
  * @param userId - The ID of the user to update.
  * @param chargeId - The payment charge ID to verify.
  * @returns An object indicating success or failure.
@@ -51,6 +51,7 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
 
     const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
     if (!abacateApiKey) {
+        console.error("ABACATE_PAY_API_KEY is not configured on the server.");
         return { success: false, message: "Gateway de pagamento não configurado." };
     }
 
@@ -66,7 +67,7 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         const data = await response.json();
 
         if (!response.ok || data.data?.status !== 'PAID') {
-            return { success: false, message: "Pagamento não confirmado." };
+            return { success: false, message: "Pagamento não confirmado ou ainda pendente." };
         }
         
         const metadata = data.data?.pixQrCode?.metadata;
@@ -75,21 +76,20 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         }
         
         const planName = metadata.plan as 'PREMIUM' | 'PROFISSIONAL';
-        let newSubscriptionStatus: 'premium' | 'professional' = 'premium';
+        let newSubscriptionStatus: 'premium' | 'professional' = 'premium'; // Default to premium
         if (planName === 'PROFISSIONAL') {
             newSubscriptionStatus = 'professional';
         }
 
-        // 2. Update user document in Firestore
-        // This write will succeed because it's initiated by a server action,
-        // which should use admin privileges implicitly.
+        // 2. Update user document in Firestore using the Admin SDK
+        // This leverages the server's admin privileges.
         const userRef = db.collection('users').doc(userId);
         await userRef.update({ subscriptionStatus: newSubscriptionStatus });
         
-        return { success: true, message: `Assinatura atualizada para ${newSubscriptionStatus}.` };
+        return { success: true, message: `Assinatura atualizada para ${newSubscriptionStatus} com sucesso.` };
 
     } catch (error: any) {
-        console.error("Error finalizing subscription:", error);
+        console.error("Erro ao finalizar a assinatura:", error);
         return { success: false, message: error.message || "Erro desconhecido ao finalizar a assinatura." };
     }
 }

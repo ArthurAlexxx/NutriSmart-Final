@@ -25,12 +25,9 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             details: details,
             createdAt: new Date(),
         };
-        // Use a Server Action which has the correct context to write to DB
-        // This is a workaround for serverless environments where admin init can be tricky
-        // For simplicity in this context, we will log to console and attempt DB write.
-        console.log(`Webhook Log (${status}): ${details}`, logData);
         await db.collection('webhook_logs').add(logData);
     } catch (logError: any) {
+        // Se a escrita do log falhar (ex: permissão), logue no console para não perder a informação.
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
 }
@@ -104,7 +101,7 @@ async function handlePayment(event: any) {
         const planName = metadata.plan;
 
         try {
-            // Use the Server Action to update the user's subscription
+            // Use a Server Action para ter certeza que estamos usando o admin context
             const updateResult = await updateUserSubscriptionAction(userId, planName);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
@@ -115,7 +112,7 @@ async function handlePayment(event: any) {
             const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
-            // Re-throw a aposta para que a chamada de origem saiba que falhou
+            // Re-throw para que a chamada de origem saiba que falhou
             throw new Error(errorMessage);
         }
 
@@ -179,7 +176,7 @@ export async function POST(request: NextRequest) {
       // Retorna 200 OK imediatamente para o AbacatePay saber que recebemos.
       return NextResponse.json({ received: true }, { status: 200 });
   } catch (error: any) {
-      // Erros durante o handlePayment (ex: DB offline) são logados lá dentro.
+      // Erros durante o handlePayment são logados lá dentro.
       // Aqui, respondemos com 500 para sinalizar ao AbacatePay para tentar novamente mais tarde.
       console.error("Erro no processamento do webhook em segundo plano:", error);
       return new NextResponse('Erro interno ao processar o webhook.', { status: 500 });

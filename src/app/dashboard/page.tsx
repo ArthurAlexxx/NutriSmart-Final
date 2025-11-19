@@ -1,4 +1,3 @@
-
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -13,6 +12,7 @@ import { collection, query, onSnapshot, deleteDoc, updateDoc, setDoc, Unsubscrib
 import { useRouter } from 'next/navigation';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useUser, useFirestore } from '@/firebase';
+import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 import AppLayout from '@/components/app-layout';
 import EditMealModal from '@/components/edit-meal-modal';
@@ -26,7 +26,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
-import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 
 export default function DashboardPage() {
@@ -50,28 +49,31 @@ export default function DashboardPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    // Client-side check to finalize payment
-    if (user && userProfile?.subscriptionStatus === 'free') {
-        const pendingChargeId = localStorage.getItem('pendingChargeId');
-        if (pendingChargeId) {
-            verifyAndFinalizeSubscription(user.uid, pendingChargeId)
-                .then(result => {
+    // Client-side check to finalize payment from localStorage
+    const finalizePayment = async () => {
+        if (user && userProfile?.subscriptionStatus === 'free') {
+            const pendingChargeId = localStorage.getItem('pendingChargeId');
+            if (pendingChargeId) {
+                try {
+                    const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
                     if (result.success) {
                         toast({ title: "Assinatura Ativada!", description: "Seu plano foi atualizado com sucesso." });
                         localStorage.removeItem('pendingChargeId');
                         // The userProfile will update via the onSnapshot listener in useUser
-                    } else {
-                        // Optional: handle cases where verification fails
-                        console.error("Falha na finalização da assinatura:", result.message);
-                        localStorage.removeItem('pendingChargeId'); // Clean up failed attempts
+                    } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
+                        // Only show error if it's not a pending payment, to avoid annoying the user.
+                        toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
+                        localStorage.removeItem('pendingChargeId'); // Clean up failed/invalid attempts
                     }
-                })
-                .catch(err => {
+                } catch (err: any) {
                     console.error("Erro ao tentar finalizar assinatura:", err);
+                    toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
                     localStorage.removeItem('pendingChargeId');
-                });
+                }
+            }
         }
-    }
+    };
+    finalizePayment();
   }, [user, userProfile, toast]);
 
   useEffect(() => {
