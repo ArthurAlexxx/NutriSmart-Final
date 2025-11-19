@@ -39,6 +39,7 @@ const navItemsPatient = [
 
 const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
+    { href: '/pro/library', label: 'Biblioteca', icon: Library },
     { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
 ];
 

@@ -113,6 +113,23 @@
             "date": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "description", "amount", "type", "category", "date"]
+    },
+    "PlanTemplate": {
+      "title": "PlanTemplate",
+      "type": "object",
+      "description": "A reusable meal plan template created by a professional.",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "calorieGoal": { "type": "number" },
+        "hydrationGoal": { "type": "number" },
+        "meals": { 
+          "type": "array", 
+          "items": { "$ref": "#/entities/MealPlanItem" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "calorieGoal", "hydrationGoal", "meals", "createdAt"]
     }
   },
   "auth": {
@@ -132,6 +149,13 @@
         "definition": {
           "schema": { "$ref": "#/entities/ActivePlan" },
           "description": "Stores user-specific meal plans, such as the active plan."
+        }
+      },
+      {
+        "path": "/users/{userId}/plan_templates/{templateId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/PlanTemplate" },
+          "description": "Stores reusable meal plan templates created by a professional user."
         }
       },
       {

@@ -1,6 +1,7 @@
 // src/components/pro/create-plan-template-modal.tsx
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,13 +10,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Save, Trash2, Droplet, Flame } from 'lucide-react';
+import { Loader2, Plus, Save, Trash2, Droplet, Flame, Rocket } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import type { PlanTemplate } from '@/types/library';
 
 const mealPlanItemSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, 'O tipo de refeição é obrigatório.'),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
   items: z.string().min(3, 'Descreva os itens da refeição.'),
@@ -24,8 +27,9 @@ const mealPlanItemSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(3, 'O nome do modelo é obrigatório.'),
   description: z.string().optional(),
-  calorieGoal: z.coerce.number().min(1, 'A meta de calorias é obrigatória.'),
-  hydrationGoal: z.coerce.number().min(1, 'A meta de hidratação é obrigatória.'),
+  calorieGoal: z.coerce.number().positive('A meta de calorias deve ser positiva.'),
+  proteinGoal: z.coerce.number().positive('A meta de proteínas deve ser positiva.'),
+  hydrationGoal: z.coerce.number().positive('A meta de hidratação é obrigatória.'),
   meals: z.array(mealPlanItemSchema).min(1, 'Adicione pelo menos uma refeição ao modelo.'),
 });
 
@@ -35,9 +39,10 @@ interface CreatePlanTemplateModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   userId: string;
+  template: PlanTemplate | null;
 }
 
-const defaultMealValues: Omit<z.infer<typeof mealPlanItemSchema>, 'id'> = { name: '', time: '08:00', items: '' };
+const defaultMealValues: Omit<z.infer<typeof mealPlanItemSchema>, 'id'> = { name: 'Café da Manhã', time: '08:00', items: '' };
 
 const mealTypeOptions = [
     { value: 'Café da Manhã', label: 'Café da Manhã' },
@@ -48,15 +53,18 @@ const mealTypeOptions = [
     { value: 'Ceia', label: 'Ceia' },
 ];
 
-export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }: CreatePlanTemplateModalProps) {
+export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, template }: CreatePlanTemplateModalProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const isEditing = !!template;
+
   const form = useForm<PlanTemplateFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
       calorieGoal: NaN,
+      proteinGoal: NaN,
       hydrationGoal: NaN,
       meals: [defaultMealValues],
     },
@@ -67,6 +75,32 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
     name: 'meals',
   });
 
+  useEffect(() => {
+    if (isOpen && template) {
+      form.reset({
+        name: template.name,
+        description: template.description,
+        calorieGoal: template.calorieGoal,
+        proteinGoal: template.proteinGoal,
+        hydrationGoal: template.hydrationGoal,
+        meals: template.meals,
+      });
+    } else {
+      form.reset({
+        name: '', description: '', calorieGoal: NaN, proteinGoal: NaN, hydrationGoal: NaN, meals: [defaultMealValues],
+      });
+    }
+  }, [isOpen, template, form]);
+  
+  const watchedCalorieGoal = form.watch('calorieGoal');
+
+  useEffect(() => {
+      if (watchedCalorieGoal > 0 && form.formState.dirtyFields.calorieGoal) {
+          const newProteinGoal = Math.round((watchedCalorieGoal * 0.35) / 4);
+          form.setValue('proteinGoal', newProteinGoal, { shouldDirty: true });
+      }
+  }, [watchedCalorieGoal, form]);
+
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: PlanTemplateFormValues) => {
@@ -76,21 +110,19 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
     }
     
     try {
-        const templatesRef = collection(firestore, `users/${userId}/plan_templates`);
-        await addDoc(templatesRef, { ...data, createdAt: serverTimestamp() });
-        toast({
-            title: "Modelo Criado!",
-            description: "Seu novo modelo de plano foi salvo na biblioteca.",
-        });
-        form.reset();
+        if (isEditing && template) {
+            const templateRef = doc(firestore, 'users', userId, 'plan_templates', template.id);
+            await updateDoc(templateRef, data);
+            toast({ title: 'Modelo Atualizado!', description: 'O modelo de plano foi salvo com sucesso.'});
+        } else {
+            const templatesRef = collection(firestore, `users/${userId}/plan_templates`);
+            await addDoc(templatesRef, { ...data, createdAt: serverTimestamp() });
+            toast({ title: 'Modelo Criado!', description: 'Seu novo modelo de plano foi salvo na biblioteca.'});
+        }
         onOpenChange(false);
     } catch (error: any) {
-        console.error('Error creating plan template:', error);
-        toast({
-            title: "Erro ao Criar Modelo",
-            description: error.message || 'Ocorreu um erro desconhecido.',
-            variant: "destructive",
-        });
+        console.error('Error saving plan template:', error);
+        toast({ title: 'Erro ao Salvar', description: error.message || 'Ocorreu um erro desconhecido.', variant: "destructive" });
     }
   };
 
@@ -98,9 +130,9 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl flex flex-col p-0 max-h-[90svh]">
         <DialogHeader className='p-6 pb-4 shrink-0'>
-          <DialogTitle className="text-2xl font-bold">Novo Modelo de Plano</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</DialogTitle>
           <DialogDescription>
-            Crie um plano alimentar base para reutilizar com seus pacientes.
+            {isEditing ? 'Ajuste os detalhes deste modelo.' : 'Crie um plano alimentar base para reutilizar com seus pacientes.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -108,37 +140,22 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
             <div className="flex-1 overflow-y-auto px-6">
                 <div className="space-y-6 pt-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Nome do Modelo *</FormLabel>
-                            <FormControl><Input placeholder="Ex: Plano de Emagrecimento (2000 kcal)" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
+                        <FormItem><FormLabel>Nome do Modelo *</FormLabel><FormControl><Input placeholder="Ex: Plano de Emagrecimento (2000 kcal)" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="description" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descrição (Opcional)</FormLabel>
-                            <FormControl><Textarea placeholder="Descreva o objetivo deste plano" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
+                        <FormItem><FormLabel>Descrição (Opcional)</FormLabel><FormControl><Textarea placeholder="Descreva o objetivo deste plano" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField control={form.control} name="calorieGoal" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="flex items-center gap-2"><Flame className="h-4 w-4" /> Meta de Calorias (kcal) *</FormLabel>
-                                <FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
+                            <FormItem><FormLabel className="flex items-center gap-2"><Flame className="h-4 w-4" /> Calorias *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="proteinGoal" render={({ field }) => (
+                            <FormItem><FormLabel className="flex items-center gap-2"><Rocket className="h-4 w-4" /> Proteínas *</FormLabel><FormControl><Input type="number" placeholder="Ex: 140" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
                         <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="flex items-center gap-2"><Droplet className="h-4 w-4" /> Meta de Hidratação (ml) *</FormLabel>
-                                <FormControl><Input type="number" placeholder="Ex: 2500" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
+                            <FormItem><FormLabel className="flex items-center gap-2"><Droplet className="h-4 w-4" /> Hidratação (ml) *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2500" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
                     </div>
-
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold">Refeições *</h3>
@@ -149,18 +166,7 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId }
                                 <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <FormField control={form.control} name={`meals.${index}.name`} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Tipo</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {mealTypeOptions.map(option => (
-                                                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
+                                            <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl><SelectContent>{mealTypeOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                                         )}/>
                                         <FormField control={form.control} name={`meals.${index}.time`} render={({ field }) => (
                                             <FormItem><FormLabel>Horário</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
