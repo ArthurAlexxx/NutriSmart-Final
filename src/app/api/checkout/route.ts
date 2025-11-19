@@ -8,9 +8,9 @@ const plans: { [key: string]: { monthly: number, yearly: number } } = {
     monthly: 1990, // R$ 19,90 em centavos
     yearly: 19080, // R$ 15.90 * 12 em centavos
   },
-  CLINICO: {
-    monthly: 9990, // R$ 99,90 em centavos
-    yearly: 95880, // R$ 79.90 * 12 em centavos
+  PROFISSIONAL: {
+    monthly: 4990, // R$ 49,90 em centavos
+    yearly: 47880, // R$ 39.90 * 12 em centavos
   }
 };
 

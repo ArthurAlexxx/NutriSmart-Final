@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Compara a assinatura gerada com a assinatura enviada pelo AbacatePay
     if (signature !== expectedSignature) {
+      console.warn('Assinatura de webhook inválida recebida.');
       return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 403 });
     }
     
@@ -39,14 +40,26 @@ export async function POST(request: NextRequest) {
       // Garante que o metadata com o ID do nosso usuário exista
       if (metadata && metadata.externalId) {
         const userId = metadata.externalId;
+        const planName = metadata.plan;
         const userRef = db.collection('users').doc(userId);
+        
+        let newSubscriptionStatus: 'premium' | 'professional' | 'free' = 'free';
+        if (planName === 'PREMIUM') {
+          newSubscriptionStatus = 'premium';
+        } else if (planName === 'PROFISSIONAL') {
+          newSubscriptionStatus = 'professional';
+        } else {
+            console.warn(`Plano desconhecido "${planName}" recebido no webhook para o usuário ${userId}.`);
+            return NextResponse.json({ received: true, message: 'Plano desconhecido.' }, { status: 200 });
+        }
+
 
         // Atualiza o status da assinatura do usuário no Firestore
         await userRef.update({
-          subscriptionStatus: 'premium', // Ou poderia ser `metadata.plan` se houvesse mais planos
+          subscriptionStatus: newSubscriptionStatus,
         });
 
-        console.log(`Assinatura do usuário ${userId} atualizada para premium.`);
+        console.log(`Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`);
       } else {
         console.warn('Webhook de pagamento recebido sem o externalId no metadata:', charge.id);
       }

@@ -1,4 +1,3 @@
-
 // src/types/user.ts
 import { Timestamp } from "firebase/firestore";
 

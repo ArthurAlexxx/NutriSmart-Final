@@ -38,8 +38,8 @@ const plans = [
     },
     {
         name: 'PREMIUM',
-        priceId: 'price_premium_monthly', // ID para o plano mensal
-        yearlyPriceId: 'price_premium_yearly', // ID para o plano anual
+        priceId: 'price_premium_monthly',
+        yearlyPriceId: 'price_premium_yearly',
         price: '19.90',
         yearlyPrice: '15.90', 
         period: 'por mês',
@@ -56,20 +56,20 @@ const plans = [
         isPopular: true,
     },
     {
-        name: 'CLÍNICO',
+        name: 'PROFISSIONAL',
         priceId: 'price_pro_monthly',
         yearlyPriceId: 'price_pro_yearly',
-        price: '99.90',
-        yearlyPrice: '79.90',
+        price: '49.90',
+        yearlyPrice: '39.90',
         period: 'por mês, por profissional',
         features: [
-            'Plataforma White-Label para sua clínica',
+            'Todos os recursos do Premium para seu uso pessoal',
             'Dashboard de gestão de pacientes',
             'Biblioteca de planos e orientações',
-            'Acompanhamento em tempo real',
             'Comunicação via chat integrado',
+            'Módulo de controle financeiro',
         ],
-        description: 'Uma solução completa para nutricionistas e clínicas que desejam alta performance.',
+        description: 'Uma solução completa para nutricionistas que desejam alta performance.',
         buttonText: 'Virar Profissional',
         href: '/register?type=pro',
         isPopular: false,
@@ -78,7 +78,7 @@ const plans = [
 
 function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user, userProfile } = useUser();
 
@@ -95,10 +95,9 @@ function Pricing() {
       return;
     }
 
-    if (userProfile.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') {
-        return; // Already has this plan
-    }
-
+    if (plan.name === 'PREMIUM' && userProfile.subscriptionStatus === 'premium') return;
+    if (plan.name === 'PROFISSIONAL' && userProfile.subscriptionStatus === 'professional') return;
+    
     setSelectedPlan(plan);
     setIsModalOpen(true);
   };
@@ -131,7 +130,7 @@ function Pricing() {
           <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3">
             {plans.map((plan) => {
               
-              const isCurrentPlan = userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM';
+              const isCurrentPlan = (userProfile?.subscriptionStatus === 'premium' && plan.name === 'PREMIUM') || (userProfile?.subscriptionStatus === 'professional' && plan.name === 'PROFISSIONAL');
               const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
 
               return (

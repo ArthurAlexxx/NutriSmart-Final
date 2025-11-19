@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -111,14 +110,16 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       ...item,
       pathname: pathname,
       onClick: () => isMobile && setSheetOpen(false),
-      disabled: false // All features are enabled
+      disabled: false 
     });
+
+    const isSubscribedPro = userProfile?.subscriptionStatus === 'professional';
 
     if (isProUser) {
         return (
           <>
             <NavSection title="Menu Profissional">
-              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} disabled={!isSubscribedPro}/>)}
             </NavSection>
             <Separator className="my-4" />
             <NavSection title="Uso Pessoal">
