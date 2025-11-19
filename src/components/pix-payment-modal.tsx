@@ -1,7 +1,7 @@
 // src/components/pix-payment-modal.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -39,7 +39,9 @@ interface PixPaymentModalProps {
 export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, userProfile }: PixPaymentModalProps) {
   const [step, setStep] = useState<'form' | 'qrcode'>('form');
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
+  const [chargeId, setChargeId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [brCode, setBrCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,8 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const firestore = useFirestore();
   const router = useRouter();
   const { onProfileUpdate } = useUser();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const form = useForm<CustomerDataFormValues>({
     resolver: zodResolver(formSchema),
@@ -57,6 +61,13 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       taxId: userProfile.taxId || '',
     }
   });
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+    }
+  };
   
   useEffect(() => {
     if(isOpen) {
@@ -69,9 +80,15 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setPaymentStatus('PENDING');
         setQrCode(null);
         setBrCode(null);
+        setChargeId(null);
         setError(null);
         setIsLoading(false);
+        setIsVerifying(false);
+    } else {
+        stopPolling();
     }
+
+    return () => stopPolling();
   }, [isOpen, userProfile, form]);
 
   const generateQrCode = async (customerData: any) => {
@@ -96,6 +113,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
             throw new Error(data.error || 'Falha ao gerar o QR Code. Verifique os dados e tente novamente.');
         }
         
+        setChargeId(data.id);
         setQrCode(data.brCodeBase64);
         setBrCode(data.brCode);
         setStep('qrcode');
@@ -107,7 +125,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     } finally {
         setIsLoading(false);
     }
-};
+  };
 
   const handleFormSubmit = async (data: CustomerDataFormValues) => {
     setIsLoading(true);
@@ -134,6 +152,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const handleSuccessfulPayment = useCallback(() => {
     if (paymentStatus === 'PAID') return;
     
+    stopPolling();
     setPaymentStatus('PAID');
     confetti({
       particleCount: 150,
@@ -149,20 +168,39 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     }, 2500);
   }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
   
+  const handleCheckPayment = useCallback(async () => {
+    if (!chargeId || isVerifying || paymentStatus === 'PAID') return;
+
+    setIsVerifying(true);
+    try {
+        const response = await fetch(`/api/checkout/${chargeId}`);
+        const data = await response.json();
+
+        if (response.ok && data.status === 'PAID') {
+            handleSuccessfulPayment();
+        } else if (!response.ok) {
+            toast({ title: 'Erro ao Verificar', description: data.error || 'Não foi possível verificar o pagamento no momento.', variant: 'destructive'});
+        } else {
+             toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente. Tente novamente em alguns segundos.' });
+        }
+    } catch (e: any) {
+        console.error("Verification failed", e);
+        toast({ title: 'Erro de Conexão', description: 'Não foi possível conectar ao servidor para verificar.', variant: 'destructive'});
+    } finally {
+        setIsVerifying(false);
+    }
+  }, [chargeId, isVerifying, handleSuccessfulPayment, toast, paymentStatus]);
+
   useEffect(() => {
-    if (step !== 'qrcode' || !firestore || !userProfile || paymentStatus === 'PAID') return;
-    
-    const newSubscriptionStatus = plan.name === 'PROFISSIONAL' ? 'professional' : 'premium';
-
-    const unsub = onSnapshot(doc(firestore, 'users', userProfile.id), (doc) => {
-      const data = doc.data() as UserProfile;
-      if (data && data.subscriptionStatus === newSubscriptionStatus) {
-        handleSuccessfulPayment();
+      if (step === 'qrcode' && chargeId && paymentStatus === 'PENDING') {
+          pollingIntervalRef.current = setInterval(handleCheckPayment, 5000);
       }
-    });
-
-    return () => unsub();
-  }, [step, firestore, userProfile, plan.name, paymentStatus, handleSuccessfulPayment]);
+      return () => {
+          if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+          }
+      };
+  }, [step, chargeId, paymentStatus, handleCheckPayment]);
 
 
   const handleCopyCode = () => {
@@ -273,6 +311,10 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                     </DialogFooter>
                 ) : (
                     <DialogFooter className="flex-col gap-2">
+                        <Button onClick={handleCheckPayment} disabled={isVerifying} className="w-full">
+                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
+                             Verificar Pagamento
+                        </Button>
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4" />
                             <p className="text-sm">Aguardando confirmação do pagamento...</p>
