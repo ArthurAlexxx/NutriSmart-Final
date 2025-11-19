@@ -3,10 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon } from 'lucide-react';
+import { Loader2, Copy, Clock, CheckCircle, Save, ArrowRight, User as UserIcon, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
-import Image from 'next/image';
 import { Button } from './ui/button';
 import { onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
@@ -40,6 +39,7 @@ interface PixPaymentModalProps {
 export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, userProfile }: PixPaymentModalProps) {
   const [step, setStep] = useState<'form' | 'qrcode'>('form');
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID' | 'ERROR'>('PENDING');
   const [chargeId, setChargeId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -97,7 +97,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || 'Falha ao gerar o QR Code. Tente novamente.');
+            throw new Error(data.error || 'Falha ao gerar o QR Code. Verifique os dados e tente novamente.');
         }
         
         setQrCode(data.brCodeBase64);
@@ -118,6 +118,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     setIsLoading(true);
     try {
         const { fullName, phone, taxId } = data;
+        // Only update if data has changed
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
@@ -153,6 +154,33 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         router.push(destination);
     }, 2500);
   }, [onOpenChange, router, userProfile.profileType, paymentStatus]);
+  
+  const handleManualCheck = async () => {
+    if (!chargeId || isChecking) return;
+    setIsChecking(true);
+    try {
+        const response = await fetch(`/api/checkout/${chargeId}`);
+        const data = await response.json();
+        
+        if (data.status === 'PAID') {
+          handleSuccessfulPayment();
+        } else {
+            toast({
+                title: 'Pagamento Pendente',
+                description: 'Ainda não recebemos a confirmação do seu pagamento. Tente novamente em alguns segundos.',
+            });
+        }
+      } catch (pollError) {
+        console.error('Manual check error:', pollError);
+        toast({
+            title: 'Erro na Verificação',
+            description: 'Não foi possível verificar o status do pagamento no momento.',
+            variant: 'destructive',
+        });
+      } finally {
+          setIsChecking(false);
+      }
+  }
 
   useEffect(() => {
     if (step !== 'qrcode' || !chargeId || paymentStatus === 'PAID') return;
@@ -254,7 +282,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
       if (qrCode && brCode) {
           return (
              <div className='flex flex-col items-center gap-4 animate-in fade-in'>
-              <Image src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
+              <img src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
               <Button onClick={handleCopyCode} variant="outline">
                 <Copy className="mr-2 h-4 w-4" /> Copiar Código
               </Button>
@@ -297,10 +325,16 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                         </Button>
                     </DialogFooter>
                 ) : (
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground mt-4">
-                        <Clock className="h-4 w-4" />
-                        <p className="text-sm">Aguardando pagamento...</p>
-                    </div>
+                    <DialogFooter className="flex-col gap-2">
+                        <Button onClick={handleManualCheck} disabled={isChecking} className="w-full">
+                            {isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
+                            Já paguei, verificar
+                        </Button>
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <p className="text-sm">Aguardando pagamento...</p>
+                        </div>
+                    </DialogFooter>
                 )}
             </>
         )}
