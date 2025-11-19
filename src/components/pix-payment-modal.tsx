@@ -43,6 +43,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [brCode, setBrCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastPlanName, setLastPlanName] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { onProfileUpdate } = useUser();
@@ -58,7 +59,8 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   });
   
   useEffect(() => {
-    if(isOpen) {
+    // Reset only if the modal is opened for a different plan
+    if (isOpen && plan.name !== lastPlanName) {
         form.reset({
             fullName: userProfile.fullName || '',
             phone: userProfile.phone || '',
@@ -72,8 +74,13 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setError(null);
         setIsLoading(false);
         setIsVerifying(false);
+        setLastPlanName(plan.name);
+    } else if (isOpen && qrCode) {
+        // If reopening for the same plan and a QR code exists, go straight to that step
+        setStep('qrcode');
     }
-  }, [isOpen, userProfile, form]);
+  }, [isOpen, userProfile, form, plan.name, lastPlanName, qrCode]);
+
 
   const generateQrCode = async (customerData: any) => {
     setIsLoading(true);
@@ -206,9 +213,9 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
        if (step === 'form') {
            return (
-                <div className='w-full'>
-                    <DialogHeader className='text-left mb-6'>
-                        <DialogTitle className="text-2xl font-bold flex items-center gap-2"><UserIcon className="h-6 w-6"/> Complete seus Dados</DialogTitle>
+                <div className='w-full text-left'>
+                    <DialogHeader className='mb-6'>
+                        <DialogTitle className="text-2xl font-bold flex items-center gap-3"><UserIcon className="h-6 w-6 text-primary"/> Complete seus Dados</DialogTitle>
                         <DialogDescription>
                             Precisamos de algumas informações para gerar a cobrança.
                         </DialogDescription>
@@ -247,11 +254,13 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
       if (qrCode && brCode) {
           return (
-             <div className='flex flex-col items-center gap-4 animate-in fade-in'>
-              <img src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
-              <Button onClick={handleCopyCode} variant="outline">
-                <Copy className="mr-2 h-4 w-4" /> Copiar Código
-              </Button>
+             <div className='flex flex-col items-center gap-4 animate-in fade-in w-full'>
+                <div className='p-4 bg-background rounded-lg border'>
+                    <img src={`data:image/png;base64,${qrCode}`} alt="PIX QR Code" width={200} height={200} />
+                </div>
+                <Button onClick={handleCopyCode} variant="outline" className='w-full'>
+                    <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
+                </Button>
             </div>
           )
       }
@@ -261,48 +270,51 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md text-center">
-        {step === 'qrcode' && (
-             <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Pagamento PIX</DialogTitle>
-                <DialogDescription>
-                    {paymentStatus !== 'PAID' && 'Escaneie o QR Code ou copie o código para pagar.'}
-                </DialogDescription>
-            </DialogHeader>
-        )}
+      <DialogContent className="sm:max-w-md text-center p-0">
+        <DialogHeader className='p-6 pb-2'>
+            <DialogTitle className="text-2xl font-bold">Assinatura</DialogTitle>
+             <DialogDescription>
+                {step === 'form' 
+                    ? `Você está assinando o plano ${plan.name}.`
+                    : 'Finalize o pagamento para ativar seu plano.'
+                }
+            </DialogDescription>
+        </DialogHeader>
 
-        <div className="py-8 flex items-center justify-center min-h-[300px]">
+        <div className="py-8 px-6 flex items-center justify-center min-h-[350px]">
           {renderContent()}
         </div>
         
         {paymentStatus !== 'PAID' && (
-            <>
-                <div className="bg-muted p-4 rounded-lg">
-                    <p className='font-semibold'>Plano {plan.name}</p>
-                    <p className='text-2xl font-bold text-primary'>R$ {price}</p>
-                    <p className='text-sm text-muted-foreground'>{period}</p>
+            <div className='border-t'>
+                <div className="bg-muted p-4">
+                    <div className='flex justify-between items-center'>
+                         <p className='font-semibold'>Plano {plan.name}</p>
+                         <p className='text-sm text-muted-foreground'>{period}</p>
+                    </div>
+                    <p className='text-2xl font-bold text-primary text-left'>R$ {price}</p>
                 </div>
 
                 {step === 'form' ? (
-                     <DialogFooter>
+                     <DialogFooter className='p-6 pt-4'>
                          <Button form="customer-data-form" type="submit" disabled={isLoading} className='w-full'>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ArrowRight className="mr-2 h-4 w-4" />}
-                            Continuar para Pagamento
+                            Gerar PIX para Pagamento
                         </Button>
                     </DialogFooter>
                 ) : (
-                    <DialogFooter className="flex-col gap-2">
+                    <DialogFooter className="flex-col gap-2 p-6 pt-4">
                         <Button onClick={handleCheckPayment} disabled={isVerifying} className="w-full">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
                              Já Paguei, Verificar Status
                         </Button>
-                         <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                         <div className="flex items-center justify-center gap-2 text-muted-foreground pt-2">
                             <Clock className="h-4 w-4" />
-                            <p className="text-sm">A atualização da assinatura é automática via webhook.</p>
+                            <p className="text-sm">A atualização da assinatura é automática.</p>
                         </div>
                     </DialogFooter>
                 )}
-            </>
+            </div>
         )}
       </DialogContent>
     </Dialog>
