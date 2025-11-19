@@ -1,14 +1,20 @@
-
 // src/app/api/webhooks/abacatepay/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import * as crypto from 'crypto';
-import { headers } from 'next/headers';
+import { headers, ReadonlyHeaders } from 'next/headers';
 
 // CONFIGURAÇÃO CRÍTICA: Garante que o Next.js não processe o corpo da requisição
 // antes de nós, o que é essencial para a validação do webhook.
 export const dynamic = 'force-dynamic';
 
+// Chave pública HMAC fornecida pela documentação do AbacatePay.
+const ABACATEPAY_PUBLIC_KEY = "t9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9";
+
+
+/**
+ * Salva um log do webhook no Firestore para auditoria e depuração.
+ */
 async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', details: string) {
     try {
         const logData = {
@@ -25,27 +31,52 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
 }
 
 /**
+ * Verifica se a assinatura do webhook corresponde ao HMAC esperado.
+ * Conforme a documentação do AbacatePay.
+ * @param rawBody Corpo bruto da requisição em string.
+ * @param signatureFromHeader A assinatura recebida de `X-Webhook-Signature`.
+ * @returns true se a assinatura for válida, false caso contrário.
+ */
+function verifyAbacateSignature(rawBody: string, signatureFromHeader: string): boolean {
+  try {
+    const bodyBuffer = Buffer.from(rawBody, "utf8");
+
+    const expectedSig = crypto
+      .createHmac("sha256", ABACATEPAY_PUBLIC_KEY)
+      .update(bodyBuffer)
+      .digest("base64");
+
+    const a = Buffer.from(expectedSig);
+    const b = Buffer.from(signatureFromHeader);
+
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(a, b);
+  } catch (error) {
+    console.error("Error during signature verification:", error);
+    return false;
+  }
+}
+
+/**
  * Busca de forma flexível pelos metadados dentro do payload do evento.
- * @param {any} eventData O objeto de dados do evento do AbacatePay.
- * @returns Os metadados se encontrados, caso contrário, null.
  */
 function findMetadata(eventData: any) {
     if (!eventData) return null;
-
-    // Caminho 1: Padrão observado em billing.paid
-    if (eventData.pixQrCode?.metadata) {
-        return eventData.pixQrCode.metadata;
-    }
-    // Caminho 2: Metadados diretamente no objeto de dados
-    if (eventData.metadata) {
-        return eventData.metadata;
-    }
-    // Adicione outros caminhos possíveis aqui se forem descobertos
-    // ex: if (eventData.charge?.metadata) return eventData.charge.metadata;
-
+    // Caminho 1: Padrão observado em billing.paid para pixQrCode
+    if (eventData.pixQrCode?.metadata) return eventData.pixQrCode.metadata;
+    // Caminho 2: Padrão observado em 'charge'
+    if (eventData.charge?.metadata) return eventData.charge.metadata;
+    // Fallback
+    if (eventData.metadata) return eventData.metadata;
     return null;
 }
 
+/**
+ * Processa o evento de pagamento, atualizando o status da assinatura do usuário.
+ */
 async function handlePayment(event: any) {
     if (event.event !== 'billing.paid') {
         const message = `Evento não processado: ${event.event || 'desconhecido'}`;
@@ -70,14 +101,11 @@ async function handlePayment(event: any) {
             const message = `Plano desconhecido "${planName}" no webhook para o usuário ${userId}.`;
             console.warn(message);
             await saveWebhookLog(event, 'FAILURE', message);
-            return; // Para o processamento
+            return;
         }
 
         try {
-            await userRef.update({
-                subscriptionStatus: newSubscriptionStatus,
-            });
-
+            await userRef.update({ subscriptionStatus: newSubscriptionStatus });
             const successMessage = `Assinatura do usuário ${userId} atualizada para ${newSubscriptionStatus}.`;
             console.log(successMessage);
             await saveWebhookLog(event, 'SUCCESS', successMessage);
@@ -94,37 +122,44 @@ async function handlePayment(event: any) {
     }
 }
 
+/**
+ * Função principal para lidar com as requisições POST do webhook.
+ */
 export async function POST(request: NextRequest) {
+  const webhookSecretFromEnv = process.env.ABACATE_PAY_WEBHOOK_SECRET;
+  
+  // 1. Validação do Secret na URL
+  const webhookSecretFromUrl = request.nextUrl.searchParams.get('webhookSecret');
+  
+  if (!webhookSecretFromEnv) {
+    console.error('CRITICAL: ABACATE_PAY_WEBHOOK_SECRET não está configurado no ambiente.');
+    return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
+  }
+
+  if (webhookSecretFromUrl !== webhookSecretFromEnv) {
+      console.warn('Requisição de webhook recebida com secret inválido na URL.');
+      return new NextResponse('Webhook secret inválido.', { status: 401 });
+  }
+
   let rawBody;
   try {
     rawBody = await request.text();
     
+    // 2. Validação da Assinatura HMAC no Cabeçalho
     const headerPayload = headers();
+    // Normaliza para minúsculas para evitar problemas de case-sensitivity
     const signature = headerPayload.get('x-webhook-signature');
-    const webhookSecret = process.env.ABACATE_PAY_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.error('CRITICAL: ABACATE_PAY_WEBHOOK_SECRET não está configurado no ambiente.');
-      return new NextResponse('Configuração de segurança do servidor incompleta.', { status: 500 });
-    }
-
+    
     if (!signature) {
-       console.warn('Requisição de webhook recebida sem assinatura.');
-       const receivedHeaders: { [key: string]: string } = {};
-       headerPayload.forEach((value, key) => {
-         receivedHeaders[key] = value;
-       });
-       console.log('Cabeçalhos recebidos:', JSON.stringify(receivedHeaders, null, 2));
+       console.warn('Requisição de webhook recebida sem assinatura no cabeçalho.');
       return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
     }
 
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(rawBody)
-      .digest('hex');
+    const isSignatureValid = verifyAbacateSignature(rawBody, signature);
 
-    if (signature !== expectedSignature) {
+    if (!isSignatureValid) {
       console.warn('Assinatura de webhook inválida recebida.');
+      await saveWebhookLog(JSON.parse(rawBody), 'FAILURE', 'Assinatura HMAC inválida.');
       return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
     
