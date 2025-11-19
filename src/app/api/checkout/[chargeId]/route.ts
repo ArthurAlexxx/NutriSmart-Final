@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/[chargeId]/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
