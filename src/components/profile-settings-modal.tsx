@@ -370,12 +370,36 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                  />
             ))}
             <div className='flex-1 sm:hidden'></div> {/* Spacer */}
-            <Button variant="ghost" size="icon" className="sm:hidden text-muted-foreground" onClick={handleSignOut}><LogOut className="h-5 w-5"/></Button>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="sm:hidden text-muted-foreground" onSelect={(e) => e.preventDefault()}>
+                      <LogOut className="h-5 w-5"/>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Isso encerrará sua sessão atual.</AlertDialogDescription></AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSignOut} className='bg-destructive hover:bg-destructive/90'>Confirmar Saída</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           </nav>
            <div className="mt-auto pt-4 border-t hidden sm:block">
-              <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleSignOut}>
-                <LogOut className="h-5 w-5" /> Sair da Conta
-              </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start gap-3" onSelect={(e) => e.preventDefault()}>
+                        <LogOut className="h-5 w-5" /> Sair da Conta
+                    </Button>
+                </AlertDialogTrigger>
+                 <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Isso encerrará sua sessão atual e você precisará fazer login novamente.</AlertDialogDescription></AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSignOut} className='bg-destructive hover:bg-destructive/90'>Confirmar Saída</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             </div>
         </div>
         <div className="w-full sm:w-3/4 p-6 overflow-y-auto">
