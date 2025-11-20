@@ -254,6 +254,9 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                             </Button>
                         </div>
                     </CardContent>
+                    <CardFooter>
+                        <p className='text-xs text-muted-foreground'>Seu nutricionista usará este código para se conectar à sua conta.</p>
+                    </CardFooter>
                 </Card>
             );
         case 'subscription':

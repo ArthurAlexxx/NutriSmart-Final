@@ -254,8 +254,8 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8">
             <div className='flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
-                    <h2 className='text-3xl font-bold text-foreground font-heading'>Diário de Bordo</h2>
-                    <p className='text-muted-foreground'>Registre suas refeições e consumo de água para hoje.</p>
+                    <h2 className='text-3xl font-bold text-foreground font-heading'>Seu Diário</h2>
+                    <p className='text-muted-foreground'>Acompanhe suas refeições, hidratação e veja seu progresso diário.</p>
                 </div>
                  <Button id="adjust-goals-button" onClick={() => setGoalsModalOpen(true)} variant="outline" size="sm">
                     <Settings className="mr-2 h-4 w-4" /> Ajustar Metas

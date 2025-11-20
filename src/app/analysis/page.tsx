@@ -22,7 +22,6 @@ import ChartsView from '@/components/analysis/charts-view';
 import { seedDemoData, deleteSeededData } from '@/app/actions/seed-data';
 import SubscriptionOverlay from '@/components/subscription-overlay';
 import InsightsCard from '@/components/analysis/insights-card';
-import { achievements } from '@/lib/achievements';
 import { generateAnalysisInsightsAction } from '@/app/actions/ai-actions';
 
 
