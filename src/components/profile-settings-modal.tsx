@@ -190,12 +190,14 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="personal-data" className="w-full pt-4">
-            <TabsList className={cn("grid w-full mx-auto max-w-[calc(100%-3rem)]", `grid-cols-${tabsToShow.length}`)}>
-                <TabsTrigger value="personal-data"><UserIcon className="h-5 w-5"/></TabsTrigger>
-                {effectiveSubscriptionStatus !== 'professional' && <TabsTrigger value="sharing"><Share2 className="h-5 w-5"/></TabsTrigger>}
-                <TabsTrigger value="subscription"><CreditCard className="h-5 w-5"/></TabsTrigger>
-                <TabsTrigger value="advanced"><ShieldAlert className="h-5 w-5"/></TabsTrigger>
-            </TabsList>
+            <div className='px-6'>
+                <TabsList className={cn("grid w-full", `grid-cols-${tabsToShow.length}`)}>
+                    <TabsTrigger value="personal-data"><UserIcon className="h-5 w-5"/></TabsTrigger>
+                    {effectiveSubscriptionStatus !== 'professional' && <TabsTrigger value="sharing"><Share2 className="h-5 w-5"/></TabsTrigger>}
+                    <TabsTrigger value="subscription"><CreditCard className="h-5 w-5"/></TabsTrigger>
+                    <TabsTrigger value="advanced"><ShieldAlert className="h-5 w-5"/></TabsTrigger>
+                </TabsList>
+            </div>
             <div className="p-6">
                 <TabsContent value="personal-data">
                     <Form {...form}>
@@ -324,8 +326,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                 </TabsContent>
             </div>
         </Tabs>
-        <DialogFooter className="border-t p-4 sm:hidden">
-             <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
+        <DialogFooter className="border-t p-4 flex-col sm:flex-row gap-2 sm:gap-0">
+             <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 sm:hidden" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair da Conta
             </Button>
