@@ -325,7 +325,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             </div>
         </Tabs>
         <DialogFooter className="border-t p-4 sm:hidden">
-            <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
+             <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair da Conta
             </Button>
