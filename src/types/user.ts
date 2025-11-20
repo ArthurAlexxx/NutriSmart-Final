@@ -13,6 +13,7 @@ export interface UserProfile {
     fullName: string;
     email: string;
     createdAt: Timestamp | { seconds: number; nanoseconds: number; };
+    status?: 'active' | 'paused';
     
     // Novos campos para pagamento
     phone?: string;

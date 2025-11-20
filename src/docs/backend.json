@@ -7,12 +7,12 @@
       "description": "Represents a user, who can be a patient or a professional.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the user." },
-        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The type of user profile." },
         "fullName": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "description": "User's email address.", "format": "email" },
         "phone": { "type": "string", "description": "User's phone number." },
         "taxId": { "type": "string", "description": "User's CPF or CNPJ." },
         "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "paused"], "description": "The current status of the user account." },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
         "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },
@@ -25,7 +25,7 @@
         "proteinGoal": { "type": "number" },
         "waterGoal": { "type": "number" }
       },
-      "required": ["id", "profileType", "fullName", "email", "createdAt"]
+      "required": ["id", "fullName", "email", "createdAt", "status"]
     },
     "ActivePlan": {
       "title": "ActivePlan",
