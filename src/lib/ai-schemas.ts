@@ -67,3 +67,33 @@ export const GeneratePlanInputSchema = z.object({
 });
 
 export type GeneratePlanInput = z.infer<typeof GeneratePlanInputSchema>;
+
+
+// Schema for Analysis Insights
+const MealEntryForAISchema = z.object({
+  date: z.string(),
+  mealType: z.string(),
+  mealData: z.object({
+    totais: z.object({
+      calorias: z.number(),
+      proteinas: z.number(),
+    }),
+  }),
+});
+
+export const AnalysisInsightsInputSchema = z.object({
+  period: z.number(),
+  goals: z.object({
+    calories: z.number(),
+    protein: z.number(),
+  }),
+  meals: z.array(MealEntryForAISchema),
+});
+
+export type AnalysisInsightsInput = z.infer<typeof AnalysisInsightsInputSchema>;
+
+export const AnalysisInsightsOutputSchema = z.object({
+  insights: z.array(z.string()).describe("Um array de 3 a 5 strings, onde cada string é um insight nutricional para o usuário."),
+});
+
+export type AnalysisInsightsOutput = z.infer<typeof AnalysisInsightsOutputSchema>;

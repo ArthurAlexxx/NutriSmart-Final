@@ -11,6 +11,9 @@ import {
   type AnalyzeMealInput,
   GeneratedPlan,
   type GeneratePlanInput,
+  AnalysisInsightsOutputSchema,
+  type AnalysisInsightsOutput,
+  type AnalysisInsightsInput,
 } from '@/lib/ai-schemas';
 
 const openai = new OpenAI({
@@ -289,6 +292,81 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      }
      console.error("JSON recebido da OpenAI:", resultText);
      throw new Error("A resposta da IA não estava no formato de análise esperado.");
+  }
+}
+
+/**
+ * Generates nutritional insights based on user's meal data and goals.
+ * @param input - The user's meal entries and goals for a specific period.
+ * @returns A validated array of insights.
+ */
+export async function generateAnalysisInsightsAction(input: AnalysisInsightsInput): Promise<AnalysisInsightsOutput> {
+  const prompt = `
+    Você é um nutricionista assistente de IA, especialista em analisar dados de consumo alimentar e fornecer insights práticos e motivacionais.
+
+    OBJETIVO: Analisar os dados do usuário para o período de ${input.period} dias e gerar de 3 a 5 insights curtos e úteis.
+
+    DADOS DO USUÁRIO:
+    - Meta de Calorias Diária: ${input.goals.calories} kcal
+    - Meta de Proteínas Diária: ${input.goals.protein} g
+    - Refeições Registradas no Período:
+    ${input.meals.map(m => `  - Dia: ${m.date}, Tipo: ${m.mealType}, Calorias: ${m.mealData.totais.calorias}, Proteínas: ${m.mealData.totais.proteinas}`).join('\n')}
+
+    REGRAS DE ANÁLISE:
+    1.  **Seja Positivo e Construtivo:** Comece com um ponto positivo, se possível. Evite linguagem de julgamento.
+    2.  **Identifique Padrões:** Analise a consistência. O usuário atinge as metas? Há diferenças entre dias de semana e fins de semana? Algum tipo de refeição (ex: jantar) está consistentemente acima ou abaixo das metas?
+    3.  **Seja Específico:** Use números para dar contexto. Ex: "Seu consumo de calorias nos fins de semana foi, em média, 20% maior." em vez de "Você come mais nos fins de semana."
+    4.  **Dê Conselhos Acionáveis:** Cada insight negativo deve vir acompanhado de uma sugestão simples. Ex: "Para o lanche da tarde, tente trocar por uma opção rica em proteínas como iogurte grego para aumentar sua saciedade."
+    5.  **Limite de Insights:** Gere entre 3 e 5 insights no máximo. Foque na qualidade, não na quantidade.
+    6.  **Fale diretamente com o usuário:** Use "você", "sua jornada", etc.
+
+    REGRAS DE SAÍDA (CRÍTICO):
+    - Sua resposta DEVE SER APENAS o objeto JSON final.
+    - O objeto deve conter uma única chave "insights", que é um array de strings.
+    - Cada string no array é um insight.
+
+    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    {
+      "insights": [
+        "Parabéns por atingir sua meta de proteína em 5 dos últimos 7 dias! Isso é ótimo para a manutenção da massa muscular.",
+        "Notamos que sua ingestão de calorias é, em média, 300 kcal mais alta nos fins de semana. Que tal experimentar uma receita mais leve do nosso Chef Virtual no próximo sábado?",
+        "Seu café da manhã tem sido consistentemente nutritivo e dentro das metas. Continue assim!",
+        "Para atingir sua meta de hidratação mais facilmente, tente beber um copo de água antes de cada refeição principal."
+      ]
+    }
+
+    AGORA, GERE SOMENTE O OBJETO JSON FINAL COM OS INSIGHTS.
+  `;
+  
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+      { role: "user", content: prompt }
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.5,
+  });
+
+  const resultText = response.choices[0].message.content;
+  if (!resultText) {
+    throw new Error('A IA não conseguiu gerar os insights. Tente novamente mais tarde.');
+  }
+
+  try {
+    const insightsJson = JSON.parse(resultText);
+    const validationResult = AnalysisInsightsOutputSchema.safeParse(insightsJson);
+    if (validationResult.success) {
+      return validationResult.data;
+    } else {
+      console.error("Zod validation error in generateAnalysisInsightsAction:", validationResult.error.errors);
+      console.error("Received JSON:", resultText);
+      throw new Error('A resposta da IA não corresponde ao formato de insights esperado.');
+    }
+  } catch (error: any) {
+    console.error("Error parsing or validating insights JSON:", error);
+    console.error("Original JSON string from OpenAI:", resultText);
+    throw new Error("A resposta da IA não estava no formato de insights esperado.");
   }
 }
     

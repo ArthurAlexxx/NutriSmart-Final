@@ -23,6 +23,7 @@ import { seedDemoData, deleteSeededData } from '@/app/actions/seed-data';
 import SubscriptionOverlay from '@/components/subscription-overlay';
 import InsightsCard from '@/components/analysis/insights-card';
 import { achievements } from '@/lib/achievements';
+import { generateAnalysisInsightsAction } from '@/app/actions/ai-actions';
 
 
 type Period = 7 | 15 | 30;
@@ -40,6 +41,8 @@ export default function AnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>(7);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [insights, setInsights] = useState<string[]>([]);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
   const isDemoUser = user?.uid === DEMO_USER_ID;
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
@@ -194,12 +197,50 @@ export default function AnalysisPage() {
       return filledData.reverse();
   }, [chartData, userProfile?.weight]);
 
-  const unlockedAchievementDetails = useMemo(() => {
-    if (!userProfile?.unlockedAchievements) return [];
-    return achievements
-        .filter(ach => userProfile.unlockedAchievements.includes(ach.id))
-        .map(ach => ach.description);
-  }, [userProfile?.unlockedAchievements]);
+  const handleGenerateInsights = async () => {
+    if (!userProfile || isFeatureLocked) {
+      toast({ title: 'Acesso Negado', description: 'Faça upgrade para o Premium para usar os insights de IA.', variant: 'destructive'});
+      return;
+    }
+    if (periodMeals.length === 0) {
+      toast({ title: 'Dados Insuficientes', description: 'Registre algumas refeições no período selecionado antes de gerar insights.'});
+      return;
+    }
+    
+    setIsGeneratingInsights(true);
+    setInsights([]);
+    try {
+      const result = await generateAnalysisInsightsAction({
+        period,
+        goals: {
+          calories: userProfile.calorieGoal || 2000,
+          protein: userProfile.proteinGoal || 140,
+        },
+        meals: periodMeals.map(m => ({ // Sanitize data for the action
+            date: m.date,
+            mealType: m.mealType,
+            mealData: {
+                totais: {
+                    calorias: m.mealData.totais.calorias,
+                    proteinas: m.mealData.totais.proteinas,
+                }
+            }
+        })),
+      });
+      
+      setInsights(result.insights);
+
+    } catch (error: any) {
+      console.error("Failed to generate insights:", error);
+      toast({
+        title: 'Erro ao Gerar Insights',
+        description: error.message || 'Não foi possível se comunicar com a IA. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
 
 
   const mainContent = () => {
@@ -227,12 +268,24 @@ export default function AnalysisPage() {
             </p>
           </div>
           
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold font-heading flex items-center gap-2">
-                <BrainCircuit className="h-6 w-6 text-primary"/> DNA Nutricional (Conquistas)
-            </h3>
-            <p className="text-muted-foreground">Sua jornada de saúde refletida em conquistas e insights.</p>
-            <InsightsCard insights={unlockedAchievementDetails} isLoading={isUserLoading} />
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+                <div className='flex-1'>
+                    <h3 className="text-xl font-bold font-heading flex items-center gap-2">
+                        <BrainCircuit className="h-6 w-6 text-primary"/> DNA Nutricional (Análise IA)
+                    </h3>
+                    <p className="text-muted-foreground">Receba conselhos personalizados com base nos seus dados.</p>
+                </div>
+                <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked}>
+                    {isGeneratingInsights ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Lightbulb className="mr-2 h-4 w-4" />
+                    )}
+                    Gerar Insights com IA
+                </Button>
+            </div>
+            <InsightsCard insights={insights} isLoading={isGeneratingInsights} />
           </div>
 
           <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
