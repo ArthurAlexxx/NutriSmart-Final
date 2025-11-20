@@ -1,4 +1,3 @@
-
 // src/components/inline-add-meal-form.tsx
 'use client';
 
@@ -10,7 +9,7 @@ import { Plus, Trash2, Loader2, Camera, AlertTriangle, Lock, X } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { getNutritionalInfo, getNutritionalInfoFromPhoto } from '@/app/actions/meal-actions';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, limit, arrayUnion } from 'firebase/firestore';
 import type { MealData, MealEntry } from '@/types/meal';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -199,10 +198,38 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     }
   };
 
+  const unlockFirstMealAchievement = async () => {
+    if (!firestore || !userProfile || (userProfile.unlockedAchievements || []).includes('first-meal')) {
+      return;
+    }
+
+    const mealEntriesRef = collection(firestore, 'users', userId, 'meal_entries');
+    const q = query(mealEntriesRef, limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      try {
+        await onProfileUpdate({
+            unlockedAchievements: arrayUnion('first-meal')
+        });
+        toast({
+            title: "Nova Conquista!",
+            description: `Você ganhou a conquista "Diário Inaugurado".`,
+        });
+      } catch(e) {
+          console.error("Failed to unlock 'first-meal' achievement:", e);
+      }
+    }
+  };
+
   const saveMeal = async (mealType: string, mealData: MealData) => {
     if (!firestore) {
         throw new Error("Serviço de banco de dados indisponível.");
     };
+
+    // Before saving, check if it's the first meal to unlock achievement
+    await unlockFirstMealAchievement();
+    
     const newMealEntry: Omit<MealEntry, 'id'> = {
       userId: userId,
       date: getLocalDateString(new Date()),
