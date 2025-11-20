@@ -1,4 +1,3 @@
-
 // src/app/register/page.tsx
 'use client';
 
@@ -91,6 +90,7 @@ function RegisterForm() {
           createdAt: serverTimestamp(),
           dashboardShareCode: shareCode,
           subscriptionStatus: 'free',
+          unlockedAchievements: ['first-steps'], // Unlock first achievement
       };
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});

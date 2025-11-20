@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback }from 'react';
-import { collection, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, writeBatch, getDocs, Unsubscribe } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, writeBatch, getDocs, Unsubscribe, arrayUnion } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/app-layout';
@@ -104,6 +104,25 @@ export default function ChefPage() {
         errorEmitter.emit('permission-error', contextualError);
       });
   };
+  
+  const unlockAchievement = async (achievementId: string) => {
+    if (!userProfile || !firestore || (userProfile.unlockedAchievements || []).includes(achievementId)) {
+        return;
+    }
+    
+    try {
+        await onProfileUpdate({
+            unlockedAchievements: arrayUnion(achievementId)
+        });
+        toast({
+            title: "Nova Conquista Desbloqueada!",
+            description: `Você ganhou a conquista "Aprendiz de Chef".`,
+        });
+    } catch(e) {
+        console.error("Failed to unlock achievement:", e);
+    }
+  };
+
 
   const handleSendMessage = async (input: string) => {
       if (!input.trim() || !user || isFeatureLocked) return;
@@ -125,6 +144,9 @@ export default function ChefPage() {
             recipe: recipeResult,
         };
         saveMessage(assistantMessage);
+        
+        // Unlock achievement
+        await unlockAchievement('chef-apprentice');
 
       } catch (error: any) {
           console.error("Failed to get AI response:", error);

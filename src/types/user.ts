@@ -1,4 +1,3 @@
-
 // src/types/user.ts
 import { Timestamp } from "firebase/firestore";
 
@@ -44,4 +43,6 @@ export interface UserProfile {
     subscriptionExpiresAt?: Timestamp | { seconds: number; nanoseconds: number; };
     photoAnalysisCount?: number;
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
+    
+    unlockedAchievements?: string[]; // New field for achievements
 }

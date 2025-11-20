@@ -8,7 +8,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Database, Trash2 } from 'lucide-react';
+import { Loader2, Database, Trash2, Lightbulb, BrainCircuit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { subDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import AppLayout from '@/components/app-layout';
@@ -21,6 +21,8 @@ import SummaryCards from '@/components/summary-cards';
 import ChartsView from '@/components/analysis/charts-view';
 import { seedDemoData, deleteSeededData } from '@/app/actions/seed-data';
 import SubscriptionOverlay from '@/components/subscription-overlay';
+import InsightsCard from '@/components/analysis/insights-card';
+import { achievements } from '@/lib/achievements';
 
 
 type Period = 7 | 15 | 30;
@@ -192,6 +194,13 @@ export default function AnalysisPage() {
       return filledData.reverse();
   }, [chartData, userProfile?.weight]);
 
+  const unlockedAchievementDetails = useMemo(() => {
+    if (!userProfile?.unlockedAchievements) return [];
+    return achievements
+        .filter(ach => userProfile.unlockedAchievements.includes(ach.id))
+        .map(ach => ach.description);
+  }, [userProfile?.unlockedAchievements]);
+
 
   const mainContent = () => {
     if (loading || isUserLoading) {
@@ -206,22 +215,33 @@ export default function AnalysisPage() {
     return (
       <div className="w-full space-y-8 relative">
         {isFeatureLocked && <SubscriptionOverlay />}
-        <div className={cn("w-full space-y-6", isFeatureLocked && 'blur-md pointer-events-none')}>
-          <SummaryCards
-            totalNutrients={totalNutrients}
-            nutrientGoals={userProfile ? { calories: userProfile.calorieGoal || 2000, protein: userProfile.proteinGoal || 140 } : undefined}
-            isAnalysisPage={true}
-          />
-          <p className="text-xs text-muted-foreground text-center -mt-2">
-            Médias calculadas para o período de {period} dias.
-          </p>
-        </div>
-        <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
-            <ChartsView
-            caloriesData={chartData}
-            hydrationData={chartData}
-            weightData={weightChartData}
+        <div className={cn("w-full space-y-8", isFeatureLocked && 'blur-md pointer-events-none')}>
+          <div className="w-full space-y-6">
+            <SummaryCards
+              totalNutrients={totalNutrients}
+              nutrientGoals={userProfile ? { calories: userProfile.calorieGoal || 2000, protein: userProfile.proteinGoal || 140 } : undefined}
+              isAnalysisPage={true}
             />
+            <p className="text-xs text-muted-foreground text-center -mt-2">
+              Médias calculadas para o período de {period} dias.
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold font-heading flex items-center gap-2">
+                <BrainCircuit className="h-6 w-6 text-primary"/> DNA Nutricional (Conquistas)
+            </h3>
+            <p className="text-muted-foreground">Sua jornada de saúde refletida em conquistas e insights.</p>
+            <InsightsCard insights={unlockedAchievementDetails} isLoading={isUserLoading} />
+          </div>
+
+          <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
+              <ChartsView
+              caloriesData={chartData}
+              hydrationData={chartData}
+              weightData={weightChartData}
+              />
+          </div>
         </div>
       </div>
     );
