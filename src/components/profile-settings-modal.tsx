@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cancelSubscriptionAction } from '@/app/actions/billing-actions';
 import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
 import { Separator } from './ui/separator';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 
 const formSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -210,72 +211,78 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     switch(activeTab) {
         case 'personal':
             return (
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <DialogHeader>
-                            <DialogTitle>Dados Pessoais</DialogTitle>
-                            <DialogDescription>Mantenha seus dados de contato e identificação atualizados.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <FormField control={form.control} name="fullName" render={({ field }) => (
-                                <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="phone" render={({ field }) => (
-                                <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="taxId" render={({ field }) => (
-                                <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        </div>
-                        <DialogFooter className='pt-4'>
-                            <Button type="submit" disabled={isSubmitting || !isDirty}>
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Salvar Alterações
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                <Card className="w-full shadow-none border-none">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)}>
+                            <CardHeader>
+                                <CardTitle>Dados Pessoais</CardTitle>
+                                <CardDescription>Mantenha seus dados de contato e identificação atualizados.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <FormField control={form.control} name="fullName" render={({ field }) => (
+                                    <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                    <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="taxId" render={({ field }) => (
+                                    <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </CardContent>
+                            <CardFooter>
+                                <Button type="submit" disabled={isSubmitting || !isDirty}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Salvar Alterações
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Form>
+                </Card>
             );
         case 'sharing':
              return (
-                <div className="space-y-4">
-                    <DialogHeader>
-                        <DialogTitle>Compartilhamento de Dados</DialogTitle>
-                        <DialogDescription>Compartilhe o código abaixo com seu nutricionista para que ele possa acompanhar seu progresso e criar planos alimentares.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-4 bg-muted rounded-lg flex items-center justify-between gap-4">
-                        <span className="font-mono text-lg font-bold text-primary">{userProfile.dashboardShareCode || 'Gerando...'}</span>
-                        <Button variant="outline" size="icon" onClick={handleCopyCode} disabled={isCopied}>
-                            <Copy className={cn("h-4 w-4", isCopied && 'text-green-500')}/>
-                        </Button>
-                    </div>
-                </div>
+                <Card className="w-full shadow-none border-none">
+                    <CardHeader>
+                        <CardTitle>Compartilhamento de Dados</CardTitle>
+                        <CardDescription>Compartilhe o código abaixo com seu nutricionista para que ele possa acompanhar seu progresso e criar planos alimentares.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="p-4 bg-muted rounded-lg flex items-center justify-between gap-4">
+                            <span className="font-mono text-lg font-bold text-primary">{userProfile.dashboardShareCode || 'Gerando...'}</span>
+                            <Button variant="outline" size="icon" onClick={handleCopyCode} disabled={isCopied}>
+                                <Copy className={cn("h-4 w-4", isCopied && 'text-green-500')}/>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             );
         case 'subscription':
             return (
-                 <div className="space-y-6">
-                    <DialogHeader>
-                        <DialogTitle>Sua Assinatura</DialogTitle>
-                         <DialogDescription>Abaixo estão os detalhes do seu plano atual.</DialogDescription>
-                    </DialogHeader>
-                    <div className="text-center space-y-4">
-                         <Badge variant={effectiveSubscriptionStatus !== 'free' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
-                            {isTrial ? 'Teste Profissional' : effectiveSubscriptionStatus}
-                        </Badge>
-                        {countdown && (
-                             <div className='p-3 rounded-lg bg-primary/10 text-primary text-center max-w-xs mx-auto'>
-                                <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> {isTrial ? 'Período de Teste' : 'Assinatura Ativa'}</p>
-                                <p className='text-xs font-medium'>Expira em: {countdown}</p>
+                 <Card className="w-full shadow-none border-none">
+                    <CardHeader>
+                        <CardTitle>Sua Assinatura</CardTitle>
+                         <CardDescription>Abaixo estão os detalhes do seu plano atual.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="text-center space-y-4 p-6 border rounded-lg bg-secondary/30">
+                            <Badge variant={effectiveSubscriptionStatus !== 'free' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
+                                {isTrial ? 'Teste Profissional' : effectiveSubscriptionStatus}
+                            </Badge>
+                            {countdown && (
+                                <div className='p-3 rounded-lg bg-primary/10 text-primary text-center max-w-xs mx-auto'>
+                                    <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> {isTrial ? 'Período de Teste' : 'Assinatura Ativa'}</p>
+                                    <p className='text-xs font-medium'>Expira em: {countdown}</p>
+                                </div>
+                            )}
+                            <div className="pt-2">
+                                <Button asChild>
+                                    <Link href="/pricing">Ver todos os planos</Link>
+                                </Button>
                             </div>
-                        )}
-                        <div className="pt-2">
-                            <Button asChild>
-                                <Link href="/pricing">Ver todos os planos</Link>
-                            </Button>
                         </div>
-                    </div>
-                    {effectiveSubscriptionStatus !== 'free' && (
-                         <div className='pt-6 border-t'>
+                    </CardContent>
+                     {effectiveSubscriptionStatus !== 'free' && (
+                        <CardFooter className="pt-6 border-t">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost" className="text-destructive hover:text-destructive w-full">
@@ -302,52 +309,53 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                        </div>
+                        </CardFooter>
                     )}
-                </div>
+                </Card>
             );
         case 'advanced':
             return (
-                 <div className="space-y-6">
-                    <DialogHeader>
-                        <DialogTitle>Zona de Perigo</DialogTitle>
-                        <DialogDescription>Ações que afetam sua conta de forma permanente.</DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="border border-yellow-500/50 bg-yellow-500/5 p-4 rounded-lg">
-                        <h4 className="font-semibold flex items-center gap-2 text-yellow-600"><PauseCircle className="h-5 w-5"/> Pausar Conta</h4>
-                        <p className="text-sm text-muted-foreground mt-1 mb-3">Sua conta ficará inativa e você será desconectado. Seus dados serão mantidos para quando você voltar.</p>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline" className="text-yellow-600 border-yellow-500/50 hover:bg-yellow-500/10 hover:text-yellow-700">Pausar minha conta</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Pausar sua conta?</AlertDialogTitle><AlertDialogDescription>Você será desconectado e não poderá acessar seus dados até fazer login novamente. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handlePauseAccount} disabled={isProcessingAction} className='bg-yellow-500 hover:bg-yellow-600'>Confirmar Pausa</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
+                 <Card className="w-full shadow-none border-none">
+                    <CardHeader>
+                        <CardTitle>Zona de Perigo</CardTitle>
+                        <CardDescription>Ações que afetam sua conta de forma permanente.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="border border-yellow-500/50 bg-yellow-500/5 p-4 rounded-lg">
+                            <h4 className="font-semibold flex items-center gap-2 text-yellow-600"><PauseCircle className="h-5 w-5"/> Pausar Conta</h4>
+                            <p className="text-sm text-muted-foreground mt-1 mb-3">Sua conta ficará inativa e você será desconectado. Seus dados serão mantidos para quando você voltar.</p>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" className="text-yellow-600 border-yellow-500/50 hover:bg-yellow-500/10 hover:text-yellow-700">Pausar minha conta</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Pausar sua conta?</AlertDialogTitle><AlertDialogDescription>Você será desconectado e não poderá acessar seus dados até fazer login novamente. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handlePauseAccount} disabled={isProcessingAction} className='bg-yellow-500 hover:bg-yellow-600'>Confirmar Pausa</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
 
-                    <div className="border border-destructive/50 bg-destructive/5 p-4 rounded-lg">
-                        <h4 className="font-semibold flex items-center gap-2 text-destructive"><Trash2 className="h-5 w-5"/> Excluir Conta</h4>
-                        <p className="text-sm text-muted-foreground mt-1 mb-3">Esta ação é irreversível. Todos os seus dados, incluindo histórico, planos e informações de perfil, serão permanentemente apagados.</p>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                 <Button variant="destructive">Excluir permanentemente</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Você tem ABSOLUTA certeza?</AlertDialogTitle><AlertDialogDescription>Isto irá apagar sua conta e todos os seus dados de forma permanente. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteAccount} disabled={isProcessingAction} className='bg-destructive hover:bg-destructive/90'>Eu entendo, excluir tudo</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </div>
+                        <div className="border border-destructive/50 bg-destructive/5 p-4 rounded-lg">
+                            <h4 className="font-semibold flex items-center gap-2 text-destructive"><Trash2 className="h-5 w-5"/> Excluir Conta</h4>
+                            <p className="text-sm text-muted-foreground mt-1 mb-3">Esta ação é irreversível. Todos os seus dados, incluindo histórico, planos e informações de perfil, serão permanentemente apagados.</p>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="destructive">Excluir permanentemente</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Você tem ABSOLUTA certeza?</AlertDialogTitle><AlertDialogDescription>Isto irá apagar sua conta e todos os seus dados de forma permanente. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDeleteAccount} disabled={isProcessingAction} className='bg-destructive hover:bg-destructive/90'>Eu entendo, excluir tudo</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardContent>
+                </Card>
             );
         default: return null;
     }
@@ -356,7 +364,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 sm:p-2 shadow-2xl flex flex-col sm:flex-row gap-0">
+      <DialogContent className="max-w-4xl p-0 sm:p-0 shadow-2xl flex flex-col sm:flex-row gap-0 max-h-[90vh] sm:max-h-[600px]">
         <div className="w-full sm:w-1/4 p-4 border-b sm:border-b-0 sm:border-r">
           <h2 className="text-xl font-bold p-2 hidden sm:block">Configurações</h2>
           <nav className="flex flex-row sm:flex-col gap-1 mt-0 sm:mt-4">
@@ -369,7 +377,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     label={item.label}
                  />
             ))}
-            <div className='flex-1 sm:hidden'></div> {/* Spacer */}
+            <div className='flex-1 sm:hidden'></div>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="sm:hidden text-muted-foreground" onSelect={(e) => e.preventDefault()}>
