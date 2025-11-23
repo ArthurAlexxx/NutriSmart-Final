@@ -71,20 +71,18 @@ const exampleRecipe: Recipe = {
     },
 };
 
-const AnimatedText = ({ text, delay = 0, onComplete }: { text: string; delay?: number; onComplete?: () => void; }) => {
+const AnimatedText = ({ text, onComplete }: { text: string; onComplete?: () => void; }) => {
     const [displayedText, setDisplayedText] = useState('');
-    const [isComplete, setIsComplete] = useState(false);
 
     useEffect(() => {
         setDisplayedText('');
-        setIsComplete(false);
         let i = 0;
         const intervalId = setInterval(() => {
-            setDisplayedText(text.slice(0, i + 1));
-            i++;
-            if (i > text.length) {
+            if (i < text.length) {
+                setDisplayedText(text.slice(0, i + 1));
+                i++;
+            } else {
                 clearInterval(intervalId);
-                setIsComplete(true);
                 if (onComplete) onComplete();
             }
         }, 50); // Typing speed
@@ -93,6 +91,7 @@ const AnimatedText = ({ text, delay = 0, onComplete }: { text: string; delay?: n
 
     return <span className="font-semibold text-lg min-h-[28px]">{displayedText}</span>;
 };
+
 
 const exampleAnalysisData = [
   { day: 'Seg', calories: 2100 },
@@ -136,15 +135,34 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
     const [showChefResult, setShowChefResult] = useState(false);
     const [diaryIndex, setDiaryIndex] = useState(0);
     const [showDiaryTotals, setShowDiaryTotals] = useState(false);
+    
+    // State for Chef animation
+    const [chefAnimatedText, setChefAnimatedText] = useState('');
+    const [showRecipeCard, setShowRecipeCard] = useState(false);
 
     const currentDiaryExample = diaryExamples[diaryIndex];
     
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (featureId === 'chef') {
-            setShowChefResult(false);
-            const timer = setTimeout(() => setShowChefResult(true), 2500);
-            return () => clearTimeout(timer);
+            setShowRecipeCard(false);
+            setChefAnimatedText('');
+            const fullText = 'frango, brócolis e arroz...';
+            const firstPart = 'frango...';
+            
+            // Start typing first part
+            setChefAnimatedText(firstPart);
+            // After first part is "typed", show the card
+            const cardTimer = setTimeout(() => {
+                setShowRecipeCard(true);
+                 // Then continue typing the rest
+                const restTimer = setTimeout(() => {
+                    setChefAnimatedText(fullText);
+                }, 500); // Small delay before typing the rest
+                 return () => clearTimeout(restTimer);
+            }, firstPart.length * 50 + 500); // 50ms per char + 500ms delay
+            
+            return () => clearTimeout(cardTimer);
         }
         if (featureId === 'diary') {
             const runLoop = () => {
@@ -158,7 +176,7 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
             };
         }
 
-    }, [featureId, diaryIndex]);
+    }, [featureId]);
 
      useEffect(() => {
         if (featureId === 'diary') {
@@ -216,9 +234,9 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
                     <CardContent className="p-4 space-y-4">
                         <div className="p-4 border rounded-2xl bg-card">
                              <p className="text-sm text-muted-foreground">Tenho em casa...</p>
-                             <AnimatedText text='frango, brócolis e arroz...' delay={0.5} />
+                             <AnimatedText text={chefAnimatedText} />
                         </div>
-                        <RecipeDisplay recipe={showChefResult ? exampleRecipe : null} isGenerating={!showChefResult} isCollapsible={true} isChatMode={true} />
+                        <RecipeDisplay recipe={showRecipeCard ? exampleRecipe : null} isGenerating={!showRecipeCard} isChatMode={true} />
                     </CardContent>
                 </Card>
             );
