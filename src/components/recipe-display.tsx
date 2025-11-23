@@ -15,7 +15,6 @@ interface RecipeDisplayProps {
   recipe: Recipe | null;
   isGenerating: boolean;
   isChatMode?: boolean;
-  isCollapsible?: boolean;
 }
 
 const InfoBadge = ({ icon: Icon, text }: { icon: React.ElementType, text: string }) => (
@@ -34,8 +33,8 @@ const NutrientItem = ({ value, label, icon: Icon, colorClass }: { value: string;
 );
 
 
-export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false, isCollapsible = false }: RecipeDisplayProps) {
-  const [isOpen, setIsOpen] = useState(!isChatMode); // Start open if not in chat, start open always now in chat
+export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false }: RecipeDisplayProps) {
+  const [isOpen, setIsOpen] = useState(false); // Start collapsed
 
   if (isGenerating) {
     return (
@@ -107,17 +106,6 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
       </div>
     </div>
   );
-
-  if (isChatMode) {
-    return (
-      <div className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
-        {mainContent}
-        <CardContent className="p-0">
-          {instructionsContent}
-        </CardContent>
-      </div>
-    )
-  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
