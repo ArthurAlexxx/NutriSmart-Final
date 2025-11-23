@@ -23,12 +23,6 @@ const features = [
     description: 'Chega de procurar alimentos em listas intermináveis. Apenas descreva sua refeição e nossa IA calcula tudo para você em segundos.',
   },
   {
-    id: 'chef',
-    icon: ChefHat,
-    title: 'Chef Virtual com o que Você Tem na Geladeira',
-    description: 'Sem inspiração? Diga ao nosso Chef IA os ingredientes que você tem e receba receitas incríveis, com passo a passo e informações nutricionais.',
-  },
-  {
     id: 'plan',
     icon: BookCopy,
     title: 'Plano Alimentar que se Adapta a Você',
@@ -228,18 +222,6 @@ const FeatureDemo = ({ featureId }: { featureId: string }) => {
                     </CardContent>
                 </Card>
             );
-        case 'chef':
-            return (
-                <Card className="shadow-lg shadow-primary/10 w-full overflow-hidden">
-                    <CardContent className="p-4 space-y-4">
-                        <div className="p-4 border rounded-2xl bg-card">
-                             <p className="text-sm text-muted-foreground">Tenho em casa...</p>
-                             <AnimatedText text={chefAnimatedText} />
-                        </div>
-                        <RecipeDisplay recipe={showRecipeCard ? exampleRecipe : null} isGenerating={!showRecipeCard} isChatMode={true} />
-                    </CardContent>
-                </Card>
-            );
         case 'plan':
             return (
                 <Card className="shadow-lg shadow-primary/10 w-full">
@@ -296,7 +278,7 @@ const FeatureShowcase = ({ feature, index }: { feature: typeof features[0], inde
                 <p className="text-muted-foreground text-lg">
                     {feature.description}
                 </p>
-                {(feature.id === 'plan' || feature.id === 'analysis' || feature.id === 'chef') && (
+                {(feature.id === 'plan' || feature.id === 'analysis') && (
                     <Button asChild size="lg" variant="ghost" className='text-primary hover:text-primary'>
                         <Link href="/pricing">
                             Ver Planos Premium <ArrowRight className="ml-2 h-5 w-5" />
