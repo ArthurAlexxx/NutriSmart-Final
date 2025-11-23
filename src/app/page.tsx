@@ -9,7 +9,6 @@ import { FeaturesSection } from '@/components/ui/features-section';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { CTASection } from '@/components/ui/cta-section';
 import { Pricing } from '@/components/ui/pricing';
-import UseCasesSection from '@/components/ui/use-cases-section';
 import MetricsSection from '@/components/ui/metrics-section';
 
 const avatarData = [
@@ -53,9 +52,7 @@ export default function Home() {
         />
 
         <FeaturesSection />
-        
-        <UseCasesSection />
-        
+                
         <TestimonialsSection />
 
         <MetricsSection />
