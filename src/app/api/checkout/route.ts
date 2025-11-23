@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   
   // CORREÇÃO: Calcula o valor anual total multiplicando o valor mensal com desconto por 12.
   const amount = isYearly ? plan.yearlyDiscountedMonthly * 12 : plan.monthly;
-  const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - NutriSmart`;
+  const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - NutriNea`;
 
   try {
     const abacateApiUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';

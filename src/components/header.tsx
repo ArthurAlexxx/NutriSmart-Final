@@ -21,7 +21,7 @@ const NavLink = ({ href, children, onClick, className }: { href: string; childre
 );
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">NutriSmart</span>;
+    return <span className="text-xl font-semibold">NutriNea</span>;
 };
 
 

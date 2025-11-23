@@ -2,7 +2,7 @@
   "placeholderImages": [
     {
       "id": "logo",
-      "description": "NutriSmart logo",
+      "description": "NutriNea logo",
       "imageUrl": "https://i.imgur.com/QHV8Oil.png",
       "imageHint": "logo"
     },
@@ -14,7 +14,7 @@
     },
     {
       "id": "feature-1",
-      "description": "Uma mulher sorrindo e mexendo em um tablet, mostrando a interface do app NutriSmart.",
+      "description": "Uma mulher sorrindo e mexendo em um tablet, mostrando a interface do app NutriNea.",
       "imageUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "woman using app"
     },

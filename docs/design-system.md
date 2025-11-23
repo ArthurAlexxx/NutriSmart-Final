@@ -1,6 +1,6 @@
 # Sistema de Design - Especificação Padrão
 
-Este documento define a identidade visual e os princípios de UX/UI para nossos projetos, usando o NutriSmart como base.
+Este documento define a identidade visual e os princípios de UX/UI para nossos projetos, usando o NutriNea como base.
 
 ## 1. Filosofia de Design e Inspiração
 

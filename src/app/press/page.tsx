@@ -24,7 +24,7 @@ export default function PressPage() {
                             Kit de <span className="text-primary">Imprensa</span>
                         </h1>
                         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                            Recursos e informações para jornalistas, blogueiros e parceiros de mídia interessados em contar a história do NutriSmart.
+                            Recursos e informações para jornalistas, blogueiros e parceiros de mídia interessados em contar a história do NutriNea.
                         </p>
                     </div>
                 </section>
@@ -41,9 +41,9 @@ export default function PressPage() {
                             <Card>
                                 <CardContent className="p-6">
                                     <p className="font-semibold">Equipe de Comunicação</p>
-                                    <a href="mailto:imprensa@nutrismart.com" className="text-primary text-lg font-medium flex items-center gap-2 mt-2 hover:underline">
+                                    <a href="mailto:imprensa@nutrinea.com" className="text-primary text-lg font-medium flex items-center gap-2 mt-2 hover:underline">
                                         <Mail className="h-5 w-5" />
-                                        imprensa@nutrismart.com
+                                        imprensa@nutrinea.com
                                     </a>
                                 </CardContent>
                             </Card>

@@ -37,7 +37,7 @@ export default function AboutPage() {
                             Nossa Missão é <span className="text-primary">Democratizar a Saúde</span>
                         </h1>
                         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                            No NutriSmart, estamos redefinindo o bem-estar, unindo nutrição de ponta com o poder da inteligência artificial para criar um caminho mais simples e inteligente para uma vida saudável.
+                            No NutriNea, estamos redefinindo o bem-estar, unindo nutrição de ponta com o poder da inteligência artificial para criar um caminho mais simples e inteligente para uma vida saudável.
                         </p>
                     </div>
                 </section>

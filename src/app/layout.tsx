@@ -18,7 +18,7 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'NutriSmart',
+  title: 'NutriNea',
   description: 'Acompanhe sua saúde e alimentação com a ajuda da inteligência artificial.',
   icons: {
     icon: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
         url: `data:image/svg+xml,${encodeURIComponent(
           `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <rect width="100" height="100" rx="20" fill="hsl(101 28% 54%)" />
-            <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="80" font-family="${lexend.style.fontFamily}" fill="white" dy=".05em">N</text>
+            <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="80" font-family="${lexend.style.fontFamily}" fill="white" dy=".05em">Ne</text>
           </svg>`
         )}`,
         type: 'image/svg+xml',

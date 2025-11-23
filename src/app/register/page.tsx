@@ -27,7 +27,7 @@ const registerSchema = z.object({
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((data) => data.password === data.password, {
   message: 'As senhas não coincidem.',
   path: ['confirmPassword'],
 });
@@ -118,7 +118,7 @@ function RegisterForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-6 text-2xl font-bold font-heading text-primary">
-                NutriSmart
+                NutriNea
             </Link>
             <h1 className="text-3xl font-bold font-heading">
                 Crie sua Conta

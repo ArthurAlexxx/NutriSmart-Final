@@ -13,7 +13,7 @@ export default function PrivacyPage() {
                         <h1 className="text-4xl font-bold font-heading">Política de Privacidade</h1>
                         <p className="text-muted-foreground">Última atualização: 25 de Julho de 2024</p>
                         
-                        <p>Sua privacidade é extremamente importante para nós do NutriSmart. Esta Política de Privacidade descreve como coletamos, usamos, compartilhamos e protegemos suas informações pessoais.</p>
+                        <p>Sua privacidade é extremamente importante para nós do NutriNea. Esta Política de Privacidade descreve como coletamos, usamos, compartilhamos e protegemos suas informações pessoais.</p>
                         
                         <h2>1. Informações que Coletamos</h2>
                         <ul>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
                         <p>Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos você sobre quaisquer alterações significativas publicando a nova política em nosso site.</p>
 
                         <h2>8. Contato</h2>
-                        <p>Se você tiver alguma dúvida sobre esta Política de Privacidade, entre em contato conosco em <a href="mailto:privacidade@nutrismart.com">privacidade@nutrismart.com</a>.</p>
+                        <p>Se você tiver alguma dúvida sobre esta Política de Privacidade, entre em contato conosco em <a href="mailto:privacidade@nutrinea.com">privacidade@nutrinea.com</a>.</p>
                     </article>
                 </div>
             </main>

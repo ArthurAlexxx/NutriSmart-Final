@@ -1,6 +1,6 @@
-# NutriSmart
+# NutriNea
 
-NutriSmart é uma aplicação web moderna construída com Next.js, Firebase e IA generativa, projetada para ajudar os usuários a rastrear sua nutrição e alcançar seus objetivos de saúde.
+NutriNea é uma aplicação web moderna construída com Next.js, Firebase e IA generativa, projetada para ajudar os usuários a rastrear sua nutrição e alcançar seus objetivos de saúde.
 
 ## Funcionalidades Principais
 

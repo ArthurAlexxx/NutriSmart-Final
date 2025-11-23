@@ -68,4 +68,4 @@ Esta é a espinha dorsal do modelo de negócio. A implementação deve seguir es
 
 ## Exemplo de Aplicação (Contexto)
 
-**Para a IA:** "Com base em todas as diretrizes acima, crie uma aplicação SaaS de [**descreva o novo nicho, ex: 'gestão de treinos para academias' ou 'plataforma de agendamento para salões de beleza'**]. A estrutura deve ser idêntica à do projeto NutriSmart, mas o conteúdo, as entidades de dados e as funcionalidades específicas devem ser adaptados para o novo contexto."
+**Para a IA:** "Com base em todas as diretrizes acima, crie uma aplicação SaaS de [**descreva o novo nicho, ex: 'gestão de treinos para academias' ou 'plataforma de agendamento para salões de beleza'**]. A estrutura deve ser idêntica à do projeto NutriNea, mas o conteúdo, as entidades de dados e as funcionalidades específicas devem ser adaptados para o novo contexto."

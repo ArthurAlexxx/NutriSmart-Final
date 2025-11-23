@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">NutriSmart</span>;
+    return <span className="text-xl font-semibold">NutriNea</span>;
 };
 
 
@@ -51,7 +51,7 @@ export default function Footer() {
         </div>
         <div className="mt-12 border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground text-center sm:text-left">
-                © {new Date().getFullYear()} NutriSmart. Todos os direitos reservados.
+                © {new Date().getFullYear()} NutriNea. Todos os direitos reservados.
             </p>
         </div>
       </div>

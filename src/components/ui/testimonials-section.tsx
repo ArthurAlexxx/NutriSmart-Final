@@ -15,7 +15,7 @@ const testimonials: Testimonial[] = [
     {
         name: 'Juliana M.',
         role: 'Usuária Satisfeita',
-        text: '"O NutriSmart mudou minha relação com a comida. Nunca foi tão fácil comer bem e atingir minhas metas de saúde. A IA entende minhas necessidades!"',
+        text: '"O NutriNea mudou minha relação com a comida. Nunca foi tão fácil comer bem e atingir minhas metas de saúde. A IA entende minhas necessidades!"',
         image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&q=80",
     },
     {
@@ -27,7 +27,7 @@ const testimonials: Testimonial[] = [
     {
         name: 'Dr. Fernanda L.',
         role: 'Nutricionista Parceira',
-        text: '"Uso o NutriSmart para acompanhar meus pacientes e os resultados são fantásticos. A interface é intuitiva e a capacidade de compartilhar dados otimizou meu trabalho."',
+        text: '"Uso o NutriNea para acompanhar meus pacientes e os resultados são fantásticos. A interface é intuitiva e a capacidade de compartilhar dados otimizou meu trabalho."',
         image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&q=80",
     },
     {
@@ -85,7 +85,7 @@ export const TestimonialsSection = () => {
                     <Badge variant="outline" className="mb-4">Depoimentos</Badge>
                     <h2 className="text-3xl font-bold md:text-4xl font-heading">Amado por milhares de usuários e profissionais</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                        Veja o que estão dizendo sobre a transformação que o NutriSmart proporcionou.
+                        Veja o que estão dizendo sobre a transformação que o NutriNea proporcionou.
                     </p>
                 </div>
                 <div className="mt-16 flex justify-center items-start gap-6">
