@@ -34,7 +34,8 @@ const NutrientItem = ({ value, label, icon: Icon, colorClass }: { value: string;
 
 
 export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false }: RecipeDisplayProps) {
-  const [isOpen, setIsOpen] = useState(false); // Start collapsed
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
+  const [isRecipeOpen, setIsRecipeOpen] = useState(isChatMode); // Start open in chat, closed otherwise
 
   if (isGenerating) {
     return (
@@ -59,18 +60,28 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
   if (!recipe) return null;
 
 
+  const headerContent = (
+     <CardHeader className={cn(isChatMode ? 'p-4' : 'p-6')}>
+        <CardTitle className="text-2xl md:text-3xl font-bold text-balance">{recipe.title}</CardTitle>
+        <CardDescription className="pt-2 text-base">{recipe.description}</CardDescription>
+        {!isRecipeOpen && !isChatMode && (
+             <div className="pt-4">
+                <Button onClick={() => setIsRecipeOpen(true)} className="w-full">
+                    Ver Receita Completa
+                </Button>
+            </div>
+        )}
+    </CardHeader>
+  );
+
   const mainContent = (
       <>
-        <CardHeader className={cn(isChatMode ? 'p-4' : 'p-6')}>
-            <CardTitle className="text-2xl md:text-3xl font-bold text-balance">{recipe.title}</CardTitle>
-            <CardDescription className="pt-2 text-base">{recipe.description}</CardDescription>
-            <div className="flex flex-wrap items-center gap-3 pt-4">
+        <div className={cn("pt-0 space-y-8", isChatMode ? 'p-4' : 'p-6')}>
+            <div className="flex flex-wrap items-center gap-3">
                 <InfoBadge icon={Clock} text={`${recipe.prepTime} preparo`} />
                 <InfoBadge icon={Utensils} text={`${recipe.cookTime} cozimento`} />
                 <InfoBadge icon={Users} text={`${recipe.servings} porções`} />
             </div>
-        </CardHeader>
-        <CardContent className={cn("space-y-8", isChatMode ? 'p-4 pt-2' : 'p-6')}>
             <div className="grid md:grid-cols-2 gap-8">
                 <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><CheckSquare className="h-5 w-5 text-primary" /> Ingredientes</h3>
@@ -88,7 +99,7 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
                     </div>
                 </div>
             </div>
-        </CardContent>
+        </div>
       </>
   );
 
@@ -108,19 +119,26 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
   );
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card")}>
-        {mainContent}
-        <CollapsibleContent>
-           {instructionsContent}
-        </CollapsibleContent>
-        <CardFooter className={cn("p-6 pt-0", isChatMode && "p-4 pt-0")}>
-            <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full text-primary hover:text-primary">
-                    {isOpen ? 'Ocultar Modo de Preparo' : 'Ver Modo de Preparo Completo'}
-                    <ChevronDown className={cn("h-4 w-4 ml-2 transition-transform", isOpen && "rotate-180")} />
-                </Button>
-            </CollapsibleTrigger>
-        </CardFooter>
-    </Collapsible>
+    <div className={cn(!isChatMode && "shadow-lg rounded-3xl animate-fade-in border bg-card overflow-hidden")}>
+        {headerContent}
+        {isRecipeOpen && (
+            <Collapsible open={isInstructionsOpen} onOpenChange={setIsInstructionsOpen} className="animate-fade-in">
+                <CardContent>
+                    {mainContent}
+                </CardContent>
+                <CollapsibleContent>
+                   {instructionsContent}
+                </CollapsibleContent>
+                <CardFooter className={cn("p-6 pt-0", isChatMode && "p-4 pt-0")}>
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full text-primary hover:text-primary">
+                            {isInstructionsOpen ? 'Ocultar Modo de Preparo' : 'Ver Modo de Preparo Completo'}
+                            <ChevronDown className={cn("h-4 w-4 ml-2 transition-transform", isInstructionsOpen && "rotate-180")} />
+                        </Button>
+                    </CollapsibleTrigger>
+                </CardFooter>
+            </Collapsible>
+        )}
+    </div>
   )
 }
