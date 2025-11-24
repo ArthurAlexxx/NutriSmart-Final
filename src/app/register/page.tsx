@@ -96,12 +96,6 @@ function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
-      await sendEmailVerification(user);
-      toast({
-        title: "Verifique seu e-mail",
-        description: "Enviamos um link de verificação para o seu e-mail.",
-      });
-
       const userRef = doc(firestore, 'users', user.uid);
       const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
@@ -121,6 +115,11 @@ function RegisterForm() {
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
       await updateProfile(user, { displayName: data.fullName });
+
+      toast({
+        title: "Conta Criada com Sucesso!",
+        description: "Você será redirecionado em breve.",
+      });
       
       // The useEffect will now handle the redirection once the profile is loaded.
 

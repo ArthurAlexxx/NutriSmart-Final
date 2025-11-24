@@ -42,7 +42,6 @@ const LogoDisplay = () => {
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
@@ -59,11 +58,6 @@ export default function LoginPage() {
   useEffect(() => {
     // This effect handles redirection AFTER the user state is fully resolved.
     if (!isUserLoading && user) {
-        if (!user.emailVerified && user.providerData.some(p => p.providerId === 'password')) {
-            // This case should be handled by handleLogin, but as a safeguard.
-            return;
-        }
-
         toast({
             title: "Login bem-sucedido!",
             description: "Redirecionando para o seu painel...",
@@ -78,31 +72,6 @@ export default function LoginPage() {
     }
   }, [user, effectiveSubscriptionStatus, isUserLoading, isAdmin, router, toast]);
 
-  const handleResendVerification = async (userToVerify: User) => {
-    if (isResending) return;
-    setIsResending(true);
-    try {
-      await sendEmailVerification(userToVerify);
-      toast({
-        title: "E-mail de Verificação Reenviado",
-        description: "Verifique sua caixa de entrada para o novo link. Pode levar alguns minutos.",
-      });
-    } catch (error: any) {
-      console.error("Resend Verification Error:", error);
-      let description = "Não foi possível reenviar o e-mail. Se o problema persistir, verifique as configurações do projeto ou tente novamente mais tarde.";
-      if (error.code === 'auth/too-many-requests') {
-          description = "Muitas tentativas de reenvio. Por favor, aguarde um momento antes de tentar novamente.";
-      }
-      toast({
-        title: "Erro ao Reenviar",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-        setIsResending(false);
-    }
-  };
-
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -113,29 +82,8 @@ export default function LoginPage() {
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-
-      // Check for email verification
-      if (!userCredential.user.emailVerified) {
-          const userToVerify = userCredential.user;
-          await signOut(auth); // Sign out the user immediately
-          setLoading(false);
-          toast({
-              title: "Verificação Necessária",
-              description: "Seu e-mail ainda não foi verificado. Por favor, verifique sua caixa de entrada.",
-              variant: "destructive",
-              duration: 8000,
-              action: (
-                <Button variant="secondary" onClick={() => handleResendVerification(userToVerify)} disabled={isResending}>
-                   {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Reenviar E-mail
-                </Button>
-              ),
-          });
-          return;
-      }
-      
-      // If verified, the useEffect will handle the redirect.
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // The useEffect will handle the redirect on successful login.
       
     } catch (error: any) {
       setLoading(false); // Stop loading on error
