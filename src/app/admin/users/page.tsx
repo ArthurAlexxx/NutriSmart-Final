@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, getCountFromServer } from 'firebase/firestore';
 import AppLayout from '@/components/app-layout';
-import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
+import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign, Edit, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ function AdminUsersPage() {
         return query(baseCollection, orderBy('createdAt', 'desc'));
     }
 
-    // This query requires a composite index on (subscriptionStatus, createdAt)
+    // Esta consulta requer o índice composto que você está criando!
     return query(baseCollection, where('subscriptionStatus', '==', filter), orderBy('createdAt', 'desc'));
 
   }, [isAdmin, firestore, filter]);
