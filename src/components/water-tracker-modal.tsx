@@ -120,7 +120,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
-        <DialogHeader className='p-6 pb-0 sm:p-0'>
+        <DialogHeader className='text-center'>
           <DialogTitle className="text-2xl font-bold">Registrar Água</DialogTitle>
           <DialogDescription>
             Acompanhe sua meta diária de hidratação. Cada toque adiciona 250ml.
@@ -146,7 +146,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
             </div>
         </div>
 
-        <DialogFooter className='p-6 pt-0 sm:p-0'>
+        <DialogFooter>
           <Button type="button" onClick={() => onOpenChange(false)} className='w-full'>
             Fechar
           </Button>
