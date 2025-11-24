@@ -18,8 +18,8 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'NutriNea',
-  description: 'Acompanhe sua saúde e alimentação com a ajuda da inteligência artificial.',
+  title: 'NutriNea | Nutrição Inteligente, Vida Saudável',
+  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com NutriNea.',
   icons: {
     icon: [
       {
