@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { getLocalDateString } from '@/lib/date-utils';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -160,6 +161,20 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     
     try {
         const optimizedImageBase64 = await optimizeImage(data.photo);
+        
+        // 1. Upload image to Firebase Storage
+        const storage = getStorage();
+        const imageName = `${Date.now()}.jpg`;
+        const storageRef = ref(storage, `meal-photos/${userId}/${imageName}`);
+        
+        // Convert base64 to blob
+        const response = await fetch(optimizedImageBase64);
+        const blob = await response.blob();
+        
+        await uploadBytes(storageRef, blob);
+        const imageUrl = await getDownloadURL(storageRef);
+
+        // 2. Analyze image with AI
         const result = await getNutritionalInfoFromPhoto(optimizedImageBase64, data.mealType);
 
         if (result.error) {
@@ -167,6 +182,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
         }
 
         const mealData: MealData = {
+          imageUrl: imageUrl, // Save the public URL
           alimentos: [{ 
             name: result.description || 'Análise de Foto', 
             portion: 1, 

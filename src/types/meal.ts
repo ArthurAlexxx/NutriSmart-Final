@@ -22,6 +22,7 @@ export interface Totals {
 export interface MealData {
   alimentos: Food[];
   totais: Totals;
+  imageUrl?: string; // Optional field for the meal image URL
 }
 
 export interface MealEntry {
