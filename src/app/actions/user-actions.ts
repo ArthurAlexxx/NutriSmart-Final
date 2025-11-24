@@ -61,14 +61,16 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
         // This relies on security rules allowing the user to delete their own document.
         await db.collection('users').doc(userId).delete();
 
-        // Step 3: Delete the user from Firebase Authentication using the Admin SDK
-        await adminAuth.deleteUser(userId);
+        // Step 3: We will NOT delete the user from Firebase Authentication.
+        // This avoids the need for the Admin SDK and the service account key.
+        // The user will no longer be able to log in effectively because their Firestore data is gone.
+        // await adminAuth.deleteUser(userId);
 
         revalidatePath('/'); // Revalidate all paths after deletion
-        return { success: true, message: 'Sua conta e todos os seus dados foram excluídos permanentemente.' };
+        return { success: true, message: 'Seus dados foram excluídos permanentemente. Sua conta de login será desativada.' };
 
     } catch (error: any) {
-        console.error(`CRITICAL: Failed to completely delete account for user ${userId}:`, error);
-        return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir sua conta.' };
+        console.error(`CRITICAL: Failed to completely delete account data for user ${userId}:`, error);
+        return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir os dados da sua conta.' };
     }
 }
