@@ -26,7 +26,9 @@
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
         "waterGoal": { "type": "number" },
-        "unlockedAchievements": { "type": "array", "items": { "type": "string" } }
+        "unlockedAchievements": { "type": "array", "items": { "type": "string" } },
+        "photoAnalysisCount": { "type": "number" },
+        "lastPhotoAnalysisDate": { "type": "string" }
       },
       "required": ["id", "fullName", "email", "createdAt", "status", "profileType", "role"]
     },
