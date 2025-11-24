@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import AppLayout from '@/components/app-layout';
 import { Loader2, Shield, UserCheck, Crown, User, Search } from 'lucide-react';
@@ -21,7 +21,7 @@ function AdminPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  const usersQuery = useMemo(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!isAdmin || !firestore) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
   }, [isAdmin, firestore]);
