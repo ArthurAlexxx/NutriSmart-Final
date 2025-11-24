@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
-import { Separator } from './ui/separator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 
 const formSchema = z.object({
@@ -146,16 +145,33 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const handleDeleteAccount = async () => {
     setIsProcessingAction(true);
-    const result = await deleteAccountAction(userId);
-     if (result.success) {
-        toast({ title: 'Conta Excluída', description: 'Sua conta foi permanentemente removida.', duration: 5000 });
-        onOpenChange(false);
-        router.push('/');
-    } else {
-        toast({ title: 'Erro Crítico', description: result.message, variant: 'destructive' });
+     try {
+        const idToken = await auth.currentUser?.getIdToken();
+        const response = await fetch(`/api/user/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ userId }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            toast({ title: 'Conta Excluída', description: result.message, duration: 5000 });
+            onOpenChange(false);
+            router.push('/');
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error: any) {
+        toast({ title: 'Erro Crítico', description: error.message || 'Ocorreu um erro ao tentar excluir sua conta.', variant: 'destructive' });
+    } finally {
+        setIsProcessingAction(false);
     }
-    setIsProcessingAction(false);
   }
+
 
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
@@ -178,7 +194,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     return 'Expirando em breve';
   }, [expiryDate]);
   
-  const isTrial = effectiveSubscriptionStatus === 'professional' && userProfile.subscriptionStatus === 'free' && countdown;
   const isProfessionalUser = effectiveSubscriptionStatus === 'professional';
 
   const navItems = [
@@ -250,11 +265,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     <CardContent className="space-y-6">
                         <div className="text-center space-y-4 p-6 border rounded-lg bg-secondary/30">
                             <Badge variant={effectiveSubscriptionStatus !== 'free' ? 'default' : 'secondary'} className='capitalize text-lg py-1 px-4'>
-                                {isTrial ? 'Teste Profissional' : effectiveSubscriptionStatus}
+                                {effectiveSubscriptionStatus}
                             </Badge>
                             {countdown && (
                                 <div className='p-3 rounded-lg bg-primary/10 text-primary text-center max-w-xs mx-auto'>
-                                    <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> {isTrial ? 'Período de Teste' : 'Assinatura Ativa'}</p>
+                                    <p className='font-bold text-sm flex items-center justify-center gap-2'><AlarmClock className='h-4 w-4'/> Assinatura Ativa</p>
                                     <p className='text-xs font-medium'>Expira em: {countdown}</p>
                                 </div>
                             )}

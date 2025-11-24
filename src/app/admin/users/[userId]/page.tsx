@@ -1,59 +1,35 @@
 // src/app/admin/users/[userId]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import AppLayout from '@/components/app-layout';
-import { Loader2, ArrowLeft, Save, User as UserIcon, Shield, CreditCard, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, ArrowLeft, User as UserIcon, Shield, CreditCard, CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserAsAdmin } from '@/app/actions/user-actions';
 import type { UserProfile } from '@/types/user';
 
-const formSchema = z.object({
-    fullName: z.string().min(3, "Nome deve ter pelo menos 3 caracteres."),
-    role: z.enum(['patient', 'professional']),
-    subscriptionStatus: z.enum(['free', 'premium', 'professional']),
-    subscriptionExpiresAt: z.date().optional(),
-});
-
-type EditUserFormValues = z.infer<typeof formSchema>;
-
-export default function EditUserPage() {
+export default function ViewUserPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
     const router = useRouter();
     const params = useParams();
     const firestore = useFirestore();
-    const { toast } = useToast();
 
     const userId = params.userId as string;
 
-    const userToEditRef = useMemoFirebase(() => {
+    const userToViewRef = useMemoFirebase(() => {
         if (!isAdmin || !firestore || !userId) return null;
         return doc(firestore, 'users', userId);
     }, [isAdmin, firestore, userId]);
 
-    const { data: userToEdit, isLoading: isLoadingUserToEdit } = useDoc<UserProfile>(userToEditRef);
-
-    const form = useForm<EditUserFormValues>({
-        resolver: zodResolver(formSchema),
-    });
+    const { data: userToView, isLoading: isLoadingUserToView } = useDoc<UserProfile>(userToViewRef);
 
     useEffect(() => {
         if (!isUserLoading && !isAdmin) {
@@ -61,33 +37,18 @@ export default function EditUserPage() {
         }
     }, [isUserLoading, isAdmin, router]);
 
-    useEffect(() => {
-        if (userToEdit) {
-            form.reset({
-                fullName: userToEdit.fullName,
-                role: userToEdit.role === 'admin' ? 'professional' : userToEdit.role, // Can't set admin via form
-                subscriptionStatus: userToEdit.subscriptionStatus || 'free',
-                subscriptionExpiresAt: userToEdit.subscriptionExpiresAt ? (userToEdit.subscriptionExpiresAt as Timestamp).toDate() : undefined,
-            });
+    const getSubscriptionStatus = (user: UserProfile) => {
+        if (user.subscriptionStatus === 'free') return 'Gratuito';
+        
+        const expiresAt = user.subscriptionExpiresAt ? (user.subscriptionExpiresAt as Timestamp).toDate() : null;
+        if (expiresAt && expiresAt < new Date()) {
+            return `Expirado (${user.subscriptionStatus})`;
         }
-    }, [userToEdit, form]);
+        
+        return user.subscriptionStatus;
+    };
     
-    const onSubmit = async (data: EditUserFormValues) => {
-        try {
-            const result = await updateUserAsAdmin(userId, data);
-            if(result.success) {
-                toast({ title: "Sucesso", description: result.message });
-                router.push('/admin/users');
-            } else {
-                throw new Error(result.message);
-            }
-        } catch(e: any) {
-            toast({ title: "Erro ao atualizar", description: e.message, variant: "destructive" });
-        }
-    }
-
-
-    if (isUserLoading || isLoadingUserToEdit || !isAdmin) {
+    if (isUserLoading || isLoadingUserToView || !isAdmin) {
         return (
             <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
                 <div className="flex h-full w-full items-center justify-center">
@@ -97,7 +58,7 @@ export default function EditUserPage() {
         );
     }
     
-     if (!userToEdit) {
+     if (!userToView) {
         return (
             <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
                 <div className="text-center">Usuário não encontrado.</div>
@@ -113,90 +74,48 @@ export default function EditUserPage() {
                     <Link href="/admin/users"><ArrowLeft className="h-4 w-4" /></Link>
                     </Button>
                     <div>
-                    <h1 className="text-3xl font-bold font-heading">Gerenciar Usuário</h1>
-                    <p className="text-muted-foreground">{userToEdit.email}</p>
+                    <h1 className="text-3xl font-bold font-heading">Detalhes do Usuário</h1>
+                    <p className="text-muted-foreground">{userToView.email}</p>
                     </div>
                 </div>
 
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                         <Card>
-                             <CardHeader><CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Dados Pessoais</CardTitle></CardHeader>
-                             <CardContent>
-                                <FormField control={form.control} name="fullName" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Nome Completo</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </CardContent>
-                         </Card>
-                         
-                         <Card>
-                             <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Acesso e Assinatura</CardTitle></CardHeader>
-                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <FormField control={form.control} name="role" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Role (Permissão)</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={userToEdit.role === 'admin'}>
-                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="patient">Paciente</SelectItem>
-                                                    <SelectItem value="professional">Profissional</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                     <FormField control={form.control} name="subscriptionStatus" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Status da Assinatura</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="free">Gratuito</SelectItem>
-                                                    <SelectItem value="premium">Premium</SelectItem>
-                                                    <SelectItem value="professional">Profissional</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
+                <div className="space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> Dados Pessoais</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><p className="text-sm text-muted-foreground">Nome Completo</p><p className="font-semibold">{userToView.fullName}</p></div>
+                                <div><p className="text-sm text-muted-foreground">E-mail</p><p className="font-semibold">{userToView.email}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Telefone</p><p className="font-semibold">{userToView.phone || 'N/A'}</p></div>
+                                <div><p className="text-sm text-muted-foreground">CPF/CNPJ</p><p className="font-semibold">{userToView.taxId || 'N/A'}</p></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Acesso e Assinatura</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><p className="text-sm text-muted-foreground">Role (Permissão)</p><p className="font-semibold capitalize">{userToView.role}</p></div>
+                                <div><p className="text-sm text-muted-foreground">Status da Assinatura</p><p className="font-semibold capitalize">{getSubscriptionStatus(userToView)}</p></div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Data de Expiração</p>
+                                    <p className="font-semibold">
+                                        {userToView.subscriptionExpiresAt ? format((userToView.subscriptionExpiresAt as Timestamp).toDate(), "PPP", { locale: ptBR }) : 'N/A'}
+                                    </p>
                                 </div>
-                                <FormField control={form.control} name="subscriptionExpiresAt" render={({ field }) => (
-                                    <FormItem className='flex flex-col pt-2'>
-                                        <FormLabel>Data de Expiração</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Definir data</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </CardContent>
-                         </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        <div className="flex justify-end">
-                            <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
-                                {form.formState.isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                <Save className="h-4 w-4 mr-2" />
-                                Salvar Alterações
-                            </Button>
-                        </div>
-
-                    </form>
-                </Form>
+                    <div className="flex justify-end">
+                        <p className="text-xs text-muted-foreground">Para editar dados do usuário, acesse o Console do Firebase.</p>
+                    </div>
+                </div>
             </div>
         </AppLayout>
     );
