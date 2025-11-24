@@ -87,7 +87,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
       defaultValues: { newEmail: '', password: '' },
   });
   
-  const { isSubmitting: isProfileSubmitting, isDirty: isProfileDirty } = profileForm.formState;
+  const { isSubmitting: isProfileSubmitting, formState: { isDirty: isProfileDirty } } = profileForm;
   const { isSubmitting: isEmailSubmitting } = emailForm.formState;
   
    useEffect(() => {
@@ -279,7 +279,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
-      profileForm.markAsDirty(); // Mark form as dirty to enable save button
   };
 
 
