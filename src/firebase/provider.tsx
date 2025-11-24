@@ -102,21 +102,29 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             if (profileDoc.exists()) {
                 const profileData = { id: profileDoc.id, ...profileDoc.data() } as UserProfile;
                 
-                // BUG FIX: Check if a patient profile is missing a share code and generate one.
+                const updates: Partial<UserProfile> = {};
                 if (!profileData.dashboardShareCode) {
-                    const newShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-                    console.log(`Generating missing share code for user ${profileData.id}: ${newShareCode}`);
-                    // Non-blocking update. The listener will catch the change.
-                    updateDoc(userRef, { dashboardShareCode: newShareCode }).catch(e => console.error("Failed to update share code", e));
-                    // We don't return here, let the UI update with current data and it will refresh shortly.
+                    updates.dashboardShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
                 }
-                
-                setUserAuthState(prevState => ({ 
-                    ...prevState,
-                    userProfile: profileData, 
-                    isUserLoading: false, 
-                    userError: null 
-                }));
+                if (!profileData.role) {
+                    updates.role = 'patient';
+                }
+                 if (!profileData.profileType) {
+                    updates.profileType = 'patient';
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    console.log(`Profile for user ${profileData.id} is missing fields. Updating...`, updates);
+                    updateDoc(userRef, updates).catch(e => console.error("Failed to update missing profile fields", e));
+                    // The listener will be re-triggered with the updated data.
+                } else {
+                    setUserAuthState(prevState => ({ 
+                        ...prevState,
+                        userProfile: profileData, 
+                        isUserLoading: false, 
+                        userError: null 
+                    }));
+                }
 
             } else {
                 // Profile doesn't exist, let's create one.
@@ -127,7 +135,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         fullName: userAuthState.user?.displayName || "Novo Usuário",
                         email: userAuthState.user?.email || "",
                         createdAt: serverTimestamp(),
-                        dashboardShareCode: newShareCode, // Add share code on creation
+                        dashboardShareCode: newShareCode,
                         subscriptionStatus: 'free',
                         profileType: 'patient',
                         role: 'patient',
@@ -137,8 +145,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         status: 'active'
                     };
                     await setDoc(userRef, {id: userAuthState.user.uid, ...newUserProfile});
-                    // The onSnapshot listener will be re-triggered with the new data,
-                    // so we just set loading to false here.
+                    // The onSnapshot listener will be re-triggered with the new data.
                 } catch (creationError) {
                     console.error("Failed to create user profile:", creationError);
                      setUserAuthState(prevState => ({ 
