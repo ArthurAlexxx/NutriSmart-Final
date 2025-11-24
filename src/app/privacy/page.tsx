@@ -13,7 +13,7 @@ export default function PrivacyPage() {
                         <h1 className="text-4xl font-bold font-heading">Política de Privacidade</h1>
                         <p className="text-muted-foreground">Última atualização: 25 de Julho de 2024</p>
                         
-                        <p>Sua privacidade é extremamente importante para nós do NutriNea. Esta Política de Privacidade descreve como coletamos, usamos, compartilhamos e protegemos suas informações pessoais.</p>
+                        <p>Sua privacidade é extremamente importante para nós do Nutrinea. Esta Política de Privacidade descreve como coletamos, usamos, compartilhamos e protegemos suas informações pessoais.</p>
                         
                         <h2>1. Informações que Coletamos</h2>
                         <ul>

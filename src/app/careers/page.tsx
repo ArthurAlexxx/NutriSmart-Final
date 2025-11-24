@@ -45,7 +45,7 @@ export default function CareersPage() {
                 <section className="py-20 lg:py-24">
                     <div className="container mx-auto">
                         <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-3xl font-bold md:text-4xl font-heading">Por que Trabalhar no NutriNea?</h2>
+                            <h2 className="text-3xl font-bold md:text-4xl font-heading">Por que Trabalhar no Nutrinea?</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
                             {benefits.map((benefit) => (

@@ -3,11 +3,11 @@
 import type { SiteConfig } from './site-config-schema';
 
 export const defaultSiteConfig: SiteConfig = {
-  siteName: "NutriNea",
+  siteName: "Nutrinea",
   logo: {
     type: 'image',
     imageUrl: "https://i.imgur.com/QHV8Oil.png",
-    text: "NutriNea",
+    text: "Nutrinea",
     font: "Lexend",
   },
   theme: {
@@ -49,7 +49,7 @@ export const defaultSiteConfig: SiteConfig = {
       {
         name: 'Juliana M.',
         role: 'Usuária Satisfeita',
-        quote: '"O NutriNea mudou minha relação com a comida. Nunca foi tão fácil comer bem e atingir minhas metas de saúde. A IA entende minhas necessidades melhor que qualquer app que já usei!"',
+        quote: '"O Nutrinea mudou minha relação com a comida. Nunca foi tão fácil comer bem e atingir minhas metas de saúde. A IA entende minhas necessidades melhor que qualquer app que já usei!"',
         imageUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfHx8fDE3NTg5MDk0Mjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
         imageHint: "profile picture"
       },
@@ -63,7 +63,7 @@ export const defaultSiteConfig: SiteConfig = {
       {
         name: 'Dr. Fernanda L.',
         role: 'Nutricionista Parceira',
-        quote: '"Uso o NutriNea para acompanhar meus pacientes e os resultados são fantásticos. A interface é intuitiva e a capacidade de compartilhar dados de forma segura otimizou meu trabalho e melhorou a adesão ao plano."',
+        quote: '"Uso o Nutrinea para acompanhar meus pacientes e os resultados são fantásticos. A interface é intuitiva e a capacidade de compartilhar dados de forma segura otimizou meu trabalho e melhorou a adesão ao plano."',
         imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxoZWFsdGglMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzU4OTA4Mzk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
         imageHint: "health professional"
       },

@@ -24,7 +24,7 @@ export default function PressPage() {
                             Kit de <span className="text-primary">Imprensa</span>
                         </h1>
                         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                            Recursos e informações para jornalistas, blogueiros e parceiros de mídia interessados em contar a história do NutriNea.
+                            Recursos e informações para jornalistas, blogueiros e parceiros de mídia interessados em contar a história do Nutrinea.
                         </p>
                     </div>
                 </section>

@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -80,7 +81,7 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 );
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">NutriNea</span>;
+    return <span className="text-xl font-semibold">Nutrinea</span>;
 };
 
 

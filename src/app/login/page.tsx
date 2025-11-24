@@ -1,3 +1,4 @@
+
 // src/app/login/page.tsx
 'use client';
 
@@ -86,7 +87,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-6 text-2xl font-bold font-heading text-primary">
-                NutriNea
+                Nutrinea
             </Link>
             <h1 className="text-3xl font-bold font-heading">Bem-vindo de volta!</h1>
             <p className="text-muted-foreground mt-2">Faça login para continuar sua jornada.</p>

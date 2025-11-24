@@ -1,3 +1,4 @@
+
 // src/app/register/page.tsx
 'use client';
 
@@ -118,7 +119,7 @@ function RegisterForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
             <Link href="/" className="inline-block mb-6 text-2xl font-bold font-heading text-primary">
-                NutriNea
+                Nutrinea
             </Link>
             <h1 className="text-3xl font-bold font-heading">
                 Crie sua Conta

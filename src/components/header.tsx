@@ -1,3 +1,4 @@
+
 // src/components/header.tsx
 'use client';
 
@@ -21,7 +22,7 @@ const NavLink = ({ href, children, onClick, className }: { href: string; childre
 );
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">NutriNea</span>;
+    return <span className="text-xl font-semibold">Nutrinea</span>;
 };
 
 

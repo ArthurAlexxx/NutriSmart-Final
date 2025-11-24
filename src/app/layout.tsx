@@ -1,3 +1,4 @@
+
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Poppins, Lexend, Playfair_Display, Roboto_Slab, Montserrat, Lato, Merriweather, Oswald, Lobster, Pacifico, Dancing_Script, Caveat } from 'next/font/google';
@@ -18,8 +19,8 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'NutriNea | Nutrição Inteligente, Vida Saudável',
-  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com NutriNea.',
+  title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
+  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
     icon: [
       {
