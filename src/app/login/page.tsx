@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft, LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
+import { FaGoogle } from 'react-icons/fa';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   email: z.string().email('E-mail inválido.'),
@@ -87,6 +89,29 @@ export default function LoginPage() {
     // No finally block to set loading to false, as the useEffect handles the final state.
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    if (!auth) {
+      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle user creation and redirection
+    } catch (error: any) {
+      setLoading(false);
+      console.error("Google Sign-In Error", error);
+       toast({
+        title: "Erro com Google",
+        description: error.message || 'Não foi possível fazer login com Google. Tente novamente.',
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
@@ -98,48 +123,65 @@ export default function LoginPage() {
             <p className="text-muted-foreground mt-2">Faça login para continuar sua jornada.</p>
         </div>
         
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
-            <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                    <Input placeholder="seu@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                <FormItem>
-                    <div className="flex justify-between">
-                        <FormLabel>Senha</FormLabel>
-                        <Link
-                            href="/forgot-password"
-                            className="ml-auto inline-block text-xs text-primary underline"
-                        >
-                            Esqueceu a senha?
-                        </Link>
-                    </div>
-                    <FormControl>
-                    <Input type="password" placeholder="Sua senha" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <Button type="submit" className="w-full" disabled={loading || isUserLoading}>
-                {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Entrar
+        <div className='space-y-4'>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
+                <FaGoogle className="mr-2 h-4 w-4"/> Continuar com Google
             </Button>
-            </form>
-        </Form>
+            
+             <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    Ou continue com
+                    </span>
+                </div>
+            </div>
+
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>E-mail</FormLabel>
+                        <FormControl>
+                        <Input placeholder="seu@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                    <FormItem>
+                        <div className="flex justify-between">
+                            <FormLabel>Senha</FormLabel>
+                            <Link
+                                href="/forgot-password"
+                                className="ml-auto inline-block text-xs text-primary underline"
+                            >
+                                Esqueceu a senha?
+                            </Link>
+                        </div>
+                        <FormControl>
+                        <Input type="password" placeholder="Sua senha" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit" className="w-full" disabled={loading || isUserLoading}>
+                    {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Entrar
+                </Button>
+                </form>
+            </Form>
+        </div>
         <div className="mt-6 text-center text-sm">
             Não tem uma conta?{' '}
             <Link href="/register" className="font-semibold text-primary hover:underline">

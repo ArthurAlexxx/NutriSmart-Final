@@ -12,6 +12,9 @@
         "phone": { "type": "string", "description": "User's phone number." },
         "taxId": { "type": "string", "description": "User's CPF or CNPJ." },
         "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "paused"], "description": "The current status of the user account." },
+        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The primary type of the user profile." },
+        "role": { "type": "string", "enum": ["patient", "professional", "admin"], "description": "The access control role of the user." },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
         "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },
@@ -22,9 +25,12 @@
         "targetDate": { "type": "string", "format": "date-time" },
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
-        "waterGoal": { "type": "number" }
+        "waterGoal": { "type": "number" },
+        "unlockedAchievements": { "type": "array", "items": { "type": "string" } },
+        "photoAnalysisCount": { "type": "number" },
+        "lastPhotoAnalysisDate": { "type": "string" }
       },
-      "required": ["id", "fullName", "email", "createdAt"]
+      "required": ["id", "fullName", "email", "createdAt", "status", "profileType", "role"]
     },
     "ActivePlan": {
       "title": "ActivePlan",
@@ -102,20 +108,6 @@
       },
       "required": ["userId", "role", "content"]
     },
-    "FinancialTransaction": {
-        "title": "FinancialTransaction",
-        "type": "object",
-        "description": "Represents a single financial transaction (income or expense) for a professional user.",
-        "properties": {
-            "userId": { "type": "string" },
-            "description": { "type": "string" },
-            "amount": { "type": "number" },
-            "type": { "type": "string", "enum": ["income", "expense"] },
-            "category": { "type": "string" },
-            "date": { "type": "string", "format": "date-time" }
-        },
-        "required": ["userId", "description", "amount", "type", "category", "date"]
-    },
     "PlanTemplate": {
       "title": "PlanTemplate",
       "type": "object",
@@ -159,7 +151,7 @@
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": ["password", "google"]
   },
   "firestore": {
     "structure": [
@@ -217,13 +209,6 @@
         "definition": {
           "schema": { "$ref": "#/entities/ChefMessage" },
           "description": "Stores the chat history between a user and the virtual chef."
-        }
-      },
-      {
-        "path": "/users/{userId}/transactions/{transactionId}",
-        "definition": {
-            "schema": { "$ref": "#/entities/FinancialTransaction" },
-            "description": "Stores all financial transactions for a professional user."
         }
       },
       {

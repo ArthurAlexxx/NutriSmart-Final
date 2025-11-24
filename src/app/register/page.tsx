@@ -14,12 +14,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/types/user';
 import { addDays } from 'date-fns';
-
+import { FaGoogle } from 'react-icons/fa';
+import { Separator } from '@/components/ui/separator';
 
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -117,6 +118,29 @@ function RegisterForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    if (!auth) {
+      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle user creation and redirection
+    } catch (error: any) {
+      setLoading(false);
+      console.error("Google Sign-In Error", error);
+       toast({
+        title: "Erro com Google",
+        description: error.message || 'Não foi possível fazer login com Google. Tente novamente.',
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
@@ -132,33 +156,50 @@ function RegisterForm() {
             </p>
         </div>
         
-        <Form {...registerForm}>
-            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                
-                <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                    <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={registerForm.control} name="phone" render={({ field }) => (
-                    <FormItem><FormLabel>Celular *</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={registerForm.control} name="taxId" render={({ field }) => (
-                    <FormItem><FormLabel>CPF/CNPJ *</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormMessage>
-                )}/>
-                <FormField control={registerForm.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>E-mail *</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={registerForm.control} name="password" render={({ field }) => (
-                    <FormItem><FormLabel>Senha *</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
-                    <FormItem><FormLabel>Confirmar Senha *</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormMessage>
-                )}/>
-                <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
-                    {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Criar Conta
-                </Button>
-            </form>
-        </Form>
+        <div className='space-y-4'>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
+                <FaGoogle className="mr-2 h-4 w-4"/> Continuar com Google
+            </Button>
+
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    Ou crie com seu e-mail
+                    </span>
+                </div>
+            </div>
+
+            <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                    
+                    <FormField control={registerForm.control} name="fullName" render={({ field }) => (
+                        <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={registerForm.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>Celular *</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={registerForm.control} name="taxId" render={({ field }) => (
+                        <FormItem><FormLabel>CPF/CNPJ *</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormMessage>
+                    )}/>
+                    <FormField control={registerForm.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>E-mail *</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={registerForm.control} name="password" render={({ field }) => (
+                        <FormItem><FormLabel>Senha *</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
+                        <FormItem><FormLabel>Confirmar Senha *</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormMessage>
+                    )}/>
+                    <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
+                        {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar Conta
+                    </Button>
+                </form>
+            </Form>
+        </div>
         <div className="mt-6 text-center text-sm">
             Já tem uma conta?{' '}
             <Link href="/login" className="font-semibold text-primary hover:underline">
