@@ -124,9 +124,9 @@ function AdminDashboardPage() {
   }
 
   const summaryCards = [
-    { title: 'Total de Usuários', value: stats.totalUsers.toLocaleString('pt-BR'), Icon: Users },
-    { title: 'Novos Usuários (30d)', value: stats.newUsers.toLocaleString('pt-BR'), Icon: UserPlus },
-    { title: 'Assinantes Ativos', value: stats.activeSubscribers.toLocaleString('pt-BR'), Icon: Crown },
+    { title: 'Total de Usuários', value: stats.totalUsers.toLocaleString('pt-BR'), Icon: Users, href: '/admin/users' },
+    { title: 'Novos Usuários (30d)', value: stats.newUsers.toLocaleString('pt-BR'), Icon: UserPlus, href: '#' },
+    { title: 'Assinantes Ativos', value: stats.activeSubscribers.toLocaleString('pt-BR'), Icon: Crown, href: '#' },
     { title: 'Ver Receita', value: 'Painel', Icon: DollarSign, isLink: true, href: '/admin/finance' },
   ];
 
@@ -140,19 +140,16 @@ function AdminDashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           {summaryCards.map(card => (
-            <Card key={card.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{card.value}</div>
-                {card.isLink && card.href && (
-                    <Button asChild variant="link" className="p-0 h-auto">
-                        <Link href={card.href}>Acessar</Link>
-                    </Button>
-                )}
-              </CardContent>
+            <Card key={card.title} className="hover:bg-accent/50 transition-colors">
+              <Link href={card.href || '#'}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                  <card.Icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{card.value}</div>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>

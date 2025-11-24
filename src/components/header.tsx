@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => (
   <Link
@@ -22,7 +23,16 @@ const NavLink = ({ href, children, onClick, className }: { href: string; childre
 );
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">Nutrinea</span>;
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    return (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={140}
+            height={35}
+            priority
+        />
+    );
 };
 
 

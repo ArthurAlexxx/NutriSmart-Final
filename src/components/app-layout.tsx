@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -19,6 +20,7 @@ import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import ProfileSettingsModal from './profile-settings-modal';
 import { differenceInDays, differenceInHours } from 'date-fns';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 interface AppLayoutProps {
   user: User | null;
@@ -89,7 +91,16 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 );
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">Nutrinea</span>;
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    return (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={140}
+            height={35}
+            priority
+        />
+    );
 };
 
 

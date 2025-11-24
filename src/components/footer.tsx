@@ -1,9 +1,19 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const LogoDisplay = () => {
-    return <span className="text-xl font-semibold">Nutrinea</span>;
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    return (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={140}
+            height={35}
+            priority
+        />
+    );
 };
 
 

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,12 +15,26 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const formSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
 });
 
 type ForgotPasswordFormValues = z.infer<typeof formSchema>;
+
+const LogoDisplay = () => {
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    return (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={160}
+            height={40}
+            priority
+        />
+    );
+};
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -61,8 +76,8 @@ export default function ForgotPasswordPage() {
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6 text-2xl font-bold font-heading text-primary">
-              Nutrinea
+          <Link href="/" className="inline-block mb-6">
+              <LogoDisplay />
           </Link>
           <h1 className="text-3xl font-bold font-heading">Redefinir Senha</h1>
           <p className="text-muted-foreground mt-2">

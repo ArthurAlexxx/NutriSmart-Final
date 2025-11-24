@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import type { UserProfile } from '@/types/user';
 import { addDays } from 'date-fns';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -35,6 +37,19 @@ const registerSchema = z.object({
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
+
+const LogoDisplay = () => {
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    return (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={160}
+            height={40}
+            priority
+        />
+    );
+};
 
 
 function RegisterForm() {
@@ -151,8 +166,8 @@ function RegisterForm() {
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-6 text-2xl font-bold font-heading text-primary">
-                Nutrinea
+            <Link href="/" className="inline-block mb-6">
+                <LogoDisplay />
             </Link>
             <h1 className="text-3xl font-bold font-heading">
                 Crie sua Conta
