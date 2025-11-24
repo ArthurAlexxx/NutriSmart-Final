@@ -65,7 +65,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(isUploading);
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -379,11 +379,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        <p>Esta ação é irreversível. Todos os seus dados, incluindo perfil, histórico de refeições e planos, serão permanentemente excluídos.</p>
+                                        <div>Esta ação é irreversível. Todos os seus dados, incluindo perfil, histórico de refeições e planos, serão permanentemente excluídos.</div>
                                         {effectiveSubscriptionStatus !== 'free' && (
-                                            <p className='mt-4 p-3 rounded-md bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 font-medium'>
+                                            <div className='mt-4 p-3 rounded-md bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 font-medium'>
                                                 <strong>Aviso:</strong> Você possui uma assinatura <strong>{effectiveSubscriptionStatus}</strong> ativa. Ao excluir sua conta, a assinatura será cancelada e você não receberá reembolso pelo período restante.
-                                            </p>
+                                            </div>
                                         )}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
