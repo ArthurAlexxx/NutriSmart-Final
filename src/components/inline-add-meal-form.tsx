@@ -289,7 +289,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
 
   return (
-    <div className="px-6 pb-6 border-b">
+    <div className="p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="manual" disabled={isProcessing}>Modo Manual</TabsTrigger>
