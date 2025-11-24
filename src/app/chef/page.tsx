@@ -229,17 +229,15 @@ export default function ChefPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-      <div className={cn("relative h-full flex flex-col py-8", isFeatureLocked && 'blur-md pointer-events-none')}>
+      <div className="relative h-full flex flex-col p-4 sm:p-6 lg:p-8">
         {isFeatureLocked && <SubscriptionOverlay />}
-         <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col">
-            <Card className="flex-1 flex flex-col w-full rounded-2xl shadow-lg overflow-hidden border">
-                <ChatView
-                    messages={messages}
-                    isResponding={isResponding}
-                    onSendMessage={handleSendMessage}
-                />
-            </Card>
-         </div>
+         <Card className={cn("flex-1 flex flex-col w-full max-w-4xl mx-auto rounded-2xl shadow-lg overflow-hidden border", isFeatureLocked && 'blur-md pointer-events-none')}>
+            <ChatView
+                messages={messages}
+                isResponding={isResponding}
+                onSendMessage={handleSendMessage}
+            />
+        </Card>
 
          <Button
             variant="outline"

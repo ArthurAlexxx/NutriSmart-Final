@@ -188,7 +188,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             </div>
             <SidebarContent />
         </div>
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen overflow-hidden">
           <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print">
               <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
@@ -245,10 +245,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 />
               </div>
           </header>
-          <main className={cn("relative flex-1 bg-muted/40 print:bg-white print:p-0 overflow-y-auto", pathname !== '/chef' && "p-4 sm:p-6 lg:p-8")}>
-              <div className="h-full">
-                  {children}
-              </div>
+          <main className={cn(
+            "relative flex-1 bg-muted/40 print:bg-white print:p-0", 
+            pathname.startsWith('/chef') ? 'overflow-hidden' : 'overflow-y-auto'
+          )}>
+            {children}
           </main>
         </div>
       </div>
