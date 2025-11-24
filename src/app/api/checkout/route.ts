@@ -1,4 +1,3 @@
-
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 
@@ -37,7 +36,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  // CORREÇÃO: Garante que o valor enviado seja sempre um número inteiro.
   const amountInCents = isYearly ? Math.round(plan.yearlyDiscountedMonthly * 12) : Math.round(plan.monthly);
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
@@ -70,11 +68,13 @@ export async function POST(request: Request) {
       const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
       throw new Error(errorMessage);
     }
+    
+    const base64Image = data.data.brCodeBase64.replace('data:image/png;base64,', '');
 
     return NextResponse.json({
       id: data.data.id,
       brCode: data.data.brCode,
-      brCodeBase64: data.data.brCodeBase64,
+      brCodeBase64: base64Image,
     });
 
   } catch (error: any) {
