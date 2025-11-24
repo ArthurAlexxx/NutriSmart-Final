@@ -1,58 +1,61 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regra Geral: Ninguém pode ler/escrever onde não há regra explícita.
+    // Regra Geral: Bloqueia tudo por segurança.
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Users Collection: Usuários só podem acessar seus próprios dados.
+    // Função para verificar se o ID do usuário que faz a requisição corresponde
+    // a um documento de usuário que tem o campo role === 'admin'.
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Coleção de Usuários:
     match /users/{userId} {
-      // Usuário pode ler e atualizar seu próprio perfil.
-      allow read, update: if request.auth.uid == userId;
-      // Usuário pode criar seu próprio perfil durante o cadastro.
+      // Admins podem ler a lista toda e deletar qualquer usuário.
+      allow list, delete: if isAdmin();
+      // Usuário pode ler/atualizar seu próprio perfil, ou um admin pode fazê-lo.
+      allow read, update: if request.auth.uid == userId || isAdmin();
+      // Usuário pode criar seu próprio perfil.
       allow create: if request.auth.uid == userId;
-      // Usuário pode EXCLUIR seu próprio perfil.
-      allow delete: if request.auth.uid == userId;
     }
 
-    // Subcoleções de Usuários: Acesso restrito ao dono dos dados.
+    // Subcoleções de Usuários: Acesso restrito ao dono dos dados ou admin.
     match /users/{userId}/{subcollection}/{docId} {
-      allow read, write, create, delete: if request.auth.uid == userId;
+      allow read, write, create, delete: if request.auth.uid == userId || isAdmin();
     }
 
-    // Rooms Collection: Acesso permitido apenas para o profissional ou o paciente da sala.
+    // Coleção de Salas (Rooms): Apenas participantes ou admins podem ler.
     match /rooms/{roomId} {
       function isParticipant() {
         return request.auth.uid == resource.data.professionalId || request.auth.uid == resource.data.patientId;
       }
-
-      allow read: if isParticipant();
-      
-      // Apenas o profissional pode atualizar o plano, histórico e infos do paciente.
+      allow read: if isParticipant() || isAdmin();
+      // Apenas o profissional responsável pode atualizar a sala.
       allow update: if request.auth.uid == resource.data.professionalId;
-
       // Ninguém pode criar ou deletar uma sala diretamente (isso é feito via transação segura).
       allow create, delete: if false;
     }
     
-    // Messages Subcollection in Rooms: Apenas participantes podem ler/escrever.
+    // Subcoleção de Mensagens nas Salas: Apenas participantes ou admins podem interagir.
     match /rooms/{roomId}/messages/{messageId} {
        function isParticipant() {
-        // Acessa o documento pai (a sala) para verificar os IDs.
-        return request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.professionalId ||
-               request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.patientId;
+        let roomData = get(/databases/$(database)/documents/rooms/$(roomId)).data;
+        return request.auth.uid == roomData.professionalId || request.auth.uid == roomData.patientId;
       }
-      allow read, create: if isParticipant();
-      allow update, delete: if false; // Ninguém pode editar/deletar mensagens.
+      allow read, create: if isParticipant() || isAdmin();
+      // Ninguém pode editar ou deletar mensagens.
+      allow update, delete: if false;
     }
 
-    // Webhook Logs: Ninguém pode ler ou escrever. Apenas o backend (com credenciais de admin) pode criar.
+    // Logs de Webhook: Apenas admins podem ler. Ninguém pode escrever via cliente.
     match /webhook_logs/{logId} {
-      allow read, write: if false;
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

@@ -12,14 +12,12 @@ service cloud.firestore {
 
     // Coleção de Usuários:
     match /users/{userId} {
-      // Admins podem ler a lista toda.
-      allow list: if isAdmin();
+      // Admins podem ler a lista toda e deletar qualquer usuário.
+      allow list, delete: if isAdmin();
       // Usuário pode ler/atualizar seu próprio perfil, ou um admin pode fazê-lo.
       allow read, update: if request.auth.uid == userId || isAdmin();
       // Usuário pode criar seu próprio perfil.
       allow create: if request.auth.uid == userId;
-      // Usuário pode excluir sua própria conta. Admins NÃO podem excluir contas via cliente.
-      allow delete: if request.auth.uid == userId;
     }
 
     // Subcoleções de Usuários: Acesso restrito ao dono dos dados ou admin.
@@ -50,9 +48,10 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Logs de Webhook: Ninguém pode ler ou escrever via cliente.
+    // Logs de Webhook: Apenas admins podem ler. Ninguém pode escrever via cliente.
     match /webhook_logs/{logId} {
-      allow read, write: if false;
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

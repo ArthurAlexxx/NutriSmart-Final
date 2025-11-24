@@ -1,4 +1,3 @@
-
 // src/app/admin/users/page.tsx
 'use client';
 
@@ -7,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import AppLayout from '@/components/app-layout';
-import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign, Edit, Eye } from 'lucide-react';
+import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { deleteAccountAction } from '@/app/actions/user-actions';
+
 
 type SubscriptionFilter = 'all' | 'free' | 'premium' | 'professional';
 
@@ -25,9 +28,11 @@ function AdminUsersPage() {
   const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<SubscriptionFilter>('all');
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const usersQuery = useMemoFirebase(() => {
     if (!isAdmin || !firestore) return null;
@@ -41,6 +46,23 @@ function AdminUsersPage() {
       router.push('/dashboard');
     }
   }, [isUserLoading, isAdmin, router]);
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUserId(userId);
+    try {
+        const result = await deleteAccountAction(userId);
+        if (result.success) {
+            toast({ title: 'Usuário Excluído', description: 'O usuário e todos os seus dados foram removidos.' });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error: any) {
+        toast({ title: 'Erro ao Excluir', description: error.message, variant: 'destructive' });
+    } finally {
+        setDeletingUserId(null);
+    }
+  };
+
 
   const { filteredUsers, counts } = useMemo(() => {
     if (!users) return { filteredUsers: [], counts: { all: 0, free: 0, premium: 0, professional: 0 } };
@@ -108,15 +130,15 @@ function AdminUsersPage() {
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left mb-8">
             <div>
-                <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
+                <h1 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
                     <Users className='h-8 w-8 text-primary' />
                     Gerenciamento de Usuários
                 </h1>
                 <p className="text-muted-foreground">Visualize e gerencie os usuários do sistema.</p>
             </div>
-             <div className="relative max-w-sm">
+             <div className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
@@ -166,12 +188,33 @@ function AdminUsersPage() {
                                 <TableCell>{getRoleBadge(u)}</TableCell>
                                 <TableCell>{getSubscriptionBadge(u)}</TableCell>
                                 <TableCell>{u.createdAt ? format(u.createdAt.toDate(), 'dd/MM/yyyy', {locale: ptBR}) : 'N/A'}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right space-x-2">
                                     <Button asChild variant="outline" size="sm">
                                         <Link href={`/admin/users/${u.id}`}>
                                             <Edit className="h-3 w-3 mr-2" /> Gerenciar
                                         </Link>
                                     </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm" disabled={deletingUserId === u.id || u.role === 'admin'}>
+                                                {deletingUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Tem certeza que deseja excluir o usuário <strong>{u.fullName}</strong>? Esta ação é irreversível e removerá todos os dados associados.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">
+                                                    Excluir Usuário
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                             </TableRow>
                         ))

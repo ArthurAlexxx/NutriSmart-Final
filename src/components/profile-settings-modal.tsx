@@ -1,4 +1,3 @@
-
 // src/components/profile-settings-modal.tsx
 'use client';
 
@@ -22,7 +21,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { pauseAccountAction } from '@/app/actions/user-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -35,14 +33,7 @@ const profileFormSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const emailFormSchema = z.object({
-    newEmail: z.string().email("O novo e-mail é inválido."),
-    password: z.string().min(1, "A senha é obrigatória para alterar o e-mail."),
-});
-type EmailFormValues = z.infer<typeof emailFormSchema>;
-
-
-type NavItem = 'personal' | 'sharing' | 'subscription' | 'advanced';
+type NavItem = 'personal' | 'sharing' | 'subscription';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -64,32 +55,23 @@ const NavButton = ({ active, onClick, icon: Icon, label }: { active: boolean, on
 
 export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile, userId }: ProfileSettingsModalProps) {
   const { toast } = useToast();
-  const { onProfileUpdate, effectiveSubscriptionStatus } = useUser();
+  const { onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useUser();
   const auth = useAuth();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
-  const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const isGoogleProvider = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
-
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
   });
-
-  const emailForm = useForm<EmailFormValues>({
-      resolver: zodResolver(emailFormSchema),
-      defaultValues: { newEmail: '', password: '' },
-  });
   
   const { isSubmitting: isProfileSubmitting, formState: { isDirty: isProfileDirty } } = profileForm;
-  const { isSubmitting: isEmailSubmitting } = emailForm.formState;
   
    useEffect(() => {
     if (isOpen) {
@@ -106,12 +88,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         phone: userProfile.phone || '',
         taxId: userProfile.taxId || '',
       });
-      emailForm.reset({
-          newEmail: '',
-          password: '',
-      });
     }
-  }, [userProfile, profileForm, emailForm, isOpen]);
+  }, [userProfile, profileForm, isOpen]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -126,7 +104,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   };
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
-    // Check if there are any changes to submit
     if (!isProfileDirty && !selectedImage) {
         onOpenChange(false);
         return;
@@ -137,7 +114,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     try {
         let photoURL: string | undefined = undefined;
 
-        // 1. Handle Image Upload first
         if (selectedImage && auth.currentUser) {
             const storage = getStorage();
             const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/profile.jpg`);
@@ -145,7 +121,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             photoURL = await getDownloadURL(storageRef);
         }
 
-        // 2. Handle Profile Data Update
         const updatedProfile: Partial<UserProfile> = {};
         if (isProfileDirty) {
             if (profileForm.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
@@ -157,7 +132,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             updatedProfile.photoURL = photoURL;
         }
         
-        // 3. Commit changes to Firestore and Auth
         if (Object.keys(updatedProfile).length > 0) {
             await onProfileUpdate(updatedProfile);
             if (auth.currentUser) {
@@ -187,44 +161,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     }
   };
 
-  const onEmailSubmit = async (data: EmailFormValues) => {
-    const user = auth.currentUser;
-    if (!user || !user.email) {
-      toast({ title: 'Erro', description: 'Usuário não encontrado.', variant: 'destructive' });
-      return;
-    }
-
-    const credential = EmailAuthProvider.credential(user.email, data.password);
-
-    try {
-        await reauthenticateWithCredential(user, credential);
-        await updateEmail(user, data.newEmail);
-        await onProfileUpdate({ email: data.newEmail });
-        
-        toast({
-            title: 'E-mail Atualizado!',
-            description: 'Seu e-mail de login foi alterado. Um link de verificação foi enviado para o novo endereço.',
-        });
-        emailForm.reset();
-        onOpenChange(false);
-
-    } catch (error: any) {
-        let description = 'Ocorreu um erro desconhecido.';
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-            description = 'A senha informada está incorreta. Tente novamente.';
-        } else if (error.code === 'auth/email-already-in-use') {
-            description = 'O novo e-mail fornecido já está em uso por outra conta.';
-        } else if (error.code === 'auth/requires-recent-login') {
-             description = 'Esta operação é sensível e requer um login recente. Por favor, saia e entre novamente na sua conta.';
-        }
-        toast({
-            title: 'Erro ao Alterar E-mail',
-            description,
-            variant: 'destructive',
-        });
-    }
-  };
-  
   const handleCopyCode = () => {
     if (!userProfile.dashboardShareCode) return;
     navigator.clipboard.writeText(userProfile.dashboardShareCode);
@@ -233,53 +169,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     setTimeout(() => setIsCopied(false), 3000);
   };
 
-  const handlePauseAccount = async () => {
-    setIsProcessingAction(true);
-    const result = await pauseAccountAction(userId);
-    if (result.success) {
-        toast({ title: 'Conta Pausada', description: 'Sua conta foi pausada e você será desconectado.'});
-        await handleSignOut();
-    } else {
-        toast({ title: 'Erro', description: result.message, variant: 'destructive' });
-    }
-    setIsProcessingAction(false);
-  }
-
-  const handleDeleteAccount = async () => {
-    setIsProcessingAction(true);
-    if (!auth.currentUser) {
-        toast({ title: 'Erro de autenticação', description: 'Usuário não logado.', variant: 'destructive' });
-        setIsProcessingAction(false);
-        return;
-    }
-
-     try {
-        const idToken = await auth.currentUser.getIdToken();
-        const response = await fetch('/api/user/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({ userId: auth.currentUser.uid }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            toast({ title: 'Conta Excluída', description: result.message, duration: 5000 });
-            onOpenChange(false);
-            router.push('/');
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (error: any) {
-        toast({ title: 'Erro Crítico', description: error.message || 'Ocorreu um erro ao tentar excluir sua conta.', variant: 'destructive' });
-    } finally {
-        setIsProcessingAction(false);
-    }
-  }
-  
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -287,7 +176,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
   };
-
 
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
@@ -311,13 +199,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   }, [expiryDate]);
   
   const isProfessionalUser = effectiveSubscriptionStatus === 'professional';
-  const hasActiveSubscription = effectiveSubscriptionStatus !== 'free';
 
   const navItems = [
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
-    { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser },
-    { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: true },
-    { id: 'advanced', label: 'Avançado', icon: ShieldAlert, visible: true },
+    { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
+    { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
@@ -426,82 +312,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                     <Link href="/pricing">Ver todos os planos</Link>
                                 </Button>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            );
-        case 'advanced':
-            return (
-                 <Card className="w-full shadow-none border-none">
-                    <CardHeader>
-                        <CardTitle>Opções Avançadas</CardTitle>
-                        <CardDescription>Gerencie o acesso e a segurança da sua conta.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className={cn("border p-4 rounded-lg", isGoogleProvider ? "bg-muted/50" : "bg-background")}>
-                            <h4 className="font-semibold flex items-center gap-2 text-foreground"><Mail className="h-5 w-5"/> Alterar E-mail</h4>
-                             <p className="text-sm text-muted-foreground mt-1 mb-3">Altere o e-mail associado à sua conta. Você precisará confirmar sua senha.</p>
-                            {isGoogleProvider ? (
-                                <p className="text-sm text-yellow-600">Você fez login com o Google. Para alterar seu e-mail, você deve alterá-lo na sua conta do Google.</p>
-                            ) : (
-                                <Form {...emailForm}>
-                                    <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-3">
-                                        <FormField control={emailForm.control} name="newEmail" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Novo E-mail</FormLabel><FormControl><Input type="email" placeholder="novo@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )}/>
-                                        <FormField control={emailForm.control} name="password" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Senha Atual</FormLabel><FormControl><Input type="password" placeholder="Sua senha atual" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )}/>
-                                        <Button type="submit" size="sm" disabled={isEmailSubmitting}>
-                                            {isEmailSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                            Alterar E-mail
-                                        </Button>
-                                    </form>
-                                </Form>
-                            )}
-                        </div>
-                        <div className="border border-yellow-500/50 bg-yellow-500/5 p-4 rounded-lg">
-                            <h4 className="font-semibold flex items-center gap-2 text-yellow-600"><PauseCircle className="h-5 w-5"/> Pausar Conta</h4>
-                            <p className="text-sm text-muted-foreground mt-1 mb-3">Sua conta ficará inativa e você será desconectado. Seus dados serão mantidos para quando você voltar.</p>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="text-yellow-600 border-yellow-500/50 hover:bg-yellow-500/10 hover:text-yellow-700">Pausar minha conta</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Pausar sua conta?</AlertDialogTitle><AlertDialogDescription>Você será desconectado e não poderá acessar seus dados até fazer login novamente. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handlePauseAccount} disabled={isProcessingAction} className='bg-yellow-500 hover:bg-yellow-600'>Confirmar Pausa</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-
-                        <div className="border border-destructive/50 bg-destructive/5 p-4 rounded-lg">
-                            <h4 className="font-semibold flex items-center gap-2 text-destructive"><Trash2 className="h-5 w-5"/> Excluir Conta</h4>
-                            <p className="text-sm text-muted-foreground mt-1 mb-3">Esta ação é irreversível. Todos os seus dados, incluindo histórico, planos e informações de perfil, serão permanentemente apagados.</p>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <Button variant="destructive">Excluir permanentemente</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem ABSOLUTA certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Isto irá apagar sua conta e todos os seus dados de forma permanente.
-                                            {hasActiveSubscription && (
-                                                <span className="font-bold text-destructive mt-2 block">
-                                                    Você tem uma assinatura ativa que será perdida imediatamente, sem direito a reembolso.
-                                                </span>
-                                            )}
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteAccount} disabled={isProcessingAction} className='bg-destructive hover:bg-destructive/90'>Eu entendo, excluir tudo</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                         </div>
                     </CardContent>
                 </Card>
