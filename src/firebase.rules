@@ -16,12 +16,14 @@ service cloud.firestore {
 
     // Coleção de Usuários:
     match /users/{userId} {
-      // Admins podem ler a lista toda e deletar qualquer usuário.
-      allow list, delete: if isAdmin();
+      // Admins podem ler a lista de usuários.
+      allow list: if isAdmin();
       // Usuário pode ler/atualizar seu próprio perfil, ou um admin pode fazê-lo.
       allow read, update: if request.auth.uid == userId || isAdmin();
       // Usuário pode criar seu próprio perfil.
       allow create: if request.auth.uid == userId;
+      // Usuário pode DELETAR o próprio perfil.
+      allow delete: if request.auth.uid == userId;
     }
 
     // Subcoleções de Usuários: Acesso restrito ao dono dos dados ou admin.

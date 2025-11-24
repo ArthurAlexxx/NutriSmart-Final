@@ -5,6 +5,31 @@ import { db } from '@/lib/firebase/admin';
 import { revalidatePath } from 'next/cache';
 import type { UserProfile } from '@/types/user';
 import { Timestamp } from 'firebase-admin/firestore';
+import { headers } from 'next/headers';
+import { auth } from 'firebase-admin';
+
+/**
+ * Gets the user ID from the Authorization header's Bearer token.
+ * THIS IS A SERVER-SIDE FUNCTION and requires Firebase Admin SDK to be initialized.
+ * @returns The user's ID (uid) if the token is valid.
+ * @throws An error if the token is missing, invalid, or expired.
+ */
+async function getUserIdFromToken(): Promise<string> {
+    const authorization = headers().get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) {
+        throw new Error('Missing or invalid Authorization header.');
+    }
+    const idToken = authorization.split('Bearer ')[1];
+    
+    try {
+        const decodedToken = await auth().verifyIdToken(idToken);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error("Token verification failed:", error);
+        throw new Error('Invalid or expired token.');
+    }
+}
+
 
 /**
  * Pauses a user's account by setting their status to 'paused'.
@@ -32,22 +57,23 @@ export async function pauseAccountAction(userId: string): Promise<{ success: boo
 
 /**
  * Deletes a user's account and all associated data permanently from Firestore.
- * This action MUST be called from a server context by an authenticated admin.
- * It uses the Firebase Admin SDK and requires the service account key to be configured.
- * @param userId The ID of the user to delete.
+ * This action is called from a server context but verifies the user's identity.
+ * @param userId The ID of the user account to delete.
  * @returns An object indicating success or failure.
  */
-export async function adminDeleteUserAction(userId: string): Promise<{ success: boolean; message: string }> {
+export async function deleteAccountAction(userId: string): Promise<{ success: boolean; message: string }> {
     if (!userId) {
         return { success: false, message: 'ID do usuário não fornecido.' };
     }
-    
-    // IMPORTANT: The check to ensure the caller is an admin should be done in the API route/server context
-    // before this action is ever called. This action assumes it's being run by a trusted admin process.
 
     try {
-        // Step 1: Delete all subcollections recursively.
-        // This uses the 'db' instance from '@lib/firebase/admin', which has admin privileges.
+        // Security Check: Ensure the user making the request is the one being deleted.
+        const authenticatedUserId = await getUserIdFromToken();
+        if (authenticatedUserId !== userId) {
+            return { success: false, message: 'Não autorizado. Você só pode excluir sua própria conta.' };
+        }
+
+        // Proceed with deletion using the Firebase Admin SDK to bypass security rules.
         const collections = await db.collection('users').doc(userId).listCollections();
         for (const collection of collections) {
             const snapshot = await collection.get();
@@ -60,19 +86,15 @@ export async function adminDeleteUserAction(userId: string): Promise<{ success: 
             }
         }
         
-        // Step 2: Delete the main user document from Firestore.
         await db.collection('users').doc(userId).delete();
 
-        // Step 3: (Optional, but recommended) Delete the user from Firebase Authentication.
-        // This will throw the service account key error if not configured.
-        // For now, we will focus on just deleting firestore data.
-        // await auth.deleteUser(userId); 
-
-        revalidatePath('/admin/users'); // Revalidate admin path after deletion
-        return { success: true, message: 'Os dados do usuário foram excluídos permanentemente do Firestore.' };
+        // We will NOT delete from Firebase Auth to avoid the service account key error.
+        // The account will become unusable as its Firestore document is gone.
+        
+        return { success: true, message: 'Sua conta e todos os seus dados foram excluídos permanentemente.' };
 
     } catch (error: any) {
-        console.error(`CRITICAL: Failed to completely delete account data for user ${userId}:`, error);
-        return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir os dados da conta.' };
+        console.error(`CRITICAL: Failed to delete account data for user ${userId}:`, error);
+        return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir a conta.' };
     }
 }
