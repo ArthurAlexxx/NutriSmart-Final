@@ -25,7 +25,8 @@
         "targetDate": { "type": "string", "format": "date-time" },
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
-        "waterGoal": { "type": "number" }
+        "waterGoal": { "type": "number" },
+        "unlockedAchievements": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["id", "fullName", "email", "createdAt", "status", "profileType", "role"]
     },
