@@ -1,4 +1,3 @@
-
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Poppins, Lexend, Playfair_Display, Roboto_Slab, Montserrat, Lato, Merriweather, Oswald, Lobster, Pacifico, Dancing_Script, Caveat } from 'next/font/google';
@@ -26,8 +25,8 @@ export const metadata: Metadata = {
       {
         url: `data:image/svg+xml,${encodeURIComponent(
           `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <rect width="100" height="100" rx="20" fill="hsl(101 28% 54%)" />
-            <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="80" font-family="${lexend.style.fontFamily}" fill="white" dy=".05em">Ne</text>
+            <circle cx="50" cy="50" r="50" fill="hsl(101 28% 54%)" />
+            <path d="M36 75V25H47.1L64 53.3V25H73V75H61.9L45 46.7V75H36Z" fill="white"/>
           </svg>`
         )}`,
         type: 'image/svg+xml',
