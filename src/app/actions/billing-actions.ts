@@ -110,3 +110,30 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         return { success: false, message: error.message || "Erro desconhecido ao finalizar a assinatura." };
     }
 }
+
+/**
+ * Cancels a user's subscription by setting their status to 'free'.
+ * @param userId The ID of the user whose subscription is to be cancelled.
+ * @returns An object indicating success or failure.
+ */
+export async function cancelSubscriptionAction(userId: string): Promise<{ success: boolean, message: string }> {
+  if (!userId) {
+    return { success: false, message: 'UserID inválido.' };
+  }
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    // Setting status to 'free' and expiresAt to now effectively cancels the subscription benefits.
+    // A more complex setup might keep benefits until the end of the billing cycle.
+    await userRef.update({
+      subscriptionStatus: 'free',
+      subscriptionExpiresAt: Timestamp.now(),
+    });
+
+    return { success: true, message: 'Assinatura cancelada com sucesso.' };
+
+  } catch (error: any) {
+    console.error(`Falha ao cancelar a assinatura para o usuário ${userId}:`, error);
+    return { success: false, message: error.message || 'Erro desconhecido ao cancelar a assinatura.' };
+  }
+}

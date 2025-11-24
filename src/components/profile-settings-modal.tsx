@@ -69,6 +69,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -179,6 +181,39 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
   };
+  
+  const handleCancelSubscription = async () => {
+      if (!auth.currentUser) return;
+      setIsCancelling(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch('/api/billing/cancel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Falha ao cancelar a assinatura.');
+        }
+
+        toast({
+            title: 'Assinatura Cancelada',
+            description: 'Seu plano foi alterado para o gratuito. Você pode assinar novamente a qualquer momento.',
+        });
+        onOpenChange(false);
+
+      } catch (error: any) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } finally {
+        setIsCancelling(false);
+      }
+  };
+
 
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
@@ -316,6 +351,41 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 </Button>
                             </div>
                         </div>
+
+                         {effectiveSubscriptionStatus !== 'free' && (
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Gerenciar Assinatura</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground">
+                                        Ao cancelar, seu plano permanecerá ativo até a data de expiração, mas não será renovado. Você pode reativá-lo a qualquer momento.
+                                    </p>
+                                </CardContent>
+                                <CardFooter>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" disabled={isCancelling}>
+                                                {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>}
+                                                Cancelar Assinatura
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar Cancelamento</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                   Tem certeza que deseja cancelar sua assinatura {effectiveSubscriptionStatus}? Você perderá o acesso aos recursos premium ao final do seu ciclo de faturamento.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive hover:bg-destructive/90">Confirmar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardFooter>
+                             </Card>
+                         )}
                     </CardContent>
                 </Card>
             );
