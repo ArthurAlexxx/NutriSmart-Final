@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -6,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { type Room } from '@/types/room';
 import { type UserProfile } from '@/types/user';
-import { type PlanTemplate } from '@/types/library';
+import { type PlanTemplate, type ActivePlan } from '@/types/plan';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, BrainCircuit, Rocket, Library, Download, Target, Weight, CalendarIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useFirestore } from '@/firebase';
-import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, arrayRemove, collection, query, onSnapshot, Unsubscribe, setDoc } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, arrayRemove, collection, query, onSnapshot, Unsubscribe, setDoc, addDoc } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
@@ -158,11 +159,30 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
 
   const handlePatientSubmit = async (data: PlanEditorFormValues) => {
     if (!userProfile?.id || !firestore) return;
-    
+
     try {
         const userRef = doc(firestore, 'users', userProfile.id);
         const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
-        
+        const historyCollectionRef = collection(firestore, 'users', userProfile.id, 'plan_history');
+
+        // Archive the old plan
+        const oldPlanDoc = await getDoc(planRef);
+        if (oldPlanDoc.exists()) {
+            await addDoc(historyCollectionRef, oldPlanDoc.data());
+        }
+
+        // Save new active plan
+        const newActivePlan = {
+            name: `Meu Plano (IA) - ${format(new Date(), 'dd/MM/yy')}`,
+            calorieGoal: data.calorieGoal,
+            proteinGoal: data.proteinGoal,
+            hydrationGoal: data.hydrationGoal,
+            meals: data.meals,
+            createdAt: serverTimestamp(),
+        };
+        await setDoc(planRef, newActivePlan);
+
+        // Update user-level goals
         await updateDoc(userRef, {
             calorieGoal: data.calorieGoal,
             proteinGoal: data.proteinGoal,
@@ -171,17 +191,6 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
             targetWeight: data.targetWeight,
             targetDate: data.targetDate,
         });
-
-        const newActivePlan = {
-            calorieGoal: data.calorieGoal,
-            proteinGoal: data.proteinGoal,
-            hydrationGoal: data.hydrationGoal,
-            meals: data.meals,
-            createdAt: serverTimestamp(),
-            name: "Meu Plano (IA)"
-        };
-        await setDoc(planRef, newActivePlan);
-
 
         toast({
             title: "Plano Salvo!",
@@ -197,7 +206,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
             variant: "destructive",
         });
     }
-  }
+}
   
   const handleProfessionalSubmit = async (data: PlanEditorFormValues) => {
      if(!room || !firestore) return;

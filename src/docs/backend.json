@@ -37,6 +37,7 @@
       "type": "object",
       "description": "Represents a structured meal plan for a user.",
       "properties": {
+        "id": { "type": "string" },
         "name": { "type": "string" },
         "meals": { 
           "type": "array", 
@@ -47,7 +48,7 @@
         "proteinGoal": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
+      "required": ["id", "meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
     },
     "MealPlanItem": {
       "title": "MealPlanItem",
@@ -151,7 +152,7 @@
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": ["password", "google"]
   },
   "firestore": {
     "structure": [
@@ -167,6 +168,13 @@
         "definition": {
           "schema": { "$ref": "#/entities/ActivePlan" },
           "description": "Stores user-specific meal plans, such as the active plan."
+        }
+      },
+       {
+        "path": "/users/{userId}/plan_history/{historyId}",
+        "definition": {
+          "schema": { "$ref": "#/entities/ActivePlan" },
+          "description": "Stores a history of past meal plans for a user."
         }
       },
       {

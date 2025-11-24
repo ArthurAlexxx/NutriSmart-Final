@@ -10,6 +10,7 @@ export interface MealPlanItem {
 }
 
 export interface ActivePlan {
+    id?: string; // Added for history tracking
     name?: string; // Optional name for the plan
     meals: MealPlanItem[];
     hydrationGoal: number;

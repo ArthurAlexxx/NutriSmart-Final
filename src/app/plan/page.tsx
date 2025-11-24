@@ -3,22 +3,43 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { doc, onSnapshot, Unsubscribe, collection, query, where, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, collection, query, where, deleteDoc, orderBy, setDoc, addDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
-import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown } from 'lucide-react';
+import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown, History, BookUp } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import type { ActivePlan } from '@/types/plan';
 import type { Room } from '@/types/room';
 import PlanEditor from '@/components/pro/plan-editor';
 import MealPlanView from '@/components/meal-plan-view';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import SubscriptionOverlay from '@/components/subscription-overlay';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
+
+const PlanHistoryCard = ({ plan, onRestore }: { plan: ActivePlan; onRestore: (plan: ActivePlan) => void; }) => {
+    return (
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader>
+                <CardTitle className="text-lg">{plan.name || 'Plano Antigo'}</CardTitle>
+                <CardDescription>
+                    Criado em: {plan.createdAt ? format(plan.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'Data desconhecida'}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button onClick={() => onRestore(plan)} className="w-full">
+                    <BookUp className="mr-2 h-4 w-4" /> Restaurar este Plano
+                </Button>
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export default function PlanPage() {
   const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
@@ -37,7 +58,14 @@ export default function PlanPage() {
     if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid, 'plans', 'active');
   }, [user, firestore]);
+  
+  const planHistoryQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'users', user.uid, 'plan_history'), orderBy('createdAt', 'desc'));
+  }, [user, firestore]);
+
   const { data: activePlan, isLoading: isPlanLoading } = useDoc<ActivePlan>(activePlanRef);
+  const { data: planHistory, isLoading: isHistoryLoading } = useCollection<ActivePlan>(planHistoryQuery);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -47,7 +75,7 @@ export default function PlanPage() {
 
 
   useEffect(() => {
-    const isOverallLoading = isUserLoading || isPlanLoading;
+    const isOverallLoading = isUserLoading || isPlanLoading || isHistoryLoading;
 
     if (!isOverallLoading && userProfile?.patientRoomId && firestore) {
       const roomRef = doc(firestore, 'rooms', userProfile.patientRoomId);
@@ -67,7 +95,7 @@ export default function PlanPage() {
     } else {
       setLoading(isOverallLoading);
     }
-  }, [isUserLoading, isPlanLoading, userProfile, firestore, toast]);
+  }, [isUserLoading, isPlanLoading, isHistoryLoading, userProfile, firestore, toast]);
   
 
   const handlePlanDelete = useCallback(async () => {
@@ -83,6 +111,29 @@ export default function PlanPage() {
         toast({ title: "Erro ao Remover", description: "Não foi possível remover o plano.", variant: "destructive" });
     }
   }, [activePlanRef, toast]);
+
+  const handleRestorePlan = useCallback(async (planToRestore: ActivePlan) => {
+      if (!firestore || !user || !activePlanRef) return;
+      try {
+          // Archive the current active plan before restoring
+          if (activePlan) {
+              const historyRef = collection(firestore, 'users', user.uid, 'plan_history');
+              await addDoc(historyRef, activePlan);
+          }
+          
+          // Set the selected plan as the new active plan
+          await setDoc(activePlanRef, planToRestore);
+
+          toast({
+              title: "Plano Restaurado!",
+              description: `O plano "${planToRestore.name || 'Plano Antigo'}" agora está ativo.`,
+          });
+      } catch (error) {
+          console.error("Error restoring plan:", error);
+          toast({ title: "Erro ao Restaurar", description: "Não foi possível restaurar o plano.", variant: "destructive" });
+      }
+
+  }, [firestore, user, activePlan, activePlanRef, toast]);
 
   if (loading) {
     return (
@@ -149,6 +200,19 @@ export default function PlanPage() {
                         </Collapsible>
                         
                         <MealPlanView plan={myPlan} onPlanDelete={handlePlanDelete} />
+
+                        <div className='mt-8'>
+                            <h3 className='text-2xl font-bold text-foreground mb-4 flex items-center gap-2 font-heading'><History className='h-6 w-6 text-primary'/> Histórico de Planos</h3>
+                             {planHistory && planHistory.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {planHistory.map(plan => (
+                                        <PlanHistoryCard key={plan.id} plan={plan} onRestore={handleRestorePlan} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className='text-muted-foreground'>Nenhum plano antigo no seu histórico.</p>
+                            )}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
