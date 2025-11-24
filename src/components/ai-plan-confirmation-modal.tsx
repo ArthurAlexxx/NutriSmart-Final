@@ -1,3 +1,4 @@
+
 // src/components/ai-plan-confirmation-modal.tsx
 'use client';
 
@@ -88,3 +89,4 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
     </Dialog>
   );
 }
+

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -571,3 +572,4 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     </>
   );
 }
+
