@@ -320,8 +320,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                   </FormItem>
                   )}
                 />
-                <div>
-                  <div className="flex items-center justify-between mb-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Alimentos *</h3>
                     <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })} disabled={disabled}>
                       <Plus className="mr-2 h-4 w-4" /> Adicionar
@@ -329,7 +329,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                   </div>
                   <div className="space-y-4">
                     {fields.map((field, index) => (
-                      <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
+                      <div key={field.id} className="rounded-2xl border bg-secondary/30 p-4 space-y-4 relative">
                         <p className="font-semibold text-sm text-muted-foreground">Alimento {index + 1}</p>
                         {fields.length > 1 && (
                           <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(index)} disabled={disabled}>
@@ -373,7 +373,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                   </div>
               )}
 
-              <div className='flex justify-end'>
+              <div className='flex justify-end pt-4'>
                 <Button type="submit" form="inline-add-meal-form" disabled={isProcessing || disabled}>
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                   Adicionar Refeição
@@ -439,7 +439,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 />
 
                 {imagePreview && isPhotoFeatureAvailable && (
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border mt-4">
                     <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
                     <Button
                       type="button"
@@ -463,7 +463,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                       </AlertDescription>
                   </Alert>
                 ) : (
-                  <Alert variant="default" className="border-primary/30 bg-primary/5">
+                  <Alert variant="default" className="border-primary/30 bg-primary/5 mt-4">
                       <AlertTriangle className="h-4 w-4 text-primary" />
                       <AlertTitle className="text-primary">Modo Experimental</AlertTitle>
                       <AlertDescription>
@@ -481,7 +481,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                   </div>
               )}
 
-              <div className='flex justify-end'>
+              <div className='flex justify-end pt-4'>
                 <Button type="submit" disabled={isProcessing || disabled || !isPhotoFeatureAvailable}>
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
                   Analisar e Adicionar
