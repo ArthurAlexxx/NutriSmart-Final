@@ -1,3 +1,4 @@
+
 // src/components/profile-settings-modal.tsx
 'use client';
 
@@ -246,15 +247,21 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const handleDeleteAccount = async () => {
     setIsProcessingAction(true);
+    if (!auth.currentUser) {
+        toast({ title: 'Erro de autenticação', description: 'Usuário não logado.', variant: 'destructive' });
+        setIsProcessingAction(false);
+        return;
+    }
+
      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        const response = await fetch(`/api/user/delete`, {
+        const idToken = await auth.currentUser.getIdToken();
+        const response = await fetch('/api/user/delete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${idToken}`
             },
-            body: JSON.stringify({ userId }),
+            body: JSON.stringify({ userId: auth.currentUser.uid }),
         });
 
         const result = await response.json();
