@@ -1,3 +1,4 @@
+
 // src/app/register/page.tsx
 'use client';
 
@@ -6,7 +7,7 @@ import { useState, Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +30,7 @@ const registerSchema = z.object({
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.password, {
+}).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem.',
   path: ['confirmPassword'],
 });
