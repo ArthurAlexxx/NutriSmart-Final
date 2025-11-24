@@ -15,14 +15,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/user';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateUserRoleAction } from '@/app/actions/user-actions';
+
 
 export default function ViewUserPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
     const router = useRouter();
     const params = useParams();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const userId = params.userId as string;
+    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
     const userToViewRef = useMemoFirebase(() => {
         if (!isAdmin || !firestore || !userId) return null;
@@ -36,6 +41,41 @@ export default function ViewUserPage() {
             router.push('/dashboard');
         }
     }, [isUserLoading, isAdmin, router]);
+
+    const handleRoleChange = async (newRole: 'patient' | 'professional') => {
+        if (!user || !userToView || newRole === userToView.role) return;
+
+        setIsUpdatingRole(true);
+        try {
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/admin/update-role', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ userId: userToView.id, newRole }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Falha ao atualizar a função.');
+            }
+
+            toast({ title: "Sucesso!", description: result.message });
+        } catch (error: any) {
+            console.error("Error updating role:", error);
+            toast({
+                title: "Erro ao atualizar função",
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdatingRole(false);
+        }
+    };
+
 
     const getSubscriptionStatus = (user: UserProfile) => {
         if (user.subscriptionStatus === 'free') return 'Gratuito';
@@ -65,6 +105,9 @@ export default function ViewUserPage() {
             </AppLayout>
         );
     }
+    
+    const isCurrentUserAdmin = user?.uid === userToView.id;
+
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
@@ -102,8 +145,27 @@ export default function ViewUserPage() {
                             <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Acesso e Assinatura</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div><p className="text-sm text-muted-foreground">Role (Permissão)</p><p className="font-semibold capitalize">{userToView.role}</p></div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-2">Role (Permissão)</p>
+                                    <div className='flex items-center gap-2'>
+                                        <Select
+                                            value={userToView.role}
+                                            onValueChange={(value) => handleRoleChange(value as 'patient' | 'professional')}
+                                            disabled={isUpdatingRole || isCurrentUserAdmin}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Selecionar função" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="patient">Paciente</SelectItem>
+                                                <SelectItem value="professional">Profissional</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                         {isUpdatingRole && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+                                    </div>
+                                    {isCurrentUserAdmin && <p className="text-xs text-muted-foreground mt-2">Admins não podem alterar a própria função.</p>}
+                                </div>
                                 <div><p className="text-sm text-muted-foreground">Status da Assinatura</p><p className="font-semibold capitalize">{getSubscriptionStatus(userToView)}</p></div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Data de Expiração</p>
@@ -116,7 +178,7 @@ export default function ViewUserPage() {
                     </Card>
 
                     <div className="flex justify-end">
-                        <p className="text-xs text-muted-foreground">Para editar dados do usuário, acesse o Console do Firebase.</p>
+                        <p className="text-xs text-muted-foreground">Para editar outros dados, acesse o Console do Firebase.</p>
                     </div>
                 </div>
             </div>
