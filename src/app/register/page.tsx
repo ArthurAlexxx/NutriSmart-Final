@@ -1,4 +1,3 @@
-
 // src/app/register/page.tsx
 'use client';
 
@@ -114,11 +113,6 @@ const RegisterForm = () => {
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
       await updateProfile(user, { displayName: data.fullName });
-
-      toast({
-        title: "Bem-vindo(a)! 🎉",
-        description: "Sua conta foi criada com sucesso.",
-      });
       
     } catch (error: any) {
         setLoading(false);
