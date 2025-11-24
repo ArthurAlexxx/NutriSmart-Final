@@ -1,4 +1,3 @@
-
 // src/components/ui/pricing.tsx
 "use client";
 
@@ -27,7 +26,7 @@ const plans = [
         priceId: null,
         price: '0',
         yearlyPrice: '0',
-        period: 'para sempre',
+        period: 'Acesso para sempre',
         features: [
             'Registro de Refeições e Água',
             'Histórico de Consumo',
@@ -40,11 +39,11 @@ const plans = [
     },
     {
         name: 'PREMIUM',
-        priceId: 'price_premium_monthly',
+        priceId: 'price_premium_yearly',
         yearlyPriceId: 'price_premium_yearly',
-        price: '19.90',
-        yearlyPrice: '15.90', 
-        period: 'por mês',
+        price: '190.80', // 15.90 * 12
+        yearlyPrice: '190.80', 
+        period: 'Pagamento único',
         features: [
             'Todas as funcionalidades do plano gratuito',
             'Análise de Desempenho com IA',
@@ -53,17 +52,17 @@ const plans = [
             'Acompanhamento de Tendências de Peso',
         ],
         description: 'A experiência completa com todo o poder da IA para acelerar seus resultados.',
-        buttonText: 'Fazer Upgrade',
+        buttonText: 'Adquirir Acesso',
         href: '/checkout?plan=premium',
         isPopular: true,
     },
     {
         name: 'PROFISSIONAL',
-        priceId: 'price_pro_monthly',
+        priceId: 'price_pro_yearly',
         yearlyPriceId: 'price_pro_yearly',
-        price: '49.90',
-        yearlyPrice: '39.90',
-        period: 'por mês, por profissional',
+        price: '478.80', // 39.90 * 12
+        yearlyPrice: '478.80',
+        period: 'Pagamento único',
         features: [
             'Todos os recursos do Premium para seu uso pessoal',
             'Dashboard de gestão de pacientes',
@@ -79,7 +78,7 @@ const plans = [
 ];
 
 function Pricing() {
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true); // Default to yearly which is now "one-time"
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
   const { user, userProfile, effectiveSubscriptionStatus } = useUser();
@@ -122,16 +121,7 @@ function Pricing() {
             </p>
           </div>
           
-          <div className="flex justify-center items-center gap-4 py-8">
-              <span className={cn("font-medium", !isYearly && "text-primary")}>Cobrança Mensal</span>
-              <Switch checked={isYearly} onCheckedChange={setIsYearly} />
-              <span className={cn("font-medium flex items-center", isYearly && "text-primary")}>
-                Cobrança Anual
-                <Badge variant="secondary" className="ml-2 hidden sm:block">Economize 20%</Badge>
-              </span>
-          </div>
-
-          <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3">
+          <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3 mt-12">
             {plans.map((plan) => {
               
               const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
@@ -153,10 +143,12 @@ function Pricing() {
                     <CardContent className="flex-grow">
                         <div className="flex flex-col gap-8 justify-start h-full">
                             <p className="flex flex-row items-baseline gap-2 text-xl">
-                                <span className="text-4xl font-bold">R${isYearly ? plan.yearlyPrice : plan.price}</span>
-                                <span className="text-sm text-muted-foreground">
-                                   / {plan.period}
-                                </span>
+                                <span className="text-4xl font-bold">R${plan.price}</span>
+                                {plan.name !== 'GRATUITO' && (
+                                    <span className="text-sm text-muted-foreground">
+                                       / {plan.period}
+                                    </span>
+                                )}
                             </p>
                             <div className="flex flex-col gap-4 justify-start">
                                 {plan.features.map((feature, index) => (
