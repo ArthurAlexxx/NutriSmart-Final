@@ -232,22 +232,13 @@ export default function ChefPage() {
       <div className="flex flex-col h-full relative">
         {isFeatureLocked && <SubscriptionOverlay />}
          <div className={cn("w-full max-w-4xl mx-auto flex flex-col h-full", isFeatureLocked && 'blur-md pointer-events-none')}>
-            <div className="py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center relative shrink-0">
-                <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-2 sm:p-3 mb-2 sm:mb-4">
-                    <ChefHat className="h-8 w-8 sm:h-10 sm:w-10" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground font-heading">Converse com seu Chef IA</h1>
-                <p className="text-muted-foreground max-w-2xl mt-2 sm:mt-3 mx-auto">Peça receitas, dicas de culinária ou faça alterações nos pratos. Sua imaginação é o limite.</p>
-            </div>
-            
-            <Card className="flex-1 flex flex-col w-full rounded-t-2xl shadow-lg overflow-hidden max-h-[calc(100vh-16rem)]">
+            <Card className="flex-1 flex flex-col w-full rounded-2xl shadow-lg overflow-hidden border">
                 <ChatView
                     messages={messages}
                     isResponding={isResponding}
                     onSendMessage={handleSendMessage}
                 />
             </Card>
-
 
             <Button
                 variant="outline"
