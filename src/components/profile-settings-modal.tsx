@@ -1,8 +1,7 @@
-
 // src/components/profile-settings-modal.tsx
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -10,20 +9,23 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from './ui/badge';
 import Link from 'next/link';
-import { signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail } from 'firebase/auth';
+import { signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 
 const profileFormSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -68,6 +70,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const isGoogleProvider = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
 
@@ -127,6 +131,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         if (profileForm.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
         
         await onProfileUpdate(updatedProfile);
+
+        if (auth.currentUser && updatedProfile.fullName) {
+          await updateProfile(auth.currentUser, { displayName: updatedProfile.fullName });
+        }
+
         toast({
             title: 'Perfil Atualizado',
             description: 'Seus dados foram salvos com sucesso.',
@@ -154,7 +163,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     try {
         await reauthenticateWithCredential(user, credential);
         await updateEmail(user, data.newEmail);
-        // We also need to update the email in our Firestore user profile
         await onProfileUpdate({ email: data.newEmail });
         
         toast({
@@ -162,7 +170,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             description: 'Seu e-mail de login foi alterado. Um link de verificação foi enviado para o novo endereço.',
         });
         emailForm.reset();
-        onOpenChange(false); // Close modal on success
+        onOpenChange(false);
 
     } catch (error: any) {
         let description = 'Ocorreu um erro desconhecido.';
@@ -230,6 +238,31 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     }
   }
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file || !auth.currentUser) return;
+      
+      setIsUploading(true);
+
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/profile.jpg`);
+
+      try {
+          await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(storageRef);
+
+          await updateProfile(auth.currentUser, { photoURL: downloadURL });
+          await onProfileUpdate({ photoURL: downloadURL });
+
+          toast({ title: 'Foto de Perfil Atualizada!', description: 'Sua nova foto já está visível.'});
+      } catch (error: any) {
+          console.error("Error uploading photo:", error);
+          toast({ title: 'Erro no Upload', description: 'Não foi possível enviar sua foto. Tente uma imagem menor.', variant: 'destructive'});
+      } finally {
+        setIsUploading(false);
+      }
+  }
+
 
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
@@ -273,9 +306,38 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 <CardDescription>Mantenha seus dados de contato e identificação atualizados.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <FormField control={profileForm.control} name="fullName" render={({ field }) => (
-                                    <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
+                                <div className='flex flex-col sm:flex-row items-center gap-6'>
+                                     <div className='relative group'>
+                                          <Avatar className="h-24 w-24 border-2 border-primary/20">
+                                              <AvatarImage src={userProfile?.photoURL || ''} alt={userProfile?.fullName} />
+                                              <AvatarFallback>
+                                                  <UserIcon className="h-10 w-10 text-muted-foreground" />
+                                              </AvatarFallback>
+                                          </Avatar>
+                                          <Button 
+                                            type="button" 
+                                            variant="outline" 
+                                            size="icon"
+                                            className='absolute -bottom-2 -right-2 rounded-full h-9 w-9 bg-background group-hover:bg-secondary'
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploading}
+                                           >
+                                            {isUploading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Camera className="h-4 w-4"/>}
+                                          </Button>
+                                          <input 
+                                            type="file" 
+                                            ref={fileInputRef} 
+                                            className="hidden" 
+                                            accept="image/png, image/jpeg"
+                                            onChange={handlePhotoUpload}
+                                          />
+                                     </div>
+                                     <div className="flex-1 w-full">
+                                         <FormField control={profileForm.control} name="fullName" render={({ field }) => (
+                                            <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                     </div>
+                                </div>
                                 <FormField control={profileForm.control} name="phone" render={({ field }) => (
                                     <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>

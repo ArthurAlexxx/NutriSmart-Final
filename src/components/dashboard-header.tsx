@@ -43,9 +43,9 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
             <DropdownMenuTrigger asChild>
               <Button id="user-profile-button" variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.photoURL || undefined} alt={userName} />
+                  <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} alt={userName} />
                   <AvatarFallback>
-                    <UserIcon className="h-5 w-5" />
+                    {userName?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>

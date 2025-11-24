@@ -12,6 +12,7 @@ export interface UserProfile {
     id: string;
     fullName: string;
     email: string;
+    photoURL?: string; // Add photoURL field
     createdAt: Timestamp;
     status?: 'active' | 'paused';
     profileType: 'patient' | 'professional';

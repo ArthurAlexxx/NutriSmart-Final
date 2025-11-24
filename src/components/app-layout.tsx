@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -224,7 +223,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                 className="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             >
                                 <Avatar className="h-10 w-10 border">
-                                    <AvatarImage src={user?.photoURL || ''} alt={userProfile?.fullName} />
+                                    <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
                                     <AvatarFallback>{userProfile?.fullName?.[0]}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 overflow-hidden text-left">

@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Regra Padrão: Bloqueia tudo por segurança.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Regra para fotos de refeição: Usuário só pode escrever na sua própria pasta.
+    match /meal-photos/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Regra para foto de perfil: Usuário só pode escrever na sua própria pasta.
+    match /profile-pictures/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
