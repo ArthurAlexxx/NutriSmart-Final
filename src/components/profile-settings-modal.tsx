@@ -24,7 +24,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { deleteAccountAction } from '@/app/actions/user-actions';
 
 
 const profileFormSchema = z.object({
@@ -66,7 +65,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -181,45 +179,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
   };
-  
-  const handleDeleteAccount = async () => {
-    if (!auth.currentUser) {
-      toast({ title: "Erro", description: "Você precisa estar logado para excluir sua conta.", variant: "destructive" });
-      return;
-    }
-    
-    setIsDeleting(true);
-    try {
-        const idToken = await auth.currentUser.getIdToken(true);
-        const response = await fetch('/api/user/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ userId: auth.currentUser.uid }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            toast({
-                title: "Conta Excluída",
-                description: "Sua conta foi excluída com sucesso. Você será desconectado.",
-            });
-            setTimeout(() => {
-                handleSignOut();
-            }, 2000);
-        } else {
-            throw new Error(result.message || 'Falha ao excluir a conta.');
-        }
-
-    } catch (error: any) {
-        toast({ title: "Erro ao Excluir Conta", description: error.message, variant: "destructive" });
-    } finally {
-        setIsDeleting(false);
-    }
-  };
 
   const expiryDate = useMemo(() => {
     if (!userProfile?.subscriptionExpiresAt) return null;
@@ -248,7 +207,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
-    { id: 'advanced', label: 'Avançado', icon: ShieldAlert, visible: true },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
@@ -361,44 +319,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     </CardContent>
                 </Card>
             );
-        case 'advanced':
-             return (
-                <Card className="w-full shadow-none border-none border-destructive/20 bg-destructive/5">
-                    <CardHeader>
-                        <CardTitle className='text-destructive'>Zona de Perigo</CardTitle>
-                        <CardDescription className='text-destructive/80'>Ações nesta seção são permanentes e não podem ser desfeitas.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Excluir conta permanentemente
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        <div>Esta ação é irreversível. Todos os seus dados, incluindo perfil, histórico de refeições e planos, serão permanentemente excluídos.</div>
-                                        {effectiveSubscriptionStatus !== 'free' && (
-                                            <div className='mt-4 p-3 rounded-md bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 font-medium'>
-                                                <strong>Aviso:</strong> Você possui uma assinatura <strong>{effectiveSubscriptionStatus}</strong> ativa. Ao excluir sua conta, a assinatura será cancelada e você não receberá reembolso pelo período restante.
-                                            </div>
-                                        )}
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
-                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                        Eu entendo, excluir minha conta
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </CardContent>
-                </Card>
-             );
         default: return null;
     }
   }

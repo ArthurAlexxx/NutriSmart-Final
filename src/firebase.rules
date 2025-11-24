@@ -22,8 +22,8 @@ service cloud.firestore {
       allow read, update: if request.auth.uid == userId || isAdmin();
       // Usuário pode criar seu próprio perfil.
       allow create: if request.auth.uid == userId;
-      // Usuário pode DELETAR o próprio perfil.
-      allow delete: if request.auth.uid == userId;
+      // Exclusão não é permitida diretamente pelas regras de cliente.
+      allow delete: if false;
     }
 
     // Subcoleções de Usuários: Acesso restrito ao dono dos dados ou admin.
