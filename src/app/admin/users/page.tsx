@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where, getCountFromServer } from 'firebase/firestore';
 import AppLayout from '@/components/app-layout';
 import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -30,45 +30,66 @@ function AdminUsersPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<SubscriptionFilter>('all');
+  const [counts, setCounts] = useState({ all: 0, free: 0, premium: 0, professional: 0 });
   
-  const usersQuery = useMemoFirebase(() => {
-    if (!isAdmin || !firestore) return null;
-    return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-  }, [isAdmin, firestore]);
-
-  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
-
   useEffect(() => {
     if (!isUserLoading && !isAdmin) {
       router.push('/dashboard');
     }
   }, [isUserLoading, isAdmin, router]);
 
-  const { filteredUsers, counts } = useMemo(() => {
-    if (!users) return { filteredUsers: [], counts: { all: 0, free: 0, premium: 0, professional: 0 } };
-    
-    const calculatedCounts = users.reduce((acc, u) => {
-        const status = u.subscriptionStatus || 'free';
-        acc.all++;
-        if (acc[status]) {
-            acc[status]++;
-        } else {
-            acc[status] = 1;
-        }
-        return acc;
-    }, { all: 0, free: 0, premium: 0, professional: 0 } as Record<SubscriptionFilter, number>);
+  useEffect(() => {
+    if (!firestore) return;
+    const fetchCounts = async () => {
+        try {
+            const usersRef = collection(firestore, 'users');
+            const allSnap = await getCountFromServer(usersRef);
+            const freeSnap = await getCountFromServer(query(usersRef, where('subscriptionStatus', '==', 'free')));
+            const premiumSnap = await getCountFromServer(query(usersRef, where('subscriptionStatus', '==', 'premium')));
+            const proSnap = await getCountFromServer(query(usersRef, where('subscriptionStatus', '==', 'professional')));
 
-    const searchFiltered = users.filter(u =>
+            setCounts({
+                all: allSnap.data().count,
+                free: freeSnap.data().count,
+                premium: premiumSnap.data().count,
+                professional: proSnap.data().count,
+            });
+
+        } catch (e) {
+            console.error("Failed to fetch user counts:", e);
+        }
+    };
+    fetchCounts();
+  }, [firestore]);
+
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!isAdmin || !firestore) return null;
+
+    const baseCollection = collection(firestore, 'users');
+    
+    if (filter === 'all') {
+        return query(baseCollection, orderBy('createdAt', 'desc'));
+    }
+
+    // This query requires a composite index on (subscriptionStatus, createdAt)
+    return query(baseCollection, where('subscriptionStatus', '==', filter), orderBy('createdAt', 'desc'));
+
+  }, [isAdmin, firestore, filter]);
+
+  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    
+    if (!searchTerm) return users;
+
+    return users.filter(u =>
       u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const finalFiltered = filter === 'all' 
-        ? searchFiltered 
-        : searchFiltered.filter(u => (u.subscriptionStatus || 'free') === filter);
-
-    return { filteredUsers: finalFiltered, counts: calculatedCounts };
-  }, [users, searchTerm, filter]);
+  }, [users, searchTerm]);
 
   if (isUserLoading || !isAdmin) {
     return (
@@ -171,7 +192,7 @@ function AdminUsersPage() {
                                 <TableCell className="text-right space-x-2">
                                     <Button asChild variant="outline" size="sm">
                                         <Link href={`/admin/users/${u.id}`}>
-                                            <Eye className="h-3 w-3 mr-2" /> Visualizar
+                                            <Eye className="h-3 w-3 mr-2" /> Gerenciar
                                         </Link>
                                     </Button>
                                 </TableCell>

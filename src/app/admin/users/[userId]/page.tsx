@@ -1,4 +1,3 @@
-
 // src/app/admin/users/[userId]/page.tsx
 'use client';
 
