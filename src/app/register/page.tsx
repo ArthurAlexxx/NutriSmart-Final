@@ -91,6 +91,8 @@ function RegisterForm() {
           createdAt: serverTimestamp(),
           dashboardShareCode: shareCode,
           subscriptionStatus: 'free',
+          profileType: 'patient',
+          role: 'patient',
           unlockedAchievements: ['first-steps'], // Unlock first achievement
           status: 'active',
       };

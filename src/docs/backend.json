@@ -13,6 +13,8 @@
         "taxId": { "type": "string", "description": "User's CPF or CNPJ." },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["active", "paused"], "description": "The current status of the user account." },
+        "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The primary type of the user profile." },
+        "role": { "type": "string", "enum": ["patient", "professional", "admin"], "description": "The access control role of the user." },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
         "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },
@@ -25,7 +27,7 @@
         "proteinGoal": { "type": "number" },
         "waterGoal": { "type": "number" }
       },
-      "required": ["id", "fullName", "email", "createdAt", "status"]
+      "required": ["id", "fullName", "email", "createdAt", "status", "profileType", "role"]
     },
     "ActivePlan": {
       "title": "ActivePlan",

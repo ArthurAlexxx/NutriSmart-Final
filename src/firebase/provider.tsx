@@ -19,6 +19,7 @@ interface FirebaseProviderProps {
 // Define uma interface para o estado derivado da assinatura
 interface EffectiveSubscriptionState {
   effectiveSubscriptionStatus: 'free' | 'premium' | 'professional';
+  isAdmin: boolean;
 }
 
 // Internal state for user authentication
@@ -128,9 +129,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         createdAt: serverTimestamp(),
                         dashboardShareCode: newShareCode, // Add share code on creation
                         subscriptionStatus: 'free',
+                        profileType: 'patient',
+                        role: 'patient',
                         calorieGoal: 2000,
                         proteinGoal: 140,
                         waterGoal: 2000,
+                        status: 'active'
                     };
                     await setDoc(userRef, {id: userAuthState.user.uid, ...newUserProfile});
                     // The onSnapshot listener will be re-triggered with the new data,
@@ -176,6 +180,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     
     const profile = userAuthState.userProfile;
     let effectiveStatus: EffectiveSubscriptionState['effectiveSubscriptionStatus'] = 'free';
+    const isAdmin = profile?.role === 'admin';
 
     if (profile) {
         const storedStatus = profile.subscriptionStatus || 'free';
@@ -201,6 +206,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
       effectiveSubscriptionStatus: effectiveStatus,
+      isAdmin,
       onProfileUpdate: handleProfileUpdate,
     };
   }, [firebaseApp, firestore, auth, userAuthState]);
@@ -225,7 +231,7 @@ export const useFirebaseContext = (): FirebaseContextState => {
     return context;
 }
 
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'userProfile' | 'isUserLoading' | 'userError' | 'onProfileUpdate' | 'areServicesAvailable' | 'effectiveSubscriptionStatus'> => {
+export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'userProfile' | 'isUserLoading' | 'userError' | 'onProfileUpdate' | 'areServicesAvailable' | 'effectiveSubscriptionStatus' | 'isAdmin'> => {
   const context = useFirebaseContext();
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
@@ -272,6 +278,6 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
  * @returns {UserHookResult} Object with user, userProfile, isUserLoading, userError, and onProfileUpdate.
  */
 export const useUser = (): UserHookResult => {
-  const { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus } = useFirebaseContext();
-  return { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus };
+  const { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useFirebaseContext();
+  return { user, userProfile, isUserLoading, userError, onProfileUpdate, effectiveSubscriptionStatus, isAdmin };
 };

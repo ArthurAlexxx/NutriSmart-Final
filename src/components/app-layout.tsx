@@ -42,6 +42,10 @@ const navItemsPro = [
     { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
 ];
 
+const navItemsAdmin = [
+    { href: '/admin', label: 'Usuários', icon: Users, id: 'nav-admin' }
+];
+
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
   const isActive = pathname === href || (href !== '/dashboard' && href !== '/pro/dashboard' && pathname.startsWith(href));
 
@@ -92,7 +96,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
-  const { effectiveSubscriptionStatus } = useUser();
+  const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
 
   useEffect(() => {
@@ -122,6 +126,14 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       onClick: () => isMobile && setSheetOpen(false),
     });
     
+    if (isAdmin) {
+        return (
+            <NavSection title="Admin">
+                {navItemsAdmin.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+            </NavSection>
+        )
+    }
+
     if (isProUser) {
         return (
           <>
