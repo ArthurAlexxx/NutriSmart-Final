@@ -45,7 +45,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
-  const { user, effectiveSubscriptionStatus, isUserLoading, isAdmin } = useUser();
+  const { user, userProfile, isUserLoading, isAdmin } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -56,8 +56,8 @@ export default function LoginPage() {
   });
   
   useEffect(() => {
-    // This effect handles redirection AFTER the user state is fully resolved.
-    if (!isUserLoading && user) {
+    // This effect handles redirection AFTER the user state and profile are fully resolved.
+    if (!isUserLoading && user && userProfile) {
         toast({
             title: "Login bem-sucedido!",
             description: "Redirecionando para o seu painel...",
@@ -66,11 +66,11 @@ export default function LoginPage() {
         if (isAdmin) {
             router.push('/admin');
         } else {
-            const destination = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
+            const destination = userProfile.role === 'professional' ? '/pro/patients' : '/dashboard';
             router.push(destination);
         }
     }
-  }, [user, effectiveSubscriptionStatus, isUserLoading, isAdmin, router, toast]);
+  }, [user, userProfile, isUserLoading, isAdmin, router, toast]);
 
 
   const handleLogin = async (values: LoginFormValues) => {
