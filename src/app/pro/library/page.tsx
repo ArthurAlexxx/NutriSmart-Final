@@ -1,3 +1,4 @@
+
 // src/app/pro/library/page.tsx
 'use client';
 
@@ -171,11 +172,15 @@ export default function LibraryPage() {
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-             <Tabs defaultValue="templates" className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+             <div className='p-4 sm:p-6 lg:p-8'>
+             <Tabs defaultValue="templates" className="w-full">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-8 text-center sm:text-left gap-4">
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-foreground font-heading">Biblioteca de Conteúdo</h1>
-                        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto sm:mx-0">Crie, edite e gerencie seus modelos e orientações para agilizar o atendimento.</p>
+                        <h1 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
+                            <Library className="h-8 w-8 text-primary"/>
+                            Biblioteca de Conteúdo
+                        </h1>
+                        <p className="text-muted-foreground mt-1 max-w-2xl mx-auto sm:mx-0">Crie, edite e gerencie seus modelos e orientações para agilizar o atendimento.</p>
                     </div>
                      <div className='flex items-center gap-2'>
                         <Button onClick={handleAddNewTemplate}><BookCopy className="mr-2 h-4 w-4" /> Novo Modelo</Button>
@@ -251,7 +256,7 @@ export default function LibraryPage() {
                     )}
                 </TabsContent>
             </Tabs>
-            
+            </div>
             {user && (
                 <>
                     <CreatePlanTemplateModal

@@ -8,7 +8,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Settings } from 'lucide-react';
+import { Loader2, Plus, Settings, LayoutDashboard } from 'lucide-react';
 import { collection, query, onSnapshot, deleteDoc, updateDoc, setDoc, Unsubscribe, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { getLocalDateString } from '@/lib/date-utils';
@@ -256,7 +256,10 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8">
             <div className='flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
-                    <h2 className='text-3xl font-bold text-foreground font-heading'>Seu Diário</h2>
+                    <h2 className='text-3xl font-bold font-heading flex items-center gap-3'>
+                        <LayoutDashboard className='h-8 w-8 text-primary'/>
+                        Seu Diário
+                    </h2>
                     <p className='text-muted-foreground'>Acompanhe suas refeições, hidratação e veja seu progresso diário.</p>
                 </div>
                 <div className="flex items-center gap-2 p-1 rounded-lg bg-muted sm:bg-transparent sm:p-0">

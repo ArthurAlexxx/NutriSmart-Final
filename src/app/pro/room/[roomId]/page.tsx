@@ -11,7 +11,7 @@ import type { MealEntry } from '@/types/meal';
 import type { HydrationEntry } from '@/types/hydration';
 
 import AppLayout from '@/components/app-layout';
-import { Loader2, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Trash2, User } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -177,15 +177,18 @@ export default function RoomDetailPage() {
       userProfile={userProfile}
       onProfileUpdate={onProfileUpdate}
     >
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 flex flex-col h-full">
+      <div className="p-4 sm:p-6 lg:p-8 flex flex-col h-full">
         <div className="flex items-center justify-between gap-4 mb-8 animate-fade-in">
           <div className='flex items-center gap-4'>
             <Button asChild variant="outline" size="icon">
               <Link href="/pro/patients"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
             <div>
-              <h1 className="text-xl sm:text-3xl font-bold text-foreground font-heading">{room?.roomName}</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">Acompanhamento de {room?.patientInfo.name}</p>
+              <h1 className="text-xl sm:text-3xl font-bold font-heading flex items-center gap-3">
+                <User className="h-7 w-7 text-primary" />
+                {room?.patientInfo.name}
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Acompanhamento do Paciente</p>
             </div>
           </div>
             <AlertDialog>

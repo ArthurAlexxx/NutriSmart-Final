@@ -96,11 +96,14 @@ export default function ProPatientsPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+       <div className="p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 animate-fade-in text-center sm:text-left gap-4">
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-foreground font-heading">Gestão de Pacientes</h1>
-                    <p className="text-muted-foreground max-w-2xl mt-2 mx-auto sm:mx-0">Crie salas, adicione pacientes e acompanhe o progresso de cada um.</p>
+                    <h1 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
+                        <Users className="h-8 w-8 text-primary"/>
+                        Gestão de Pacientes
+                    </h1>
+                    <p className="text-muted-foreground max-w-2xl mt-1 mx-auto sm:mx-0">Crie salas, adicione pacientes e acompanhe o progresso de cada um.</p>
                 </div>
                  <Button onClick={() => setModalOpen(true)} disabled={!user}>
                     <PlusCircle className="mr-2 h-4 w-4" />

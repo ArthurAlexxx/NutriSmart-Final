@@ -1,3 +1,4 @@
+
 // src/app/admin/finance/page.tsx
 'use client';
 
@@ -113,10 +114,13 @@ export default function AdminFinancePage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
           <div>
-            <h1 className="text-3xl font-bold text-foreground font-heading">Painel Financeiro</h1>
+            <h1 className="text-3xl font-bold text-foreground font-heading flex items-center gap-3">
+                <DollarSign className='h-8 w-8 text-primary' />
+                Painel Financeiro
+            </h1>
             <p className="text-muted-foreground">Receita e transações de assinaturas da plataforma.</p>
           </div>
         </div>

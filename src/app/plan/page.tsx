@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { doc, onSnapshot, Unsubscribe, collection, query, where, deleteDoc, orderBy, setDoc, addDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
-import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown, History, BookUp, Trash2 } from 'lucide-react';
+import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown, History, BookUp, Trash2, BookMarked } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import type { ActivePlan } from '@/types/plan';
 import type { Room } from '@/types/room';
@@ -194,13 +194,15 @@ export default function PlanPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="relative">
             {isFeatureLocked && <SubscriptionOverlay />}
             <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
                 <Tabs defaultValue={isUnderProfessionalCare ? "pro-plan" : "my-plan"} className="w-full">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 animate-fade-in">
                     <div className="flex-1 text-center sm:text-left">
-                        <h2 className='text-3xl font-bold text-foreground font-heading'>
+                        <h2 className='text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start'>
+                           <BookMarked className='h-8 w-8 text-primary'/>
                             Meu Plano Alimentar
                         </h2>
                         <p className='text-muted-foreground mt-1 max-w-2xl mx-auto sm:mx-0'>
@@ -272,6 +274,7 @@ export default function PlanPage() {
                 </Tabs>
             </div>
         </div>
+      </div>
     </AppLayout>
   );
 }

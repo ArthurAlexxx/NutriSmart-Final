@@ -8,7 +8,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Database, Trash2, Lightbulb, BrainCircuit, Calendar, Settings } from 'lucide-react';
+import { Loader2, Database, Trash2, Lightbulb, BrainCircuit, Calendar, Settings, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { subDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import AppLayout from '@/components/app-layout';
@@ -317,10 +317,13 @@ export default function AnalysisPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-        <div className="w-full flex flex-col gap-8 print-container overflow-x-hidden">
+        <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col gap-8 print-container overflow-x-hidden">
              <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left no-print">
                 <div className="animate-fade-in flex-1">
-                    <h2 className="text-3xl font-bold text-foreground font-heading">Análise de Desempenho</h2>
+                    <h2 className="text-3xl font-bold font-heading flex items-center gap-3">
+                        <BarChart3 className="h-8 w-8 text-primary"/>
+                        Análise de Desempenho
+                    </h2>
                     <p className="text-muted-foreground mt-1">Seu progresso e tendências de consumo.</p>
                 </div>
             </div>

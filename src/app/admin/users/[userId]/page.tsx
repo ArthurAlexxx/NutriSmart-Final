@@ -1,3 +1,4 @@
+
 // src/app/admin/users/[userId]/page.tsx
 'use client';
 
@@ -68,13 +69,16 @@ export default function ViewUserPage() {
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-            <div className="container mx-auto py-8">
+            <div className="p-4 sm:p-6 lg:p-8">
                  <div className="flex items-center gap-4 mb-8">
                     <Button asChild variant="outline" size="icon">
                     <Link href="/admin/users"><ArrowLeft className="h-4 w-4" /></Link>
                     </Button>
                     <div>
-                    <h1 className="text-3xl font-bold font-heading">Detalhes do Usuário</h1>
+                    <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
+                        <UserIcon className="h-8 w-8 text-primary" />
+                        Detalhes do Usuário
+                    </h1>
                     <p className="text-muted-foreground">{userToView.email}</p>
                     </div>
                 </div>

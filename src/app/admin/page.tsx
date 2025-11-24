@@ -1,3 +1,4 @@
+
 // src/app/admin/page.tsx
 'use client';
 
@@ -132,9 +133,12 @@ function AdminDashboardPage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="container mx-auto py-8 space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-8">
         <div>
-            <h1 className="text-3xl font-bold font-heading">Dashboard do Administrador</h1>
+            <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
+                <Users className='h-8 w-8 text-primary' />
+                Dashboard do Administrador
+            </h1>
             <p className="text-muted-foreground">Visão geral do crescimento e métricas da plataforma.</p>
         </div>
 

@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, History as HistoryIcon } from 'lucide-react';
 import SummaryCards from '@/components/summary-cards';
 import AppLayout from '@/components/app-layout';
 import WaterIntakeSummary from '@/components/water-intake-summary';
@@ -138,9 +138,13 @@ export default function HistoryPage() {
         userProfile={userProfile}
         onProfileUpdate={handleProfileUpdateWithToast}
     >
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-8">
-            <div className="mb-2 animate-fade-in text-center">
-                <h2 className="text-3xl font-bold text-foreground font-heading">Histórico Nutricional</h2>
+            <div className="animate-fade-in text-center sm:text-left">
+                <h2 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
+                    <HistoryIcon className="h-8 w-8 text-primary"/>
+                    Histórico Nutricional
+                </h2>
                 <p className="text-muted-foreground">Navegue pelos dias para ver o detalhe de suas refeições.</p>
             </div>
             
@@ -182,6 +186,7 @@ export default function HistoryPage() {
                 </div>
              )}
         </div>
+      </div>
     </AppLayout>
   );
 }

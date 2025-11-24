@@ -1,3 +1,4 @@
+
 // src/app/admin/users/page.tsx
 'use client';
 
@@ -106,10 +107,13 @@ function AdminUsersPage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="container mx-auto py-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
             <div>
-                <h1 className="text-3xl font-bold font-heading">Gerenciamento de Usuários</h1>
+                <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
+                    <Users className='h-8 w-8 text-primary' />
+                    Gerenciamento de Usuários
+                </h1>
                 <p className="text-muted-foreground">Visualize e gerencie os usuários do sistema.</p>
             </div>
              <div className="relative max-w-sm">
