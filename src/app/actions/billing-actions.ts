@@ -2,7 +2,7 @@
 'use server';
 import { db } from '@/lib/firebase/admin';
 import type { UserProfile } from '@/types/user';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { addMonths, addYears } from 'date-fns';
 
 /**
@@ -49,7 +49,7 @@ export async function updateUserSubscriptionAction(
   } catch (error: any) {
     const errorMessage = `Falha ao atualizar usuário ${userId} no banco de dados: ${error.message}`;
     console.error(errorMessage, error); // Log the full error for more context
-    return Promise.reject(new Error(errorMessage));
+    return { success: false, message: errorMessage };
   }
 }
 
@@ -124,16 +124,17 @@ export async function cancelSubscriptionAction(userId: string): Promise<{ succes
 
   try {
     const userRef = db.collection('users').doc(userId);
-    // Revert to 'free' and remove the expiration date.
+    
+    // Revert to 'free' and remove the expiration date field.
     await userRef.update({ 
         subscriptionStatus: 'free',
-        subscriptionExpiresAt: null,
+        subscriptionExpiresAt: FieldValue.delete(),
     });
     
     return { success: true, message: 'Assinatura cancelada com sucesso.' };
   } catch (error: any) {
     const errorMessage = `Falha ao cancelar a assinatura para o usuário ${userId}: ${error.message}`;
     console.error(errorMessage, error);
-    return Promise.reject(new Error(errorMessage));
+    return { success: false, message: errorMessage };
   }
 }
