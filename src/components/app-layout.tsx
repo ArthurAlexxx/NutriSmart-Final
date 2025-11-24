@@ -130,7 +130,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     }
   };
 
-  const isChefPage = pathname === '/chef';
   const isFreeUser = effectiveSubscriptionStatus === 'free';
   
   const renderNavLinks = (isMobile = false) => {
@@ -180,7 +179,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   return (
     <>
-      <div className={cn("grid h-screen w-full md:grid-cols-[260px_1fr]", isChefPage ? "min-h-dvh" : "")}>
+      <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
         <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
               <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -246,8 +245,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 />
               </div>
           </header>
-          <main className={cn("relative bg-muted/40 print:bg-white print:p-0 overflow-y-auto", isChefPage ? "flex-1 flex flex-col min-h-0" : "p-4 sm:p-6 lg:p-8")}>
-              <div className={cn("h-full", isChefPage ? "flex-1 flex flex-col min-h-0" : "")}>
+          <main className={cn("relative flex-1 bg-muted/40 print:bg-white print:p-0 overflow-y-auto", pathname !== '/chef' && "p-4 sm:p-6 lg:p-8")}>
+              <div className="h-full">
                   {children}
               </div>
           </main>

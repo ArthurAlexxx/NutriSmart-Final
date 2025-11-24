@@ -15,19 +15,17 @@ interface ChatViewProps {
 
 export default function ChatView({ messages, isResponding, onSendMessage }: ChatViewProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if(scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth'
-        });
+    if(viewportRef.current) {
+        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
   }, [messages, isResponding]);
 
   return (
     <div className="flex-1 flex flex-col justify-between min-h-0">
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />

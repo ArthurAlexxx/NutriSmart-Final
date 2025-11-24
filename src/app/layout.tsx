@@ -36,8 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth`}>
-      <body>
+    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
+      <body className='h-full'>
         <AppProvider>
           {children}
         </AppProvider>
