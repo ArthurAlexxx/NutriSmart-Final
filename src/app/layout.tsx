@@ -1,3 +1,4 @@
+
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Poppins, Lexend, Playfair_Display, Roboto_Slab, Montserrat, Lato, Merriweather, Oswald, Lobster, Pacifico, Dancing_Script, Caveat } from 'next/font/google';
@@ -21,17 +22,7 @@ export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
-    icon: [
-      {
-        url: `data:image/svg+xml,${encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="50" fill="hsl(101 28% 54%)" />
-            <path d="M36 75V25H47.1L64 53.3V25H73V75H61.9L45 46.7V75H36Z" fill="white"/>
-          </svg>`
-        )}`,
-        type: 'image/svg+xml',
-      },
-    ],
+    icon: 'https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/favicon.png?alt=media&token=2bd99125-4f93-4534-80ff-94dc62d8789b',
   }
 };
 
