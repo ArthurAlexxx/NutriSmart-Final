@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -47,7 +46,8 @@ const navItemsAdmin = [
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
-  const isActive = pathname === href || (href !== '/dashboard' && href !== '/pro/dashboard' && pathname.startsWith(href));
+  const isDashboard = href === '/dashboard' || href === '/pro/dashboard';
+  const isActive = pathname === href || (isDashboard && pathname.startsWith(href));
 
   const linkContent = (
     <>
