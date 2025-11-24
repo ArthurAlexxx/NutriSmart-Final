@@ -17,7 +17,7 @@ import { Loader2 } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { UserProfile } from '@/types';
+import type { UserProfile } from '@/types/user';
 import { addDays } from 'date-fns';
 
 
@@ -92,6 +92,7 @@ function RegisterForm() {
           dashboardShareCode: shareCode,
           subscriptionStatus: 'free',
           unlockedAchievements: ['first-steps'], // Unlock first achievement
+          status: 'active',
       };
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
@@ -136,19 +137,19 @@ function RegisterForm() {
                     <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                  <FormField control={registerForm.control} name="phone" render={({ field }) => (
-                    <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Celular *</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={registerForm.control} name="taxId" render={({ field }) => (
-                    <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>CPF/CNPJ *</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormMessage>
                 )}/>
                 <FormField control={registerForm.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>E-mail *</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={registerForm.control} name="password" render={({ field }) => (
-                    <FormItem><FormLabel>Senha</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Senha *</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
-                    <FormItem><FormLabel>Confirmar Senha</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Confirmar Senha *</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormMessage>
                 )}/>
                 <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
                     {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -37,8 +37,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  // CORREÇÃO: Calcula o valor anual total multiplicando o valor mensal com desconto por 12.
-  const amount = isYearly ? plan.yearlyDiscountedMonthly * 12 : plan.monthly;
+  // CORREÇÃO: Garante que o valor enviado seja sempre um número inteiro.
+  const amountInCents = isYearly ? Math.round(plan.yearlyDiscountedMonthly * 12) : Math.round(plan.monthly);
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
   try {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount,
+        amount: amountInCents,
         description,
         customer: customerData,
         expiresIn: 3600, // QR Code expira em 1 hora
