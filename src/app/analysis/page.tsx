@@ -8,7 +8,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Database, Trash2, Lightbulb, BrainCircuit } from 'lucide-react';
+import { Loader2, Database, Trash2, Lightbulb, BrainCircuit, Calendar, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { subDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import AppLayout from '@/components/app-layout';
@@ -23,6 +23,7 @@ import { seedDemoData, deleteSeededData } from '@/app/actions/seed-data';
 import SubscriptionOverlay from '@/components/subscription-overlay';
 import InsightsCard from '@/components/analysis/insights-card';
 import { generateAnalysisInsightsAction } from '@/app/actions/ai-actions';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 
 type Period = 7 | 15 | 30;
@@ -267,33 +268,44 @@ export default function AnalysisPage() {
             </p>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-                <div className='flex-1'>
-                    <h3 className="text-xl font-bold font-heading flex items-center gap-2">
-                        <BrainCircuit className="h-6 w-6 text-primary"/> DNA Nutricional (Análise IA)
-                    </h3>
-                    <p className="text-muted-foreground">Receba conselhos personalizados com base nos seus dados.</p>
-                </div>
-                <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked}>
-                    {isGeneratingInsights ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Lightbulb className="mr-2 h-4 w-4" />
-                    )}
-                    Gerar Insights com IA
-                </Button>
-            </div>
-            <InsightsCard insights={insights} isLoading={isGeneratingInsights} />
-          </div>
+           <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Opções de Visualização</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-full sm:w-auto">
+                        {( [7, 15, 30] as Period[]).map(p => (
+                            <Button 
+                                key={p} 
+                                onClick={() => setPeriod(p)}
+                                variant={period === p ? 'primary' : 'ghost'}
+                                size="sm"
+                                className={cn("rounded-md flex-1 sm:flex-initial", period === p && 'bg-background text-foreground shadow-sm hover:bg-background/90')}
+                            >
+                                <Calendar className="mr-2 h-4 w-4" /> {p} Dias
+                            </Button>
+                        ))}
+                    </div>
+                     <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked} className="w-full sm:w-auto">
+                        {isGeneratingInsights ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Lightbulb className="mr-2 h-4 w-4" />
+                        )}
+                        Gerar Insights com IA
+                    </Button>
+                </CardContent>
+           </Card>
 
-          <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
+            <InsightsCard insights={insights} isLoading={isGeneratingInsights} />
+            
+            <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
               <ChartsView
-              caloriesData={chartData}
-              hydrationData={chartData}
-              weightData={weightChartData}
+                caloriesData={chartData}
+                hydrationData={chartData}
+                weightData={weightChartData}
               />
-          </div>
+            </div>
         </div>
       </div>
     );
@@ -310,21 +322,6 @@ export default function AnalysisPage() {
                 <div className="animate-fade-in flex-1">
                     <h2 className="text-3xl font-bold text-foreground font-heading">Análise de Desempenho</h2>
                     <p className="text-muted-foreground mt-1">Seu progresso e tendências de consumo.</p>
-                </div>
-                 <div className='flex w-full flex-col sm:w-auto sm:flex-row items-center gap-2'>
-                    <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-full sm:w-auto">
-                        {( [7, 15, 30] as Period[]).map(p => (
-                            <Button 
-                                key={p} 
-                                onClick={() => setPeriod(p)}
-                                variant={period === p ? 'primary' : 'ghost'}
-                                size="sm"
-                                className={cn("rounded-md flex-1 sm:flex-initial", period === p && 'bg-background text-foreground shadow-sm hover:bg-background/90')}
-                            >
-                                {p}D
-                            </Button>
-                        ))}
-                    </div>
                 </div>
             </div>
             

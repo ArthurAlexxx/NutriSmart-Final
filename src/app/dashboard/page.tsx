@@ -1,3 +1,4 @@
+
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -257,40 +258,39 @@ export default function DashboardPage() {
                     <h2 className='text-3xl font-bold text-foreground font-heading'>Seu Diário</h2>
                     <p className='text-muted-foreground'>Acompanhe suas refeições, hidratação e veja seu progresso diário.</p>
                 </div>
-                 <Button id="adjust-goals-button" onClick={() => setGoalsModalOpen(true)} variant="outline" size="sm">
-                    <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
-                </Button>
+                <div className="flex items-center gap-2 p-1 rounded-lg bg-muted sm:bg-transparent sm:p-0">
+                    <Button id="add-meal-button" onClick={() => setAddMealFormOpen(prev => !prev)} variant="ghost" size="sm" className='flex-1 sm:flex-initial'>
+                        <Plus className={cn("h-4 w-4 mr-2 transition-transform", isAddMealFormOpen && "rotate-45")} />
+                         {isAddMealFormOpen ? "Fechar" : "Adicionar Refeição"}
+                    </Button>
+                    <Button id="adjust-goals-button" onClick={() => setGoalsModalOpen(true)} variant="outline" size="sm" className='flex-1 sm:flex-initial'>
+                        <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 space-y-8">
                      <Collapsible open={isAddMealFormOpen} onOpenChange={setAddMealFormOpen}>
-                        <Card className="shadow-sm rounded-2xl w-full">
-                           <CardHeader className="flex flex-row items-center justify-between cursor-pointer">
-                                <CollapsibleTrigger asChild>
-                                    <div className='flex-1'>
-                                        <CardTitle>Refeições de Hoje</CardTitle>
-                                    </div>
-                                </CollapsibleTrigger>
-                                <CollapsibleTrigger asChild>
-                                    <Button id="add-meal-button" variant="ghost" size="sm" className='flex items-center gap-2'>
-                                        <Plus className={cn("h-4 w-4 transition-transform", isAddMealFormOpen && "rotate-45")} />
-                                        <span>{isAddMealFormOpen ? "Fechar" : "Adicionar Refeição"}</span>
-                                    </Button>
-                                </CollapsibleTrigger>
-                           </CardHeader>
-                           <CollapsibleContent>
-                                {user && <InlineAddMealForm userId={user.uid} onMealAdded={() => setAddMealFormOpen(false)} />}
-                           </CollapsibleContent>
-                           <CardContent className={cn(isAddMealFormOpen && "pt-6")}>
-                               <ConsumedFoodsList 
-                                  mealEntries={todayMeals} 
-                                  onMealDeleted={handleMealDeleted}
-                                  onMealEdit={(meal) => setEditingMeal(meal)}
-                                />
-                           </CardContent>
-                        </Card>
-                    </Collapsible>
+                        <CollapsibleContent>
+                           <Card className="shadow-sm rounded-2xl w-full mb-8">
+                             {user && <InlineAddMealForm userId={user.uid} onMealAdded={() => setAddMealFormOpen(false)} />}
+                           </Card>
+                        </CollapsibleContent>
+                     </Collapsible>
+                    
+                    <Card className="shadow-sm rounded-2xl w-full">
+                        <CardHeader>
+                            <CardTitle>Refeições de Hoje</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <ConsumedFoodsList 
+                              mealEntries={todayMeals} 
+                              onMealDeleted={handleMealDeleted}
+                              onMealEdit={(meal) => setEditingMeal(meal)}
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
                 <div className="lg:col-span-1 space-y-8">
                      {!hasLoggedWeightToday && (

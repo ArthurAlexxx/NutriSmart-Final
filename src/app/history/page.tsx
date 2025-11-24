@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, doc, deleteDoc, Unsubscribe, orde
 import { useRouter } from 'next/navigation';
 
 import ConsumedFoodsList from '@/components/consumed-foods-list';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import SummaryCards from '@/components/summary-cards';
@@ -144,10 +144,18 @@ export default function HistoryPage() {
                 <p className="text-muted-foreground">Navegue pelos dias para ver o detalhe de suas refeições.</p>
             </div>
             
-            <HistoryKanbanCalendar
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-            />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Selecione um Dia</CardTitle>
+                    <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <HistoryKanbanCalendar
+                      selectedDate={selectedDate}
+                      onDateSelect={setSelectedDate}
+                    />
+                </CardContent>
+            </Card>
 
             {(loading) && allMealEntries.length === 0 ? (
                 <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">

@@ -212,10 +212,10 @@ export default function PlanPage() {
                     </div>
                     {isUnderProfessionalCare && (
                         <TabsList className="grid w-full sm:w-auto grid-cols-2">
-                        <TabsTrigger value="pro-plan">
+                        <TabsTrigger value="pro-plan" className="w-full">
                             <BookCopy className="mr-2 h-4 w-4" /> Plano do Nutri
                         </TabsTrigger>
-                        <TabsTrigger value="my-plan">
+                        <TabsTrigger value="my-plan" className="w-full">
                             <BrainCircuit className="mr-2 h-4 w-4" /> Meu Plano (IA)
                         </TabsTrigger>
                         </TabsList>
