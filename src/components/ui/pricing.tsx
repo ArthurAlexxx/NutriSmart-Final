@@ -1,3 +1,4 @@
+
 // src/components/ui/pricing.tsx
 "use client";
 
@@ -41,8 +42,8 @@ const plans = [
         name: 'PREMIUM',
         priceId: 'price_premium_monthly',
         yearlyPriceId: 'price_premium_yearly',
-        price: '19.90', 
-        yearlyPrice: '15.90',
+        price: '29.90', 
+        yearlyPrice: '23.90',
         period: '/mês',
         features: [
             'Todas as funcionalidades do plano gratuito',

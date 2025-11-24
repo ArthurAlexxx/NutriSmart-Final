@@ -1,11 +1,12 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 
 // Definindo os preços e planos de forma estruturada.
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
   PREMIUM: {
-    monthly: 1990, // R$ 19,90 em centavos
-    yearly: 1590, // R$ 15,90 em centavos (com desconto anual)
+    monthly: 2990, // R$ 29,90 em centavos
+    yearly: 2390, // R$ 23,90 em centavos (com desconto anual)
   },
   PROFISSIONAL: {
     monthly: 4990, // R$ 49,90 em centavos
