@@ -1,4 +1,3 @@
-
 // src/app/login/page.tsx
 'use client';
 
@@ -27,6 +26,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
@@ -63,19 +63,27 @@ export default function LoginPage() {
   }, [user, effectiveSubscriptionStatus, isUserLoading, isAdmin, router, toast]);
 
   const handleResendVerification = async (userToVerify: User) => {
+    if (isResending) return;
+    setIsResending(true);
     try {
       await sendEmailVerification(userToVerify);
       toast({
         title: "E-mail de Verificação Reenviado",
-        description: "Verifique sua caixa de entrada para o novo link.",
+        description: "Verifique sua caixa de entrada para o novo link. Pode levar alguns minutos.",
       });
     } catch (error: any) {
       console.error("Resend Verification Error:", error);
+      let description = "Não foi possível reenviar o e-mail. Se o problema persistir, verifique as configurações do projeto ou tente novamente mais tarde.";
+      if (error.code === 'auth/too-many-requests') {
+          description = "Muitas tentativas de reenvio. Por favor, aguarde um momento antes de tentar novamente.";
+      }
       toast({
         title: "Erro ao Reenviar",
-        description: "Não foi possível reenviar o e-mail de verificação. Tente novamente mais tarde.",
+        description,
         variant: "destructive",
       });
+    } finally {
+        setIsResending(false);
     }
   };
 
@@ -102,7 +110,8 @@ export default function LoginPage() {
               variant: "destructive",
               duration: 8000,
               action: (
-                <Button variant="secondary" onClick={() => handleResendVerification(userToVerify)}>
+                <Button variant="secondary" onClick={() => handleResendVerification(userToVerify)} disabled={isResending}>
+                   {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Reenviar E-mail
                 </Button>
               ),
