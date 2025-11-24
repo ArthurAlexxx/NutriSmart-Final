@@ -1,4 +1,3 @@
-
 // src/app/register/page.tsx
 'use client';
 
@@ -154,70 +153,70 @@ export default function RegisterPage() {
     
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
-        <div className="w-full max-w-sm">
-            <div className="text-center mb-8">
-                <Link href="/" className="inline-block mb-6">
-                    <LogoDisplay />
-                </Link>
-                <h1 className="text-3xl font-bold font-heading">
-                    Crie sua Conta
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                    Comece sua jornada para uma vida mais saudável.
-                </p>
-            </div>
-            
-            <div className='space-y-4'>
-                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
-                    <FaGoogle className="mr-2 h-4 w-4"/> Continuar com Google
-                </Button>
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                        Ou crie com seu e-mail
-                        </span>
-                    </div>
+            <div className="w-full max-w-sm">
+                <div className="text-center mb-8">
+                    <Link href="/" className="inline-block mb-6">
+                        <LogoDisplay />
+                    </Link>
+                    <h1 className="text-3xl font-bold font-heading">
+                        Crie sua Conta
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                        Comece sua jornada para uma vida mais saudável.
+                    </p>
                 </div>
+                
+                <div className='space-y-4'>
+                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
+                        <FaGoogle className="mr-2 h-4 w-4"/> Continuar com Google
+                    </Button>
 
-                <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                        
-                        <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                            <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={registerForm.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Celular *</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={registerForm.control} name="taxId" render={({ field }) => (
-                            <FormItem><FormLabel>CPF/CNPJ *</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormMessage>
-                        )}/>
-                        <FormField control={registerForm.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel>E-mail *</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={registerForm.control} name="password" render={({ field }) => (
-                            <FormItem><FormLabel>Senha *</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
-                            <FormItem><FormLabel>Confirmar Senha *</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormMessage>
-                        )}/>
-                        <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
-                            {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Criar Conta
-                        </Button>
-                    </form>
-                </Form>
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                            Ou crie com seu e-mail
+                            </span>
+                        </div>
+                    </div>
+
+                    <Form {...registerForm}>
+                        <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                            
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => (
+                                <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input placeholder="Seu nome" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={registerForm.control} name="phone" render={({ field }) => (
+                                <FormItem><FormLabel>Celular *</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={registerForm.control} name="taxId" render={({ field }) => (
+                                <FormItem><FormLabel>CPF/CNPJ *</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormMessage>
+                            )}/>
+                            <FormField control={registerForm.control} name="email" render={({ field }) => (
+                                <FormItem><FormLabel>E-mail *</FormLabel><FormControl><Input placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={registerForm.control} name="password" render={({ field }) => (
+                                <FormItem><FormLabel>Senha *</FormLabel><FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
+                                <FormItem><FormLabel>Confirmar Senha *</FormLabel><FormControl><Input type="password" placeholder="Confirme sua senha" {...field} /></FormControl><FormMessage /></FormMessage>
+                            )}/>
+                            <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
+                                {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Criar Conta
+                            </Button>
+                        </form>
+                    </Form>
+                </div>
+                <div className="mt-6 text-center text-sm">
+                    Já tem uma conta?{' '}
+                    <Link href="/login" className="font-semibold text-primary hover:underline">
+                    Faça login
+                    </Link>
+                </div>
             </div>
-            <div className="mt-6 text-center text-sm">
-                Já tem uma conta?{' '}
-                <Link href="/login" className="font-semibold text-primary hover:underline">
-                Faça login
-                </Link>
-            </div>
-        </div>
         </div>
     );
 }
