@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -340,28 +338,35 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
         const formValues = form.getValues();
         
         const payload = {
-            calorieGoal: formValues.calorieGoal,
-            proteinGoal: formValues.proteinGoal,
-            hydrationGoal: formValues.hydrationGoal,
             weight: formValues.weight,
             targetWeight: formValues.targetWeight,
             targetDate: formValues.targetDate ? formValues.targetDate.toISOString().split('T')[0] : undefined,
+            // We no longer pass manual goals to the AI
         };
 
         const generatedPlan = await generateMealPlanAction(payload);
         
-        const parsedPlan = formSchema.safeParse(generatedPlan);
+        // Use the goals returned by the AI to update the form
+        const finalData = {
+            ...form.getValues(), // keep weight, targetWeight, etc.
+            calorieGoal: generatedPlan.calorieGoal,
+            proteinGoal: generatedPlan.proteinGoal,
+            hydrationGoal: generatedPlan.hydrationGoal,
+            meals: generatedPlan.meals,
+        };
 
-        if (parsedPlan.success) {
-            const data = parsedPlan.data;
-            await onSubmit(data);
+        // Validate the final combined data
+        const validationResult = formSchema.safeParse(finalData);
+
+        if (validationResult.success) {
+            await onSubmit(validationResult.data);
             
             toast({
                 title: "Plano Gerado e Salvo!",
                 description: "O novo plano foi criado e salvo.",
             });
         } else {
-             console.error("Zod validation error:", parsedPlan.error);
+             console.error("Zod validation error:", validationResult.error);
              throw new Error('Os dados retornados pela IA não estão no formato correto.');
         }
 
@@ -384,7 +389,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
         if (!template) return;
 
         form.setValue('calorieGoal', template.calorieGoal, { shouldDirty: true });
-        form.setValue('proteinGoal', calculatedProteinGoal(template.calorieGoal), { shouldDirty: true });
+        form.setValue('proteinGoal', template.proteinGoal, { shouldDirty: true });
         form.setValue('hydrationGoal', template.hydrationGoal, { shouldDirty: true });
         form.setValue('meals', template.meals, { shouldDirty: true });
 
@@ -408,8 +413,8 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                     <TabsContent value="goals">
                         <Card className="shadow-sm rounded-2xl">
                             <CardHeader>
-                                <CardTitle>Definição de Metas</CardTitle>
-                                <CardDescription>Ajuste as metas diárias e de peso. Estes dados serão usados para gerar planos com a IA.</CardDescription>
+                                <CardTitle>Objetivos de Peso</CardTitle>
+                                <CardDescription>Ajuste seus objetivos. Estes dados são essenciais para que a IA possa gerar um plano alimentar eficaz e personalizado para você.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <h4 className='font-semibold text-foreground flex items-center gap-2'><Weight className='h-5 w-5' /> Acompanhamento de Peso</h4>
@@ -432,29 +437,14 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                                         <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date() || date < new Date("1900-01-01")} initialFocus/>
                                     </PopoverContent></Popover><FormMessage /></FormItem>
                                 )}/>
-                                <Separator />
-                                <h4 className='font-semibold text-foreground pt-2 flex items-center gap-2'><Target className='h-5 w-5' /> Metas Diárias de Consumo</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <FormField control={form.control} name="calorieGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="proteinGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
-                                        <FormItem><FormLabel className='flex items-center gap-1.5'><Droplet className='h-4 w-4 text-sky-500'/>Água (ml)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                </div>
                             </CardContent>
                         </Card>
-                        {!isProfessional && (
-                          <div className='flex justify-end pt-6'>
-                              <Button type="button" onClick={() => setAIModalOpen(true)} disabled={isGenerating || isFeatureLocked}>
-                                  {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
-                                  Gerar Refeições com IA
-                              </Button>
-                          </div>
-                        )}
+                        <div className='flex justify-end pt-6'>
+                            <Button type="button" onClick={() => setAIModalOpen(true)} disabled={isGenerating || isFeatureLocked}>
+                                {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin" />) : (<Sparkles className="mr-2 h-4 w-4" />)}
+                                Gerar Refeições com IA
+                            </Button>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="meals">
@@ -463,12 +453,24 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
                                         <CardTitle>Editor de Refeições</CardTitle>
-                                        <CardDescription>Adicione, edite ou remova as refeições do plano.</CardDescription>
+                                        <CardDescription>Adicione, edite ou remova as refeições do plano. As metas abaixo são uma referência.</CardDescription>
                                     </div>
                                     <Button type="button" variant="outline" size="sm" onClick={() => append(defaultMealValues)} disabled={isFeatureLocked}><Plus className="mr-2 h-4 w-4" /> Nova Refeição</Button>
                                 </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl border bg-secondary/30">
+                                    <FormField control={form.control} name="calorieGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5 text-xs'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} className="h-9" /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="proteinGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5 text-xs'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} className="h-9" /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
+                                        <FormItem><FormLabel className='flex items-center gap-1.5 text-xs'><Droplet className='h-4 w-4 text-sky-500'/>Água (ml)</FormLabel><FormControl><Input type="number" {...field} disabled={isFeatureLocked} className="h-9" /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
+
                                 {fields.length === 0 ? (
                                     <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed min-h-[200px] flex flex-col justify-center items-center">
                                         <p className="font-medium text-muted-foreground">Nenhuma refeição adicionada.</p>
@@ -565,10 +567,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
         onConfirm={handleConfirmAIPlan}
         data={form.getValues()}
         isLoading={isGenerating}
-        form={form}
     />
     </>
   );
 }
-
-    

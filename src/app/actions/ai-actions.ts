@@ -145,20 +145,19 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
     - Idade: ${input.age || 'Não informada'} anos
     - Gênero: ${input.gender || 'Não informado'}
     - Meta de Peso: ${input.targetWeight || 'Não informada'} kg
+    - Data para Atingir a Meta: ${input.targetDate || 'Não informada'}
     - Nível de Atividade: ${input.activityLevel || 'moderado'}
     - Restrições Alimentares: ${input.dietaryRestrictions?.join(', ') || 'Nenhuma'}
     - Alergias: ${input.allergies?.join(', ') || 'Nenhuma'}
     - Preferências/Aversões: ${input.preferences || 'Nenhuma'}
-    - Orçamento: ${input.budget || 'moderado'}
 
     REGRAS DE PROCESSAMENTO (SIGA ESTRITAMENTE):
-    1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Crie um déficit calórico seguro (se a meta for perder peso) ou um superávit (se for ganhar peso).
-    2.  **Distribuição de Macros:** Distribua os macronutrientes de forma equilibrada (ex: 40% carboidratos, 30% proteínas, 30% gorduras), ajustando conforme o objetivo.
-    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches).
-    4.  **Alimentos Comuns no Brasil:** Utilize alimentos comuns na mesa brasileira (arroz branco, feijão, peito de frango, carne moída, pão francês, batata, frutas como banana e maçã). Respeite o orçamento e TODAS as restrições e alergias.
+    1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Se houver meta de peso, crie um déficit/superávit calórico seguro para atingir a meta na data estipulada. Se não houver meta, crie um plano de manutenção.
+    2.  **Definição dos Totais:** Sua resposta JSON **DEVE** incluir os campos \`calorieGoal\`, \`proteinGoal\`, e \`hydrationGoal\` com os totais calculados para o plano gerado. A meta de proteína deve ser aproximadamente 35% do total de calorias. A meta de hidratação deve ser 2500ml.
+    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches). A soma dos nutrientes das refeições deve ser próxima às metas totais calculadas.
+    4.  **Alimentos Comuns no Brasil:** Utilize alimentos comuns na mesa brasileira (arroz branco, feijão, peito de frango, carne moída, pão francês, batata, frutas como banana e maçã). Respeite TODAS as restrições e alergias.
     5.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
-    6.  **Hidratação:** Defina uma meta de hidratação razoável, geralmente entre 2000-3000ml.
-
+    
     REGRAS DE SAÍDA (CRÍTICO):
     - Sua resposta DEVE SER APENAS o objeto JSON final, sem nenhum texto antes ou depois.
     - O JSON deve ser estritamente validado pelo schema abaixo.

@@ -56,6 +56,7 @@ export type GeneratedPlan = z.infer<typeof GeneratedPlan>;
 export const GeneratePlanInputSchema = z.object({
     weight: z.number().optional(),
     targetWeight: z.number().optional(),
+    targetDate: z.string().optional(),
     height: z.number().optional(),
     age: z.number().optional(),
     gender: z.enum(['male', 'female']).optional(),
@@ -63,7 +64,6 @@ export const GeneratePlanInputSchema = z.object({
     dietaryRestrictions: z.array(z.string()).optional(),
     allergies: z.array(z.string()).optional(),
     preferences: z.string().optional(),
-    budget: z.enum(['economical', 'moderate', 'flexible']).optional(),
 });
 
 export type GeneratePlanInput = z.infer<typeof GeneratePlanInputSchema>;
