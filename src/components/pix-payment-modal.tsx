@@ -60,7 +60,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   
   useEffect(() => {
     // Reset only if the modal is opened for a different plan
-    if (isOpen && plan.name !== lastPlanName) {
+    if (isOpen && (plan.name !== lastPlanName || form.formState.isSubmitSuccessful)) {
         form.reset({
             fullName: userProfile.fullName || '',
             phone: userProfile.phone || '',
@@ -199,8 +199,8 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   };
 
   const monthlyPrice = parseFloat(isYearly ? plan.yearlyPrice : plan.price);
-  const displayPrice = isYearly ? monthlyPrice * 12 : monthlyPrice;
-  const period = isYearly ? 'por ano' : 'por mês';
+  const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
+  const periodText = isYearly ? 'anual' : 'mensal';
 
   const renderContent = () => {
       if (paymentStatus === 'PAID') {
@@ -292,9 +292,9 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                 <div className="bg-muted p-4">
                     <div className='flex justify-between items-center'>
                          <p className='font-semibold'>Plano {plan.name}</p>
-                         <p className='text-sm text-muted-foreground'>{period}</p>
+                         <p className='text-sm text-muted-foreground capitalize'>{periodText}</p>
                     </div>
-                    <p className='text-2xl font-bold text-primary text-left'>R$ {displayPrice.toFixed(2)}</p>
+                    <p className='text-2xl font-bold text-primary text-left'>R$ {totalAmount.toFixed(2)}</p>
                 </div>
 
                 {step === 'form' ? (

@@ -2,14 +2,14 @@
 import { NextResponse } from 'next/server';
 
 // Definindo os preços e planos de forma estruturada.
-const plans: { [key: string]: { monthly: number, yearlyDiscountedMonthly: number } } = {
+const plans: { [key: string]: { monthly: number, yearly: number } } = {
   PREMIUM: {
     monthly: 1990, // R$ 19,90 em centavos
-    yearlyDiscountedMonthly: 1590, // R$ 15,90 em centavos (com desconto anual)
+    yearly: 1590, // R$ 15,90 em centavos (com desconto anual)
   },
   PROFISSIONAL: {
     monthly: 4990, // R$ 49,90 em centavos
-    yearlyDiscountedMonthly: 3990, // R$ 39,90 em centavos (com desconto anual)
+    yearly: 3990, // R$ 39,90 em centavos (com desconto anual)
   }
 };
 
@@ -36,7 +36,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  const amountInCents = isYearly ? Math.round(plan.yearlyDiscountedMonthly * 12) : Math.round(plan.monthly);
+  const amountPerMonthInCents = isYearly ? plan.yearly : plan.monthly;
+  const totalAmountInCents = isYearly ? amountPerMonthInCents * 12 : amountPerMonthInCents;
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
   try {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: amountInCents,
+        amount: totalAmountInCents,
         description,
         customer: customerData,
         expiresIn: 3600, // QR Code expira em 1 hora

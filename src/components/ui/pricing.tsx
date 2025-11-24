@@ -39,11 +39,11 @@ const plans = [
     },
     {
         name: 'PREMIUM',
-        priceId: 'price_premium_yearly',
+        priceId: 'price_premium_monthly',
         yearlyPriceId: 'price_premium_yearly',
-        price: '190.80', // 15.90 * 12
-        yearlyPrice: '190.80', 
-        period: 'Pagamento único',
+        price: '19.90', 
+        yearlyPrice: '15.90',
+        period: '/mês',
         features: [
             'Todas as funcionalidades do plano gratuito',
             'Análise de Desempenho com IA',
@@ -58,11 +58,11 @@ const plans = [
     },
     {
         name: 'PROFISSIONAL',
-        priceId: 'price_pro_yearly',
+        priceId: 'price_pro_monthly',
         yearlyPriceId: 'price_pro_yearly',
-        price: '478.80', // 39.90 * 12
-        yearlyPrice: '478.80',
-        period: 'Pagamento único',
+        price: '49.90', 
+        yearlyPrice: '39.90',
+        period: '/mês',
         features: [
             'Todos os recursos do Premium para seu uso pessoal',
             'Dashboard de gestão de pacientes',
@@ -78,7 +78,7 @@ const plans = [
 ];
 
 function Pricing() {
-  const [isYearly, setIsYearly] = useState(true); // Default to yearly which is now "one-time"
+  const [isYearly, setIsYearly] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
   const { user, userProfile, effectiveSubscriptionStatus } = useUser();
@@ -120,12 +120,27 @@ function Pricing() {
               Escolha o plano que melhor se adapta às suas necessidades, seja você um usuário individual ou um profissional da saúde.
             </p>
           </div>
+            <div className="flex items-center gap-4 mt-6">
+                <span className={cn("font-medium", !isYearly ? "text-primary" : "text-muted-foreground")}>
+                    Pagamento Mensal
+                </span>
+                <Switch
+                    checked={isYearly}
+                    onCheckedChange={setIsYearly}
+                    aria-label="Alternar entre cobrança mensal e anual"
+                />
+                <span className={cn("font-medium", isYearly ? "text-primary" : "text-muted-foreground")}>
+                    Pagamento Anual <Badge variant="default" className="ml-2">Economize 20%</Badge>
+                </span>
+            </div>
           
           <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-3 mt-12">
             {plans.map((plan) => {
               
               const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
               const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
+              const displayPrice = isYearly ? plan.yearlyPrice : plan.price;
+              const displayPeriod = isYearly ? '/mês (cobrado anualmente)' : '/mês';
 
               return (
                 <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl", plan.isPopular && "shadow-2xl border-primary")}>
@@ -143,10 +158,11 @@ function Pricing() {
                     <CardContent className="flex-grow">
                         <div className="flex flex-col gap-8 justify-start h-full">
                             <p className="flex flex-row items-baseline gap-2 text-xl">
-                                <span className="text-4xl font-bold">R${plan.price}</span>
+                                {plan.name !== 'GRATUITO' && <span className="text-lg">R$</span>}
+                                <span className="text-4xl font-bold">{displayPrice}</span>
                                 {plan.name !== 'GRATUITO' && (
                                     <span className="text-sm text-muted-foreground">
-                                       / {plan.period}
+                                       {displayPeriod}
                                     </span>
                                 )}
                             </p>
