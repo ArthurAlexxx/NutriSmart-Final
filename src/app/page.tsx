@@ -37,11 +37,11 @@ export default function Home() {
       <main className="flex-1">
         
         <HeroSection
-            title={<>Sua jornada para uma vida saudável começa aqui.</>}
+            title={<>O seu <span className='text-primary'>plano perfeito</span> para</>}
             animatedTexts={[
-            "Coma melhor.",
-            "Cozinhe fácil.",
-            "Evolua sempre.",
+            "evoluir.",
+            "conquistar.",
+            "simplificar.",
             ]}
             subtitle="Atingir seus objetivos de saúde nunca foi tão simples. Deixe nossa Inteligência Artificial cuidar dos detalhes para você."
             infoBadgeText="✨ Bem-vindo ao futuro da nutrição!"
