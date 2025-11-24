@@ -15,11 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/types/user';
-import { addDays } from 'date-fns';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -44,15 +43,15 @@ const LogoDisplay = () => {
         <Image 
             src={logoImage?.imageUrl || ''}
             alt="Nutrinea Logo"
-            width={160}
-            height={40}
+            width={140}
+            height={35}
             priority
         />
     );
 };
 
 
-function RegisterForm() {
+const RegisterForm = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -110,21 +109,19 @@ function RegisterForm() {
           profileType: 'patient',
           role: 'patient',
           unlockedAchievements: ['first-steps'],
-          status: 'active',
+          status: 'active'
       };
       
       await setDoc(userRef, {id: user.uid, ...newUserProfile});
       await updateProfile(user, { displayName: data.fullName });
 
       toast({
-        title: "Conta Criada com Sucesso!",
-        description: "Você será redirecionado em breve.",
+        title: "Bem-vindo(a)! 🎉",
+        description: "Sua conta foi criada com sucesso.",
       });
       
-      // The useEffect will now handle the redirection once the profile is loaded.
-
     } catch (error: any) {
-        setLoading(false); // Stop loading on error
+        setLoading(false);
         let description = 'Ocorreu um erro desconhecido. Por favor, tente novamente.';
         if (error.code === 'auth/email-already-in-use') {
             description = 'Este e-mail já está sendo utilizado por outra conta.';
