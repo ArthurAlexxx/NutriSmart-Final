@@ -154,9 +154,10 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
     REGRAS DE PROCESSAMENTO (SIGA ESTRITAMENTE):
     1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Crie um déficit calórico seguro (se a meta for perder peso) ou um superávit (se for ganhar peso).
     2.  **Distribuição de Macros:** Distribua os macronutrientes de forma equilibrada (ex: 40% carboidratos, 30% proteínas, 30% gorduras), ajustando conforme o objetivo.
-    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches) usando alimentos comuns no Brasil, respeitando o orçamento e TODAS as restrições e alergias.
-    4.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
-    5.  **Hidratação:** Defina uma meta de hidratação razoável, geralmente entre 2000-3000ml.
+    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches).
+    4.  **Alimentos Comuns no Brasil:** Utilize alimentos comuns na mesa brasileira (arroz branco, feijão, peito de frango, carne moída, pão francês, batata, frutas como banana e maçã). Respeite o orçamento e TODAS as restrições e alergias.
+    5.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
+    6.  **Hidratação:** Defina uma meta de hidratação razoável, geralmente entre 2000-3000ml.
 
     REGRAS DE SAÍDA (CRÍTICO):
     - Sua resposta DEVE SER APENAS o objeto JSON final, sem nenhum texto antes ou depois.
@@ -170,7 +171,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
       "meals": [
         { "name": "Café da Manhã", "time": "07:30", "items": "- 3 ovos mexidos com tomate e orégano\\n- 1 fatia de pão integral (40g)\\n- 1/2 abacate (60g)" },
         { "name": "Lanche da Manhã", "time": "10:30", "items": "- 1 maçã média (150g)\\n- 20g de amêndoas" },
-        { "name": "Almoço", "time": "13:00", "items": "- 150g de peito de frango grelhado\\n- 100g de arroz integral cozido\\n- 1 concha de feijão preto\\n- Salada de folhas verdes à vontade com azeite" },
+        { "name": "Almoço", "time": "13:00", "items": "- 150g de peito de frango grelhado\\n- 100g de arroz branco\\n- 1 concha de feijão preto\\n- Salada de folhas verdes à vontade com azeite" },
         { "name": "Lanche da Tarde", "time": "16:30", "items": "- 1 pote de iogurte natural desnatado (170g)\\n- 1 colher de sopa de mel (15g)" },
         { "name": "Jantar", "time": "19:30", "items": "- 120g de filé de tilápia assado\\n- 150g de batata doce cozida\\n- Brócolis no vapor à vontade" },
         { "name": "Ceia", "time": "22:00", "items": "- 1 xícara de chá de camomila sem açúcar" }
@@ -369,4 +370,6 @@ export async function generateAnalysisInsightsAction(input: AnalysisInsightsInpu
     throw new Error("A resposta da IA não estava no formato de insights esperado.");
   }
 }
+    
+
     
