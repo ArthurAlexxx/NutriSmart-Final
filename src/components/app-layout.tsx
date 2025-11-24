@@ -39,11 +39,11 @@ const navItemsPatient = [
 const navItemsPro = [
     { href: '/pro/patients', label: 'Pacientes', icon: Users },
     { href: '/pro/library', label: 'Biblioteca', icon: Library },
-    { href: '/pro/financeiro', label: 'Financeiro', icon: DollarSign },
 ];
 
 const navItemsAdmin = [
-    { href: '/admin', label: 'Usuários', icon: Users, id: 'nav-admin' }
+    { href: '/admin', label: 'Usuários', icon: Users, id: 'nav-admin' },
+    { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-finance' },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
