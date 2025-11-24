@@ -73,6 +73,9 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const isGoogleProvider = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
 
   const profileForm = useForm<ProfileFormValues>({
@@ -90,6 +93,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
    useEffect(() => {
     if (isOpen) {
       setActiveTab('personal'); // Reset to the first tab when opening
+      setSelectedImage(null);
+      setImagePreview(null);
     }
   }, [isOpen]);
 
@@ -120,26 +125,56 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   };
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
-    if (!isProfileDirty) {
-      onOpenChange(false);
-      return;
+    // Check if there are any changes to submit
+    if (!isProfileDirty && !selectedImage) {
+        onOpenChange(false);
+        return;
     }
-    try {
-        const updatedProfile: Partial<UserProfile> = {};
-        if (profileForm.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
-        if (profileForm.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
-        if (profileForm.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
-        
-        await onProfileUpdate(updatedProfile);
+    
+    setIsUploading(true);
 
-        if (auth.currentUser && updatedProfile.fullName) {
-          await updateProfile(auth.currentUser, { displayName: updatedProfile.fullName });
+    try {
+        let photoURL: string | undefined = undefined;
+
+        // 1. Handle Image Upload first
+        if (selectedImage && auth.currentUser) {
+            const storage = getStorage();
+            const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/profile.jpg`);
+            await uploadBytes(storageRef, selectedImage);
+            photoURL = await getDownloadURL(storageRef);
         }
 
+        // 2. Handle Profile Data Update
+        const updatedProfile: Partial<UserProfile> = {};
+        if (isProfileDirty) {
+            if (profileForm.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
+            if (profileForm.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
+            if (profileForm.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
+        }
+
+        if (photoURL) {
+            updatedProfile.photoURL = photoURL;
+        }
+        
+        // 3. Commit changes to Firestore and Auth
+        if (Object.keys(updatedProfile).length > 0) {
+            await onProfileUpdate(updatedProfile);
+            if (auth.currentUser) {
+                const authProfileUpdate: { displayName?: string; photoURL?: string } = {};
+                if (updatedProfile.fullName) authProfileUpdate.displayName = updatedProfile.fullName;
+                if (updatedProfile.photoURL) authProfileUpdate.photoURL = updatedProfile.photoURL;
+                if (Object.keys(authProfileUpdate).length > 0) {
+                    await updateProfile(auth.currentUser, authProfileUpdate);
+                }
+            }
+        }
+        
         toast({
             title: 'Perfil Atualizado',
             description: 'Seus dados foram salvos com sucesso.',
         });
+        onOpenChange(false);
+
     } catch (error: any) {
         toast({
             title: 'Erro ao Salvar',
@@ -147,7 +182,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             variant: 'destructive',
         });
     } finally {
-        onOpenChange(false);
+        setIsUploading(false);
     }
   };
 
@@ -237,31 +272,15 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         setIsProcessingAction(false);
     }
   }
-
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file || !auth.currentUser) return;
-      
-      setIsUploading(true);
+      if (!file) return;
 
-      const storage = getStorage();
-      const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/profile.jpg`);
-
-      try {
-          await uploadBytes(storageRef, file);
-          const downloadURL = await getDownloadURL(storageRef);
-
-          await updateProfile(auth.currentUser, { photoURL: downloadURL });
-          await onProfileUpdate({ photoURL: downloadURL });
-
-          toast({ title: 'Foto de Perfil Atualizada!', description: 'Sua nova foto já está visível.'});
-      } catch (error: any) {
-          console.error("Error uploading photo:", error);
-          toast({ title: 'Erro no Upload', description: 'Não foi possível enviar sua foto. Tente uma imagem menor.', variant: 'destructive'});
-      } finally {
-        setIsUploading(false);
-      }
-  }
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+      profileForm.markAsDirty(); // Mark form as dirty to enable save button
+  };
 
 
   const expiryDate = useMemo(() => {
@@ -293,6 +312,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: true },
     { id: 'advanced', label: 'Avançado', icon: ShieldAlert, visible: true },
   ].filter(item => item.visible);
+  
+  const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
 
   const renderContent = () => {
     switch(activeTab) {
@@ -309,7 +330,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 <div className='flex flex-col sm:flex-row items-center gap-6'>
                                      <div className='relative group'>
                                           <Avatar className="h-24 w-24 border-2 border-primary/20">
-                                              <AvatarImage src={userProfile?.photoURL || ''} alt={userProfile?.fullName} />
+                                              <AvatarImage src={currentAvatarSrc} alt={userProfile?.fullName} />
                                               <AvatarFallback>
                                                   <UserIcon className="h-10 w-10 text-muted-foreground" />
                                               </AvatarFallback>
@@ -320,16 +341,16 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                             size="icon"
                                             className='absolute -bottom-2 -right-2 rounded-full h-9 w-9 bg-background group-hover:bg-secondary'
                                             onClick={() => fileInputRef.current?.click()}
-                                            disabled={isUploading}
+                                            disabled={isUploading || isProfileSubmitting}
                                            >
-                                            {isUploading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Camera className="h-4 w-4"/>}
+                                            {(isUploading || isProfileSubmitting) && selectedImage ? <Loader2 className='h-4 w-4 animate-spin' /> : <Camera className="h-4 w-4"/>}
                                           </Button>
                                           <input 
                                             type="file" 
                                             ref={fileInputRef} 
                                             className="hidden" 
                                             accept="image/png, image/jpeg"
-                                            onChange={handlePhotoUpload}
+                                            onChange={handlePhotoSelect}
                                           />
                                      </div>
                                      <div className="flex-1 w-full">
@@ -346,8 +367,8 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 )}/>
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isProfileSubmitting || !isProfileDirty}>
-                                    {isProfileSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                <Button type="submit" disabled={isProfileSubmitting || isUploading || (!isProfileDirty && !selectedImage)}>
+                                    {(isProfileSubmitting || isUploading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Salvar Alterações
                                 </Button>
                             </CardFooter>
