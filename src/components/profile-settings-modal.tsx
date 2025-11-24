@@ -21,7 +21,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { cancelSubscriptionAction } from '@/app/actions/billing-actions';
 import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
 import { Separator } from './ui/separator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
@@ -62,7 +61,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
   const form = useForm<ProfileFormValues>({
@@ -133,23 +131,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     toast({ title: 'Código Copiado!', description: 'Você pode enviar este código para seu nutricionista.'});
     setTimeout(() => setIsCopied(false), 3000);
   };
-  
-  const handleCancelSubscription = async () => {
-    setIsCancelling(true);
-    try {
-        const result = await cancelSubscriptionAction(userId);
-        if (result.success) {
-            toast({ title: "Assinatura Cancelada", description: "Seu plano foi revertido para gratuito." });
-            onOpenChange(false);
-        } else {
-            throw new Error(result.message);
-        }
-    } catch(error: any) {
-         toast({ title: "Erro ao Cancelar", description: error.message || "Não foi possível cancelar a assinatura.", variant: 'destructive' });
-    } finally {
-        setIsCancelling(false);
-    }
-  }
 
   const handlePauseAccount = async () => {
     setIsProcessingAction(true);
@@ -284,36 +265,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                             </div>
                         </div>
                     </CardContent>
-                     {effectiveSubscriptionStatus !== 'free' && (
-                        <CardFooter className="pt-6 border-t">
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" className="text-destructive hover:text-destructive w-full">
-                                        <XCircle className="mr-2 h-4 w-4" />
-                                        Cancelar Assinatura
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Ao cancelar, você perderá o acesso aos recursos premium no final do ciclo de cobrança atual. Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Voltar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleCancelSubscription}
-                                            disabled={isCancelling}
-                                            className='bg-destructive hover:bg-destructive/90'
-                                        >
-                                            {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Confirmar Cancelamento'}
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardFooter>
-                    )}
                 </Card>
             );
         case 'advanced':

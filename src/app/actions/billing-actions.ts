@@ -110,37 +110,3 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         return { success: false, message: error.message || "Erro desconhecido ao finalizar a assinatura." };
     }
 }
-
-
-/**
- * Cancels a user's subscription, reverting them to the 'free' plan.
- * @param userId - The ID of the user to update.
- * @returns An object indicating success or failure.
- */
-export async function cancelSubscriptionAction(userId: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[cancelSubscriptionAction] Iniciando cancelamento para o usuário: ${userId}`);
-  
-  if (!userId) {
-    console.error('[cancelSubscriptionAction] Erro: ID do usuário não foi fornecido.');
-    return { success: false, message: 'ID do usuário não fornecido.' };
-  }
-
-  try {
-    const userRef = db.collection('users').doc(userId);
-    
-    console.log(`[cancelSubscriptionAction] Referência do documento: ${userRef.path}`);
-
-    // Revert to 'free' and remove the expiration date field.
-    await userRef.update({ 
-        subscriptionStatus: 'free',
-        subscriptionExpiresAt: FieldValue.delete(),
-    });
-    
-    console.log(`[cancelSubscriptionAction] Assinatura para ${userId} cancelada com sucesso no Firestore.`);
-    return { success: true, message: 'Assinatura cancelada com sucesso.' };
-  } catch (error: any) {
-    const errorMessage = `[cancelSubscriptionAction] Falha ao cancelar para ${userId}. Código: ${error.code}. Mensagem: ${error.message}`;
-    console.error(errorMessage, { fullError: error });
-    return { success: false, message: `Erro ao cancelar: ${error.message}` };
-  }
-}
