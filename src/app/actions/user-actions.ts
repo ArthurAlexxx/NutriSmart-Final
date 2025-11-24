@@ -66,6 +66,7 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
     // Security check: Ensure the authenticated user is the one being deleted.
     const authenticatedUserId = await getUserIdFromToken();
     if (authenticatedUserId !== userId) {
+        console.warn(`Unauthorized delete attempt: User ${authenticatedUserId} tried to delete user ${userId}.`);
         return { success: false, message: 'Não autorizado. Você só pode excluir sua própria conta.' };
     }
 

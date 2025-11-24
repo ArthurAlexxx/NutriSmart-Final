@@ -1,22 +1,18 @@
 // src/app/api/user/delete/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { deleteAccountAction } from '@/app/actions/user-actions';
+import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   const { userId } = await request.json();
-  const authHeader = request.headers.get('Authorization');
-
+  
   if (!userId) {
     return NextResponse.json({ message: 'ID do usuário não fornecido.' }, { status: 400 });
   }
-
-  if (!authHeader) {
-     return NextResponse.json({ message: 'Não autorizado: Token não fornecido.' }, { status: 401 });
-  }
-
+  
   // A action 'deleteAccountAction' já contém a lógica de verificação do token
   // e se o ID do usuário no token corresponde ao 'userId' fornecido.
-  // Nós passamos o cabeçalho de autorização para que a action possa lê-lo.
+  // Nós lemos o cabeçalho de autorização diretamente na action.
   const result = await deleteAccountAction(userId);
 
   if (result.success) {

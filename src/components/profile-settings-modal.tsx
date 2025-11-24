@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
+import { pauseAccountAction } from '@/app/actions/user-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -304,6 +304,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   }, [expiryDate]);
   
   const isProfessionalUser = effectiveSubscriptionStatus === 'professional';
+  const hasActiveSubscription = effectiveSubscriptionStatus !== 'free';
 
   const navItems = [
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
@@ -477,7 +478,17 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                      <Button variant="destructive">Excluir permanentemente</Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Você tem ABSOLUTA certeza?</AlertDialogTitle><AlertDialogDescription>Isto irá apagar sua conta e todos os seus dados de forma permanente. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem ABSOLUTA certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Isto irá apagar sua conta e todos os seus dados de forma permanente.
+                                            {hasActiveSubscription && (
+                                                <span className="font-bold text-destructive mt-2 block">
+                                                    Você tem uma assinatura ativa que será perdida imediatamente, sem direito a reembolso.
+                                                </span>
+                                            )}
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                         <AlertDialogAction onClick={handleDeleteAccount} disabled={isProcessingAction} className='bg-destructive hover:bg-destructive/90'>Eu entendo, excluir tudo</AlertDialogAction>
