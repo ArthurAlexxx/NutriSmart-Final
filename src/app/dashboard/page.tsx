@@ -252,6 +252,7 @@ export default function DashboardPage() {
         userProfile={userProfile}
         onProfileUpdate={handleProfileUpdateWithToast}
     >
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-8">
             <div className='flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
@@ -316,6 +317,7 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
+      </div>
          {editingMeal && (
             <EditMealModal
                 isOpen={!!editingMeal}
