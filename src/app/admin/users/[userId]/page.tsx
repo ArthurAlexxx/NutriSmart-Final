@@ -25,7 +25,7 @@ export default function ViewUserPage() {
     const { toast } = useToast();
 
     const userId = params.userId as string;
-    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const userToViewRef = useMemoFirebase(() => {
         if (!isAdmin || !firestore || !userId) return null;
@@ -40,43 +40,43 @@ export default function ViewUserPage() {
         }
     }, [isUserLoading, isAdmin, router]);
 
-    const handleRoleChange = async (newRole: 'patient' | 'professional') => {
-        if (!user || !userToView || newRole === userToView.role) return;
+    const handleSubscriptionChange = async (newStatus: 'free' | 'premium' | 'professional') => {
+        if (!user || !userToView || newStatus === userToView.subscriptionStatus) return;
 
-        setIsUpdatingRole(true);
+        setIsUpdating(true);
         try {
             const idToken = await user.getIdToken();
-            const response = await fetch('/api/admin/update-role', {
+            const response = await fetch('/api/admin/update-subscription', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ userId: userToView.id, newRole }),
+                body: JSON.stringify({ userId: userToView.id, newStatus }),
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || 'Falha ao atualizar a função.');
+                throw new Error(result.message || 'Falha ao atualizar a assinatura.');
             }
 
             toast({ title: "Sucesso!", description: result.message });
         } catch (error: any) {
-            console.error("Error updating role:", error);
+            console.error("Error updating subscription:", error);
             toast({
-                title: "Erro ao atualizar função",
+                title: "Erro ao atualizar assinatura",
                 description: error.message,
                 variant: 'destructive',
             });
         } finally {
-            setIsUpdatingRole(false);
+            setIsUpdating(false);
         }
     };
 
 
     const getSubscriptionStatus = (user: UserProfile) => {
-        if (user.subscriptionStatus === 'free') return 'Gratuito';
+        if (user.subscriptionStatus === 'free' || !user.subscriptionStatus) return 'Gratuito';
         
         const expiresAt = user.subscriptionExpiresAt ? (user.subscriptionExpiresAt as Timestamp).toDate() : null;
         if (expiresAt && expiresAt < new Date()) {
@@ -144,27 +144,28 @@ export default function ViewUserPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                                <div><p className="text-sm text-muted-foreground">Role</p><p className="font-semibold capitalize">{userToView.role}</p></div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground mb-2">Role (Permissão)</p>
+                                    <p className="text-sm text-muted-foreground mb-2">Plano de Assinatura</p>
                                     <div className='flex items-center gap-2'>
                                         <Select
-                                            value={userToView.role}
-                                            onValueChange={(value) => handleRoleChange(value as 'patient' | 'professional')}
-                                            disabled={isUpdatingRole || isCurrentUserAdmin}
+                                            value={userToView.subscriptionStatus || 'free'}
+                                            onValueChange={(value) => handleSubscriptionChange(value as 'free' | 'premium' | 'professional')}
+                                            disabled={isUpdating || isCurrentUserAdmin}
                                         >
                                             <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Selecionar função" />
+                                                <SelectValue placeholder="Selecionar plano" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="patient">Paciente</SelectItem>
+                                                <SelectItem value="free">Gratuito</SelectItem>
+                                                <SelectItem value="premium">Premium</SelectItem>
                                                 <SelectItem value="professional">Profissional</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                         {isUpdatingRole && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+                                         {isUpdating && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
                                     </div>
-                                    {isCurrentUserAdmin && <p className="text-xs text-muted-foreground mt-2">Admins não podem alterar a própria função.</p>}
+                                    {isCurrentUserAdmin && <p className="text-xs text-muted-foreground mt-2">Admins não podem alterar o próprio plano.</p>}
                                 </div>
-                                <div><p className="text-sm text-muted-foreground">Status da Assinatura</p><p className="font-semibold capitalize">{getSubscriptionStatus(userToView)}</p></div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Data de Expiração</p>
                                     <p className="font-semibold">
