@@ -1,6 +1,7 @@
 // src/app/api/admin/update-role/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { updateUserRoleAction } from '@/app/actions/user-actions';
+import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,8 @@ export async function POST(request: NextRequest) {
     if (result.success) {
       return NextResponse.json({ message: result.message }, { status: 200 });
     } else {
-      return NextResponse.json({ message: result.message }, { status: 400 });
+      // Use um status mais apropriado para falhas de lógica/permissão
+      return NextResponse.json({ message: result.message }, { status: 403 });
     }
   } catch (error: any) {
     console.error('API Error updating user role:', error);

@@ -16,8 +16,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/user';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateUserRoleAction } from '@/app/actions/user-actions';
-
 
 export default function ViewUserPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();

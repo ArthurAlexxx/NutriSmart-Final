@@ -2,7 +2,6 @@
 'use server';
 
 import { db, auth as adminAuth } from '@/lib/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
 import { headers } from 'next/headers';
 
 /**
@@ -16,18 +15,16 @@ export async function updateUserRoleAction(
   userId: string,
   newRole: 'patient' | 'professional'
 ): Promise<{ success: boolean; message: string }> {
-  // This action requires admin privileges which are checked by security rules
-  // when the admin SDK is NOT used. For this action, we assume an admin is calling it.
-  // We add a server-side check to prevent an admin from changing their own role.
+  // This action requires admin privileges which are checked by verifying the ID token.
   const headersList = headers();
   const authorization = headersList.get('Authorization');
   if (!authorization) {
-    return { success: false, message: 'Authorization header is missing.' };
+    return { success: false, message: 'Cabeçalho de autorização ausente.' };
   }
 
   const token = authorization.split('Bearer ')[1];
    if (!token) {
-    return { success: false, message: 'Bearer token is missing.' };
+    return { success: false, message: 'Token de autorização ausente.' };
   }
   
   try {
