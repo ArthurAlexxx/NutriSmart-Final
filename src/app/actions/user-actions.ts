@@ -98,3 +98,39 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
         return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir a conta.' };
     }
 }
+
+export async function adminDeleteUserAction(userId: string): Promise<{ success: boolean, message: string }> {
+    if (!userId) {
+        return { success: false, message: "ID do usuário não fornecido." };
+    }
+    
+    try {
+        // First, delete all subcollections
+        const collections = await db.collection('users').doc(userId).listCollections();
+        for (const collection of collections) {
+            const snapshot = await collection.get();
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
+
+        // Then, delete the user document itself
+        await db.collection('users').doc(userId).delete();
+        
+        // Finally, delete the user from Firebase Auth
+        // This is the part that requires admin privileges and the service account key.
+        // It will fail in local dev if the key is not set, which is expected.
+        await auth.deleteUser(userId);
+
+        return { success: true, message: `Usuário ${userId} e todos os seus dados foram excluídos com sucesso.` };
+
+    } catch (error: any) {
+        console.error(`CRITICAL: Failed to run adminDeleteUserAction for ${userId}:`, error);
+        if (error.code === 'auth/user-not-found') {
+             return { success: true, message: "Dados do Firestore removidos, mas o usuário não foi encontrado na Autenticação." };
+        }
+        return { success: false, message: error.message || "Erro desconhecido ao tentar excluir o usuário." };
+    }
+}

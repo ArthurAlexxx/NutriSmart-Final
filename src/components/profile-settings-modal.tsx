@@ -248,7 +248,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
-    { id: 'advanced', label: 'Avançado', icon: ShieldAlert, visible: !isAdmin },
+    { id: 'advanced', label: 'Avançado', icon: ShieldAlert, visible: true },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';

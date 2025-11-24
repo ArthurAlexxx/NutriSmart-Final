@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: result.message }, { status: 200 });
   } else {
     // A mensagem de erro da action será mais específica (ex: 'Não autorizado' ou 'Erro interno')
-    const statusCode = result.message.includes('Não autorizado') ? 403 : 500;
+    const statusCode = result.message.includes('Não autorizado') || result.message.includes('token') ? 403 : 500;
     return NextResponse.json({ message: result.message }, { status: statusCode });
   }
 }
