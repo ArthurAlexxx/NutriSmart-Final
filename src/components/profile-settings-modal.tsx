@@ -495,7 +495,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 sm:p-0 shadow-2xl flex flex-col sm:flex-row gap-0 max-h-[90vh] sm:max-h-[600px]">
+      <DialogContent className="max-w-4xl p-0 sm:p-0 shadow-2xl flex flex-col sm:flex-row gap-0 max-h-[90vh] sm:h-[600px]">
         <div className="w-full sm:w-1/4 p-4 border-b sm:border-b-0 sm:border-r">
           <h2 className="text-xl font-bold p-2 hidden sm:block">Configurações</h2>
           <nav className="flex flex-row sm:flex-col gap-1 mt-0 sm:mt-4">
