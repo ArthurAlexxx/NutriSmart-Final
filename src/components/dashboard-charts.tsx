@@ -1,4 +1,3 @@
-
 // src/components/dashboard-charts.tsx
 'use client';
 
@@ -46,8 +45,34 @@ const macrosChartConfig = {
   },
 } satisfies ChartConfig;
 
+const planDistributionChartConfig = {
+    value: {
+        label: 'Usuários',
+    },
+    Gratuito: {
+        label: 'Gratuito',
+        color: 'hsl(var(--chart-2))',
+    },
+    Premium: {
+        label: 'Premium',
+        color: 'hsl(var(--chart-1))',
+    },
+    Profissional: {
+        label: 'Profissional',
+        color: 'hsl(var(--chart-4))',
+    },
+} satisfies ChartConfig;
+
+const userGrowthChartConfig = {
+    users: {
+        label: 'Usuários',
+        color: 'hsl(var(--chart-1))',
+    },
+} satisfies ChartConfig;
+
+
 interface DashboardChartsProps {
-    chartType: 'calories' | 'macros' | 'hydration' | 'weight';
+    chartType: 'calories' | 'macros' | 'hydration' | 'weight' | 'plan-distribution' | 'user-growth';
     data: any[];
 }
 
@@ -279,6 +304,50 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
       </ChartContainer>
     );
   }
+
+  if (chartType === 'plan-distribution') {
+    const totalUsers = React.useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
+
+    return (
+      <ChartContainer config={planDistributionChartConfig} className="mx-auto aspect-square max-h-[300px]">
+        <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} strokeWidth={2}>
+                    {data.map((entry) => (<Cell key={`cell-${entry.name}`} fill={entry.fill} />))}
+                    <Label
+                        content={({ viewBox }) => {
+                        if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                            return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                    <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">{totalUsers.toLocaleString()}</tspan>
+                                    <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground">Usuários</tspan>
+                                </text>
+                            );
+                        }
+                        }}
+                    />
+                </Pie>
+                 <ChartLegend content={<ChartLegendContent nameKey="name" />} className="[&>div]:justify-center" />
+            </PieChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    );
+  }
+  
+  if (chartType === 'user-growth') {
+    return (
+      <ChartContainer config={userGrowthChartConfig} className="min-h-[200px] w-full">
+        <AreaChart accessibilityLayer data={data} margin={{left: 12, right: 12}}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} />
+          <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+          <Area dataKey="users" type="natural" fill="var(--color-users)" fillOpacity={0.4} stroke="var(--color-users)" stackId="a" />
+        </AreaChart>
+      </ChartContainer>
+    );
+  }
+
 
   return null;
 }

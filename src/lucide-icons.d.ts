@@ -12,6 +12,7 @@ declare module "lucide-react" {
     export const AlignLeft: Icon;
     export const ArrowRight: Icon;
     export const ArrowLeft: Icon;
+    export const Award: Icon;
     export const BarChart3: Icon;
     export const Baseline: Icon;
     export const Beef: Icon;
@@ -39,13 +40,17 @@ declare module "lucide-react" {
     export const Copy: Icon;
     export const CornerDownLeft: Icon;
     export const CreditCard: Icon;
+    export const Crown: Icon;
     export const Download: Icon;
     export const Donut: Icon;
+    export const DollarSign: Icon;
     export const Droplet: Icon;
     export const Dumbbell: Icon;
+    export const Edit: Icon;
     export const Eye: Icon;
     export const Facebook: Icon;
     export const FileImage: Icon;
+    export const FilePlus: Icon;
     export const Filter: Icon;
     export const Flame: Icon;
     export const GlassWater: Icon;
@@ -66,6 +71,7 @@ declare module "lucide-react" {
     export const MessageSquare: Icon;
     export const Minus: Icon;
     export const Palette: Icon;
+    export const PauseCircle: Icon;
     export const Pencil: Icon;
     export const Plus: Icon;
     export const PlusCircle: Icon;
@@ -78,7 +84,9 @@ declare module "lucide-react" {
     export const Settings2: Icon;
     export const Share2: Icon;
     export const Shield: Icon;
+    export const ShieldAlert: Icon;
     export const ShoppingCart: Icon;
+    export const Smile: Icon;
     export const Soup: Icon;
     export const Sparkles: Icon;
     export const Star: Icon;
@@ -91,6 +99,7 @@ declare module "lucide-react" {
     export const Type: Icon;
     export const User: Icon;
     export const UserCog: Icon;
+    export const UserCheck: Icon;
     export const UserIcon: Icon;
     export const UserPlus: Icon;
     export const UserX: Icon;
@@ -100,6 +109,7 @@ declare module "lucide-react" {
     export const Weight: Icon;
     export const Wheat: Icon;
     export const X: Icon;
+    export const XCircle: Icon;
     export const Zap: Icon;
     export const icons: {[key: string]: Icon};
   }

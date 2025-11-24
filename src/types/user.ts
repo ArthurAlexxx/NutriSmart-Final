@@ -12,7 +12,7 @@ export interface UserProfile {
     id: string;
     fullName: string;
     email: string;
-    createdAt: Timestamp | { seconds: number; nanoseconds: number; };
+    createdAt: Timestamp;
     status?: 'active' | 'paused';
     profileType: 'patient' | 'professional';
     role: 'patient' | 'professional' | 'admin';
@@ -43,7 +43,7 @@ export interface UserProfile {
     waterGoal?: number;
 
     subscriptionStatus?: 'premium' | 'free' | 'professional';
-    subscriptionExpiresAt?: Timestamp | { seconds: number; nanoseconds: number; };
+    subscriptionExpiresAt?: Timestamp | Date;
     photoAnalysisCount?: number;
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
     

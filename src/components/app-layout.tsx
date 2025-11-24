@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode } from 'lucide-react';
+import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -41,13 +41,17 @@ const navItemsPro = [
 ];
 
 const navItemsAdmin = [
-    { href: '/admin', label: 'Usuários', icon: Users, id: 'nav-admin' },
-    { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-finance' },
+    { href: '/admin', label: 'Métricas', icon: BarChart3, id: 'nav-admin-metrics' },
+    { href: '/admin/users', label: 'Usuários', icon: Users, id: 'nav-admin-users' },
+    { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-admin-finance' },
+    { href: '/admin/logs', label: 'Logs', icon: Webhook, id: 'nav-admin-logs' },
 ];
 
+
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
-  const isDashboard = href === '/dashboard' || href === '/pro/dashboard';
-  const isActive = pathname === href || (isDashboard && pathname.startsWith(href));
+  const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
+  const isActive = isDashboard ? pathname.startsWith(href) && (pathname === href || !pathname.substring(href.length).includes('/')) : pathname === href;
+
 
   const linkContent = (
     <>

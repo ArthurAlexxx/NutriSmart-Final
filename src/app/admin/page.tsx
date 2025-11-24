@@ -1,31 +1,30 @@
-
 // src/app/admin/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where, getCountFromServer, Timestamp } from 'firebase/firestore';
+import { subDays } from 'date-fns';
 import AppLayout from '@/components/app-layout';
-import { Loader2, Shield, UserCheck, Crown, User, Search, Users, DollarSign } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Loader2, Users, UserPlus, DollarSign, Crown } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { DashboardCharts } from '@/components/dashboard-charts';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
-type SubscriptionFilter = 'all' | 'free' | 'premium' | 'professional';
-
-function AdminPage() {
+function AdminDashboardPage() {
   const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<SubscriptionFilter>('all');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    newUsers: 0,
+    totalRevenue: 0,
+    activeSubscribers: 0,
+  });
 
   const usersQuery = useMemoFirebase(() => {
     if (!isAdmin || !firestore) return null;
@@ -40,27 +39,81 @@ function AdminPage() {
     }
   }, [isUserLoading, isAdmin, router]);
 
-  const { filteredUsers, counts } = useMemo(() => {
-    if (!users) return { filteredUsers: [], counts: { all: 0, free: 0, premium: 0, professional: 0 } };
-    
-    const calculatedCounts = users.reduce((acc, u) => {
-        const status = u.subscriptionStatus || 'free';
-        acc.all++;
-        acc[status]++;
+  useEffect(() => {
+    const fetchStats = async () => {
+        if (!firestore || !isAdmin) return;
+
+        try {
+            const usersRef = collection(firestore, 'users');
+            const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
+
+            const totalUsersSnap = await getCountFromServer(usersRef);
+            const newUsersQuery = query(usersRef, where('createdAt', '>=', thirtyDaysAgo));
+            const newUsersSnap = await getCountFromServer(newUsersQuery);
+            
+            const subscribersQuery = query(usersRef, where('subscriptionStatus', 'in', ['premium', 'professional']));
+            const activeSubscribersSnap = await getCountFromServer(subscribersQuery);
+            
+            // Revenue is harder to calculate on the fly, will be done in finance page
+            setStats(prev => ({
+                ...prev,
+                totalUsers: totalUsersSnap.data().count,
+                newUsers: newUsersSnap.data().count,
+                activeSubscribers: activeSubscribersSnap.data().count,
+            }));
+        } catch(e) {
+            console.error("Failed to fetch admin stats:", e);
+        }
+    };
+    fetchStats();
+  }, [firestore, isAdmin]);
+
+
+  const planDistribution = useMemo(() => {
+    if (!users) return [];
+    const counts = users.reduce((acc, user) => {
+        const status = user.subscriptionStatus || 'free';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
-    }, { all: 0, free: 0, premium: 0, professional: 0 });
+    }, {} as Record<string, number>);
 
-    const searchFiltered = users.filter(u =>
-      u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return [
+      { name: 'Gratuito', value: counts.free || 0, fill: 'hsl(var(--chart-2))' },
+      { name: 'Premium', value: counts.premium || 0, fill: 'hsl(var(--chart-1))' },
+      { name: 'Profissional', value: counts.professional || 0, fill: 'hsl(var(--chart-4))' },
+    ];
+  }, [users]);
+  
+   const userGrowthData = useMemo(() => {
+    if (!users) return [];
+    const sortedUsers = [...users].sort((a, b) => a.createdAt.toDate().getTime() - b.createdAt.toDate().getTime());
+    let cumulative = 0;
+    const dataMap = new Map<string, number>();
 
-    const finalFiltered = filter === 'all' 
-        ? searchFiltered 
-        : searchFiltered.filter(u => (u.subscriptionStatus || 'free') === filter);
+    for (const user of sortedUsers) {
+      const dateStr = user.createdAt.toDate().toISOString().split('T')[0];
+      cumulative++;
+      dataMap.set(dateStr, cumulative);
+    }
+    
+    if (dataMap.size === 0) return [];
 
-    return { filteredUsers: finalFiltered, counts: calculatedCounts };
-  }, [users, searchTerm, filter]);
+    const firstDate = new Date(sortedUsers[0].createdAt.toDate());
+    const today = new Date();
+    const result = [];
+    let lastValue = 0;
+
+    for (let d = firstDate; d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        if (dataMap.has(dateStr)) {
+            lastValue = dataMap.get(dateStr)!;
+        }
+        result.push({ day: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit'}), users: lastValue });
+    }
+    
+    return result;
+  }, [users]);
+
 
   if (isUserLoading || !isAdmin) {
     return (
@@ -69,104 +122,62 @@ function AdminPage() {
       </div>
     );
   }
-  
-  const getSubscriptionBadge = (user: UserProfile) => {
-      const status = user.subscriptionStatus || 'free';
-      switch(status) {
-          case 'premium': return <Badge variant="default" className="bg-purple-500">Premium</Badge>;
-          case 'professional': return <Badge variant="default" className="bg-blue-500">Profissional</Badge>;
-          case 'free':
-          default:
-              return <Badge variant="secondary">Gratuito</Badge>
-      }
-  }
-  
-  const getRoleBadge = (user: UserProfile) => {
-    const role = user.role || 'patient';
-    switch(role) {
-      case 'admin': return <Badge variant="destructive"><Shield className="h-3 w-3 mr-1"/> Admin</Badge>;
-      case 'professional': return <Badge variant="default" className="bg-blue-500"><UserCheck className="h-3 w-3 mr-1"/> Pro</Badge>;
-      case 'patient':
-      default:
-        return <Badge variant="outline"><User className="h-3 w-3 mr-1"/> Paciente</Badge>;
-    }
-  }
 
   const summaryCards = [
-    { title: 'Todos', count: counts.all, filter: 'all', Icon: Users },
-    { title: 'Gratuitos', count: counts.free, filter: 'free', Icon: User },
-    { title: 'Premium', count: counts.premium, filter: 'premium', Icon: Crown },
-    { title: 'Profissionais', count: counts.professional, filter: 'professional', Icon: DollarSign },
+    { title: 'Total de Usuários', value: stats.totalUsers.toLocaleString('pt-BR'), Icon: Users },
+    { title: 'Novos Usuários (30d)', value: stats.newUsers.toLocaleString('pt-BR'), Icon: UserPlus },
+    { title: 'Assinantes Ativos', value: stats.activeSubscribers.toLocaleString('pt-BR'), Icon: Crown },
+    { title: 'Ver Receita', value: 'Painel', Icon: DollarSign, isLink: true, href: '/admin/finance' },
   ];
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-8">
-            <div>
-                <h1 className="text-3xl font-bold font-heading">Painel Administrativo</h1>
-                <p className="text-muted-foreground">Gerenciamento de usuários do sistema.</p>
-            </div>
-             <div className="relative max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Buscar por nome ou email..."
-                    className="w-full rounded-lg bg-background pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
+      <div className="container mx-auto py-8 space-y-8">
+        <div>
+            <h1 className="text-3xl font-bold font-heading">Dashboard do Administrador</h1>
+            <p className="text-muted-foreground">Visão geral do crescimento e métricas da plataforma.</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           {summaryCards.map(card => (
-            <Card key={card.title} className={cn("cursor-pointer hover:bg-accent transition-colors", filter === card.filter && "ring-2 ring-primary")} onClick={() => setFilter(card.filter as SubscriptionFilter)}>
+            <Card key={card.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 <card.Icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{card.count}</div>
+                <div className="text-2xl font-bold">{card.value}</div>
+                {card.isLink && card.href && (
+                    <Button asChild variant="link" className="p-0 h-auto">
+                        <Link href={card.href}>Acessar</Link>
+                    </Button>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
         
-        <div className="border rounded-lg overflow-hidden">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead>Data de Cadastro</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {isLoadingUsers ? (
-                         <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
-                    ) : filteredUsers.length > 0 ? (
-                        filteredUsers.map(u => (
-                            <TableRow key={u.id}>
-                                <TableCell>
-                                    <div className="font-medium">{u.fullName}</div>
-                                    <div className="text-sm text-muted-foreground">{u.email}</div>
-                                </TableCell>
-                                <TableCell>{getRoleBadge(u)}</TableCell>
-                                <TableCell>{getSubscriptionBadge(u)}</TableCell>
-                                <TableCell>{u.createdAt ? format(u.createdAt.toDate(), 'dd/MM/yyyy', {locale: ptBR}) : 'N/A'}</TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>
-                    )}
-                </TableBody>
-            </Table>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+            <Card className="lg:col-span-3">
+                <CardHeader>
+                    <CardTitle>Crescimento de Usuários</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <DashboardCharts chartType="user-growth" data={userGrowthData} />
+                </CardContent>
+            </Card>
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Distribuição de Planos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <DashboardCharts chartType="plan-distribution" data={planDistribution} />
+                </CardContent>
+            </Card>
         </div>
       </div>
     </AppLayout>
   );
 }
 
-export default AdminPage;
+export default AdminDashboardPage;

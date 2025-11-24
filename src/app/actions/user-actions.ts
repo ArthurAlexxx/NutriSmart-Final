@@ -3,6 +3,8 @@
 
 import { db, auth as adminAuth } from '@/lib/firebase/admin';
 import { revalidatePath } from 'next/cache';
+import type { UserProfile } from '@/types/user';
+import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Pauses a user's account by setting their status to 'paused'.
@@ -65,4 +67,41 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
         console.error(`CRITICAL: Failed to completely delete account for user ${userId}:`, error);
         return { success: false, message: error.message || 'Ocorreu um erro crítico ao tentar excluir sua conta.' };
     }
+}
+
+/**
+ * Updates a user's profile from the admin panel.
+ * @param userId The ID of the user to update.
+ * @param data The data to update.
+ * @returns An object indicating success or failure.
+ */
+export async function updateUserAsAdmin(userId: string, data: Partial<UserProfile>): Promise<{ success: boolean; message: string }> {
+  if (!userId) {
+    return { success: false, message: 'ID do usuário não fornecido.' };
+  }
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const updateData = { ...data };
+
+    // Convert Date object to Firestore Timestamp if present
+    if (data.subscriptionExpiresAt && data.subscriptionExpiresAt instanceof Date) {
+      updateData.subscriptionExpiresAt = Timestamp.fromDate(data.subscriptionExpiresAt);
+    }
+    
+    await userRef.update(updateData);
+    
+    // If the role was changed, update custom claims
+    if(data.role) {
+        await adminAuth.setCustomUserClaims(userId, { role: data.role });
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath(`/admin/users/${userId}`);
+
+    return { success: true, message: 'Usuário atualizado com sucesso.' };
+  } catch (error: any) {
+    console.error(`Error updating user ${userId} from admin:`, error);
+    return { success: false, message: error.message || 'Não foi possível atualizar o usuário.' };
+  }
 }
