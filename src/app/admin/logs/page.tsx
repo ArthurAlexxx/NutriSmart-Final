@@ -1,3 +1,4 @@
+
 // src/app/admin/logs/page.tsx
 'use client';
 
@@ -63,37 +64,39 @@ function AdminLogsPage() {
             <CardDescription>Logs de todos os webhooks recebidos pela plataforma.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Detalhes</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                     {isLoadingLogs ? (
-                         <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
-                    ) : logs && logs.length > 0 ? (
-                        logs.map(log => (
-                           <Accordion type="single" collapsible key={log.id} asChild>
-                             <AccordionItem value={log.id} asChild>
-                               <TableRow>
-                                <TableCell>{log.createdAt ? format(log.createdAt.toDate(), 'dd/MM/yyyy HH:mm:ss', {locale: ptBR}) : 'N/A'}</TableCell>
-                                <TableCell>
-                                    <Badge variant={log.status === 'SUCCESS' ? 'default' : 'destructive'} className={log.status === 'SUCCESS' ? 'bg-green-500' : ''}>
-                                        {log.status === 'SUCCESS' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                                        {log.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="max-w-sm truncate">{log.details}</TableCell>
-                                <TableCell>
-                                    <AccordionTrigger className='p-2 hover:no-underline'>
-                                        <span className='sr-only'>Ver payload</span>
-                                    </AccordionTrigger>
-                                </TableCell>
-                                 <AccordionContent asChild>
+            <Accordion type="single" collapsible className="w-full">
+              <Table>
+                  <TableHeader>
+                      <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Detalhes</TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {isLoadingLogs ? (
+                          <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
+                      ) : logs && logs.length > 0 ? (
+                          logs.map(log => (
+                            <AccordionItem value={log.id} key={log.id} asChild>
+                              <>
+                                <TableRow>
+                                  <TableCell>{log.createdAt ? format(log.createdAt.toDate(), 'dd/MM/yyyy HH:mm:ss', {locale: ptBR}) : 'N/A'}</TableCell>
+                                  <TableCell>
+                                      <Badge variant={log.status === 'SUCCESS' ? 'default' : 'destructive'} className={log.status === 'SUCCESS' ? 'bg-green-500' : ''}>
+                                          {log.status === 'SUCCESS' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                                          {log.status}
+                                      </Badge>
+                                  </TableCell>
+                                  <TableCell className="max-w-sm truncate">{log.details}</TableCell>
+                                  <TableCell>
+                                      <AccordionTrigger className='p-2 hover:no-underline'>
+                                          <span className='sr-only'>Ver payload</span>
+                                      </AccordionTrigger>
+                                  </TableCell>
+                                </TableRow>
+                                <AccordionContent asChild>
                                     <tr className='bg-muted/50 hover:bg-muted/50'>
                                         <TableCell colSpan={4} className='p-0'>
                                             <div className='p-4'>
@@ -105,14 +108,15 @@ function AdminLogsPage() {
                                         </TableCell>
                                     </tr>
                                 </AccordionContent>
-                            </TableRow>
-                           </AccordionItem>
-                        ))
-                    ) : (
-                         <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum log encontrado.</TableCell></TableRow>
-                    )}
-                </TableBody>
-            </Table>
+                              </>
+                            </AccordionItem>
+                          ))
+                      ) : (
+                          <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhum log encontrado.</TableCell></TableRow>
+                      )}
+                  </TableBody>
+              </Table>
+            </Accordion>
           </CardContent>
         </Card>
       </div>
