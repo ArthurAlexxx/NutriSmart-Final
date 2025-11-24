@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { getLocalDateString } from '@/lib/date-utils';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Progress } from './ui/progress';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -53,15 +54,15 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
   const { userProfile, onProfileUpdate } = useUser();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
+  const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('manual');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const todayStr = getLocalDateString();
   const dailyUploads = userProfile?.lastPhotoAnalysisDate === todayStr ? userProfile.photoAnalysisCount ?? 0 : 0;
   
-  // Feature is available if user is premium, or if they haven't reached the daily limit on a free plan.
   const isPhotoFeatureAvailable = userProfile?.subscriptionStatus === 'premium' || dailyUploads < MAX_DAILY_ANALYSIS;
-
 
   const manualForm = useForm<ManualMealFormValues>({
     resolver: zodResolver(manualFormSchema),
@@ -88,6 +89,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
   const handleManualSubmit = async (data: ManualMealFormValues) => {
     setIsProcessing(true);
+    setProcessingStep('Analisando nutrientes...');
+    setProgress(50);
     
     try {
       const result = await getNutritionalInfo(data);
@@ -101,6 +104,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
         toast({ title: "Aviso de Cálculo", description: result.error, variant: "default" });
       }
       
+      setProcessingStep('Registrando refeição...');
+      setProgress(100);
       await saveMeal(data.mealType, mealData);
       manualForm.reset({ mealType: '', foods: [{ name: '', portion: NaN, unit: '' }] });
       onMealAdded();
@@ -109,6 +114,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
       handleError(error, "Não foi possível analisar os nutrientes da sua refeição.");
     } finally {
       setIsProcessing(false);
+      setProgress(0);
+      setProcessingStep('');
     }
   };
 
@@ -121,8 +128,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
             img.src = event.target?.result as string;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 512;
-                const MAX_HEIGHT = 512;
+                const MAX_WIDTH = 800; // Increased size for better analysis
+                const MAX_HEIGHT = 800;
                 let width = img.width;
                 let height = img.height;
 
@@ -142,7 +149,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 const ctx = canvas.getContext('2d');
                 ctx?.drawImage(img, 0, 0, width, height);
                 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // Increased quality
                 resolve(dataUrl);
             };
             img.onerror = (error) => reject(error);
@@ -160,29 +167,32 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     setIsProcessing(true);
     
     try {
+        setProcessingStep('Otimizando imagem...');
+        setProgress(20);
         const optimizedImageBase64 = await optimizeImage(data.photo);
         
-        // 1. Upload image to Firebase Storage
-        const storage = getStorage();
-        const imageName = `${Date.now()}.jpg`;
-        const storageRef = ref(storage, `meal-photos/${userId}/${imageName}`);
-        
-        // Convert base64 to blob
-        const response = await fetch(optimizedImageBase64);
-        const blob = await response.blob();
-        
-        await uploadBytes(storageRef, blob);
-        const imageUrl = await getDownloadURL(storageRef);
-
-        // 2. Analyze image with AI
+        setProcessingStep('Enviando para análise...');
+        setProgress(50);
         const result = await getNutritionalInfoFromPhoto(optimizedImageBase64, data.mealType);
 
         if (result.error) {
             throw new Error(result.error);
         }
 
+        setProcessingStep('Salvando imagem...');
+        setProgress(75);
+        const storage = getStorage();
+        const imageName = `${Date.now()}.jpg`;
+        const storageRef = ref(storage, `meal-photos/${userId}/${imageName}`);
+        
+        const response = await fetch(optimizedImageBase64);
+        const blob = await response.blob();
+        
+        await uploadBytes(storageRef, blob);
+        const imageUrl = await getDownloadURL(storageRef);
+
         const mealData: MealData = {
-          imageUrl: imageUrl, // Save the public URL
+          imageUrl: imageUrl,
           alimentos: [{ 
             name: result.description || 'Análise de Foto', 
             portion: 1, 
@@ -191,6 +201,9 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
           }],
           totais: result.totals || { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
         };
+        
+        setProcessingStep('Registrando refeição...');
+        setProgress(100);
 
         if (!mealData.totais.calorias && !mealData.totais.proteinas) {
             toast({ title: "Análise Inconclusiva", description: "Não foi possível identificar os alimentos na imagem. Tente uma foto mais nítida ou insira manualmente.", variant: 'destructive' });
@@ -211,6 +224,8 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
         handleError(error, "Falha na análise da imagem.");
     } finally {
         setIsProcessing(false);
+        setProgress(0);
+        setProcessingStep('');
     }
   };
 
@@ -243,7 +258,6 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
         throw new Error("Serviço de banco de dados indisponível.");
     };
 
-    // Before saving, check if it's the first meal to unlock achievement
     await unlockFirstMealAchievement();
     
     const newMealEntry: Omit<MealEntry, 'id'> = {
@@ -278,77 +292,87 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     <div className="px-6 pb-6 border-b">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="manual">Modo Manual</TabsTrigger>
-          <TabsTrigger value="photo"><Camera className="mr-2 h-4 w-4"/>Análise por Foto</TabsTrigger>
+          <TabsTrigger value="manual" disabled={isProcessing}>Modo Manual</TabsTrigger>
+          <TabsTrigger value="photo" disabled={isProcessing}><Camera className="mr-2 h-4 w-4"/>Análise por Foto</TabsTrigger>
         </TabsList>
         <TabsContent value="manual" className="pt-6">
           <Form {...manualForm}>
             <form onSubmit={manualForm.handleSubmit(handleManualSubmit)} id="inline-add-meal-form" className="space-y-6">
-              <FormField
-                control={manualForm.control}
-                name="mealType"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel className="font-semibold">Tipo de Refeição *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
-                    <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Selecionar tipo de refeição" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="cafe-da-manha">Café da Manhã</SelectItem>
-                        <SelectItem value="almoco">Almoço</SelectItem>
-                        <SelectItem value="jantar">Jantar</SelectItem>
-                        <SelectItem value="lanche">Lanche</SelectItem>
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-              />
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Alimentos *</h3>
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })} disabled={disabled}>
-                    <Plus className="mr-2 h-4 w-4" /> Adicionar
-                  </Button>
-                </div>
-                <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
-                      <p className="font-semibold text-sm text-muted-foreground">Alimento {index + 1}</p>
-                      {fields.length > 1 && (
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(index)} disabled={disabled}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <FormField control={manualForm.control} name={`foods.${index}.name`} render={({ field }) => (
-                        <FormItem><FormLabel>Nome *</FormLabel><FormControl><Input placeholder="Ex: Peito de frango grelhado" {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={manualForm.control} name={`foods.${index}.portion`} render={({ field }) => (
-                          <FormItem><FormLabel>Porção *</FormLabel><FormControl><Input type="number" placeholder="Ex: 150" {...field} /></FormControl><FormMessage /></FormItem>
+              <fieldset disabled={isProcessing}>
+                <FormField
+                  control={manualForm.control}
+                  name="mealType"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel className="font-semibold">Tipo de Refeição *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
+                      <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Selecionar tipo de refeição" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          <SelectItem value="cafe-da-manha">Café da Manhã</SelectItem>
+                          <SelectItem value="almoco">Almoço</SelectItem>
+                          <SelectItem value="jantar">Jantar</SelectItem>
+                          <SelectItem value="lanche">Lanche</SelectItem>
+                      </SelectContent>
+                      </Select>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+                />
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Alimentos *</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })} disabled={disabled}>
+                      <Plus className="mr-2 h-4 w-4" /> Adicionar
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
+                        <p className="font-semibold text-sm text-muted-foreground">Alimento {index + 1}</p>
+                        {fields.length > 1 && (
+                          <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(index)} disabled={disabled}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <FormField control={manualForm.control} name={`foods.${index}.name`} render={({ field }) => (
+                          <FormItem><FormLabel>Nome *</FormLabel><FormControl><Input placeholder="Ex: Peito de frango grelhado" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
-                        <FormField control={manualForm.control} name={`foods.${index}.unit`} render={({ field }) => (
-                          <FormItem><FormLabel>Unidade *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Un." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              <SelectItem value="g">g (gramas)</SelectItem>
-                              <SelectItem value="ml">ml (mililitros)</SelectItem>
-                              <SelectItem value="un">un (unidade)</SelectItem>
-                              <SelectItem value="fatia">fatia</SelectItem>
-                              <SelectItem value="xicara">xícara</SelectItem>
-                              <SelectItem value="colher-sopa">colher de sopa</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage /></FormItem>
-                        )}/>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField control={manualForm.control} name={`foods.${index}.portion`} render={({ field }) => (
+                            <FormItem><FormLabel>Porção *</FormLabel><FormControl><Input type="number" placeholder="Ex: 150" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={manualForm.control} name={`foods.${index}.unit`} render={({ field }) => (
+                            <FormItem><FormLabel>Unidade *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Un." /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="g">g (gramas)</SelectItem>
+                                <SelectItem value="ml">ml (mililitros)</SelectItem>
+                                <SelectItem value="un">un (unidade)</SelectItem>
+                                <SelectItem value="fatia">fatia</SelectItem>
+                                <SelectItem value="xicara">xícara</SelectItem>
+                                <SelectItem value="colher-sopa">colher de sopa</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage /></FormItem>
+                          )}/>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {manualForm.formState.errors.foods && <FormMessage className='pt-2'>{manualForm.formState.errors.foods.message || manualForm.formState.errors.foods.root?.message}</FormMessage>}
+                    ))}
+                    {manualForm.formState.errors.foods && <FormMessage className='pt-2'>{manualForm.formState.errors.foods.message || manualForm.formState.errors.foods.root?.message}</FormMessage>}
+                  </div>
                 </div>
-              </div>
+              </fieldset>
+              
+               {isProcessing && (
+                  <div className="space-y-2 pt-2">
+                      <Progress value={progress} className="w-full h-2" />
+                      <p className="text-sm text-muted-foreground text-center">{processingStep}</p>
+                  </div>
+              )}
+
               <div className='flex justify-end'>
                 <Button type="submit" form="inline-add-meal-form" disabled={isProcessing || disabled}>
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -361,93 +385,101 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
         <TabsContent value="photo" className="pt-6">
            <Form {...photoForm}>
             <form onSubmit={photoForm.handleSubmit(handlePhotoSubmit)} className="space-y-6">
-               <FormField
-                control={photoForm.control}
-                name="mealType"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel className="font-semibold">Tipo de Refeição *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled || !isPhotoFeatureAvailable}>
-                    <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Selecionar tipo de refeição" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="cafe-da-manha">Café da Manhã</SelectItem>
-                        <SelectItem value="almoco">Almoço</SelectItem>
-                        <SelectItem value="jantar">Jantar</SelectItem>
-                        <SelectItem value="lanche">Lanche</SelectItem>
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-              />
-
-              <FormField
-                control={photoForm.control}
-                name="photo"
-                render={({ field }) => (
+              <fieldset disabled={isProcessing}>
+                 <FormField
+                  control={photoForm.control}
+                  name="mealType"
+                  render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Foto da Refeição *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        id="photo-input"
-                        type="file" 
-                        accept="image/*" 
-                        disabled={disabled || !isPhotoFeatureAvailable}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            field.onChange(file);
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setImagePreview(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
+                      <FormLabel className="font-semibold">Tipo de Refeição *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled || !isPhotoFeatureAvailable}>
+                      <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Selecionar tipo de refeição" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          <SelectItem value="cafe-da-manha">Café da Manhã</SelectItem>
+                          <SelectItem value="almoco">Almoço</SelectItem>
+                          <SelectItem value="jantar">Jantar</SelectItem>
+                          <SelectItem value="lanche">Lanche</SelectItem>
+                      </SelectContent>
+                      </Select>
+                      <FormMessage />
                   </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={photoForm.control}
+                  name="photo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Foto da Refeição *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          id="photo-input"
+                          type="file" 
+                          accept="image/*" 
+                          disabled={disabled || !isPhotoFeatureAvailable}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              field.onChange(file);
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setImagePreview(reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {imagePreview && isPhotoFeatureAvailable && (
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
+                    <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={handleRemovePhoto}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Remover Foto</span>
+                    </Button>
+                  </div>
                 )}
-              />
+                
+                {!isPhotoFeatureAvailable ? (
+                   <Alert variant="destructive">
+                      <Lock className="h-4 w-4" />
+                      <AlertTitle>Limite Diário Atingido</AlertTitle>
+                      <AlertDescription>
+                          Você já usou suas {MAX_DAILY_ANALYSIS} análises de foto por hoje no plano gratuito. O limite será zerado amanhã.
+                      </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="default" className="border-primary/30 bg-primary/5">
+                      <AlertTriangle className="h-4 w-4 text-primary" />
+                      <AlertTitle className="text-primary">Modo Experimental</AlertTitle>
+                      <AlertDescription>
+                      A análise por foto é uma estimativa e pode não ser 100% precisa.
+                      {userProfile?.subscriptionStatus !== 'premium' && ` (${MAX_DAILY_ANALYSIS - dailyUploads}/${MAX_DAILY_ANALYSIS} restantes hoje)`}
+                      </AlertDescription>
+                  </Alert>
+                )}
+              </fieldset>
 
-              {imagePreview && isPhotoFeatureAvailable && (
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
-                  <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={handleRemovePhoto}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Remover Foto</span>
-                  </Button>
-                </div>
+              {isProcessing && (
+                  <div className="space-y-2 pt-2">
+                      <Progress value={progress} className="w-full h-2" />
+                      <p className="text-sm text-muted-foreground text-center">{processingStep}</p>
+                  </div>
               )}
-              
-              {!isPhotoFeatureAvailable ? (
-                 <Alert variant="destructive">
-                    <Lock className="h-4 w-4" />
-                    <AlertTitle>Limite Diário Atingido</AlertTitle>
-                    <AlertDescription>
-                        Você já usou suas {MAX_DAILY_ANALYSIS} análises de foto por hoje no plano gratuito. O limite será zerado amanhã.
-                    </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert variant="default" className="border-primary/30 bg-primary/5">
-                    <AlertTriangle className="h-4 w-4 text-primary" />
-                    <AlertTitle className="text-primary">Modo Experimental</AlertTitle>
-                    <AlertDescription>
-                    A análise por foto é uma estimativa e pode não ser 100% precisa.
-                    {userProfile?.subscriptionStatus !== 'premium' && ` (${MAX_DAILY_ANALYSIS - dailyUploads}/${MAX_DAILY_ANALYSIS} restantes hoje)`}
-                    </AlertDescription>
-                </Alert>
-              )}
-
 
               <div className='flex justify-end'>
                 <Button type="submit" disabled={isProcessing || disabled || !isPhotoFeatureAvailable}>
