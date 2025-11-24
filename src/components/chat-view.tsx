@@ -14,7 +14,6 @@ interface ChatViewProps {
 }
 
 export default function ChatView({ messages, isResponding, onSendMessage }: ChatViewProps) {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
