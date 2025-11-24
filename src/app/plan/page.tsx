@@ -51,7 +51,6 @@ export default function PlanPage() {
 
   const [loading, setLoading] = useState(true);
   const [room, setRoom] = useState<Room | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   
@@ -127,19 +126,22 @@ export default function PlanPage() {
       setIsRestoring(true);
       
       try {
-          const currentActivePlan = (await doc(firestore, 'users', user.uid, 'plans', 'active').get()).data() as ActivePlan | undefined;
-          
-          if (currentActivePlan) {
+          // Archive the current active plan if it exists
+          if (activePlan) {
               const historyRef = collection(firestore, 'users', user.uid, 'plan_history');
-              await addDoc(historyRef, currentActivePlan);
+              await addDoc(historyRef, activePlan);
           }
 
-          // Remove the restored plan from history
-          const planHistoryRef = doc(firestore, 'users', user.uid, 'plan_history', planToRestore.id!);
-          await deleteDoc(planHistoryRef);
+          // Remove the restored plan from history collection
+          if (planToRestore.id) {
+            const planHistoryRef = doc(firestore, 'users', user.uid, 'plan_history', planToRestore.id);
+            await deleteDoc(planHistoryRef);
+          }
           
           // Set the selected plan as the new active plan
-          await setDoc(activePlanRef, { ...planToRestore, id: undefined }); // Remove old history ID
+          const newActiveData = { ...planToRestore };
+          delete newActiveData.id; // remove old history ID
+          await setDoc(activePlanRef, newActiveData);
 
           toast({
               title: "Plano Restaurado!",
@@ -152,7 +154,7 @@ export default function PlanPage() {
         setIsRestoring(false);
       }
 
-  }, [firestore, user, activePlanRef, toast]);
+  }, [firestore, user, activePlanRef, activePlan, toast]);
 
   if (loading) {
     return (
@@ -172,11 +174,13 @@ export default function PlanPage() {
     if (!planA || !planB) return false;
     // Compare essential fields, ignoring IDs and creation dates
     return isEqual({
+        name: planA.name,
         calorieGoal: planA.calorieGoal,
         proteinGoal: planA.proteinGoal,
         hydrationGoal: planA.hydrationGoal,
         meals: planA.meals.map(m => ({name: m.name, time: m.time, items: m.items})),
     }, {
+        name: planB.name,
         calorieGoal: planB.calorieGoal,
         proteinGoal: planB.proteinGoal,
         hydrationGoal: planB.hydrationGoal,
@@ -219,51 +223,51 @@ export default function PlanPage() {
                     </div>
 
                     <TabsContent value="pro-plan">
-                    <MealPlanView plan={proPlan} />
+                      <MealPlanView plan={proPlan} />
                     </TabsContent>
-                    <TabsContent value="my-plan" className="flex flex-col gap-8">
-                        <Collapsible open={isEditorOpen} onOpenChange={setIsEditorOpen} className="bg-card rounded-2xl border p-4 shadow-sm">
-                            <CollapsibleTrigger asChild>
-                                <Button variant="ghost" className="w-full justify-between hover:bg-transparent">
-                                    <div className='text-left'>
-                                        <h3 className='text-lg font-semibold'>Assistente de Plano IA</h3>
-                                        <p className='text-sm text-muted-foreground font-normal'>Gere ou edite um plano alimentar personalizado.</p>
-                                    </div>
-                                    <ChevronsUpDown className={cn("h-5 w-5 transition-transform text-muted-foreground", isEditorOpen && 'rotate-180')}/>
-                                </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="pt-8">
-                                {userProfile && <PlanEditor userProfile={userProfile} onPlanSaved={() => setIsEditorOpen(false)} isProfessional={false} />}
-                            </CollapsibleContent>
-                        </Collapsible>
-                        
-                        <MealPlanView plan={myPlan} onPlanDelete={handlePlanDelete} />
-
-                         <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} className="bg-card rounded-2xl border p-4 shadow-sm">
-                            <CollapsibleTrigger asChild>
-                                <Button variant="ghost" className="w-full justify-between hover:bg-transparent">
-                                    <div className='text-left flex items-center gap-3'>
-                                        <History className='h-6 w-6 text-primary'/>
-                                        <div>
-                                            <h3 className='text-lg font-semibold'>Histórico de Planos</h3>
-                                            <p className='text-sm text-muted-foreground font-normal'>Veja e restaure seus planos gerados anteriormente.</p>
-                                        </div>
-                                    </div>
-                                    <ChevronsUpDown className={cn("h-5 w-5 transition-transform text-muted-foreground", isHistoryOpen && 'rotate-180')}/>
-                                </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="pt-8">
-                                {planHistory && planHistory.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {planHistory.map(plan => (
-                                            <PlanHistoryCard key={plan.id} plan={plan} onRestore={handleRestorePlan} isRestoring={isRestoring} isCurrent={comparePlans(activePlan, plan)} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className='text-muted-foreground text-center py-4'>Nenhum plano antigo no seu histórico.</p>
-                                )}
-                            </CollapsibleContent>
-                        </Collapsible>
+                    <TabsContent value="my-plan">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+                            <div className="xl:order-2">
+                                <MealPlanView plan={myPlan} onPlanDelete={handlePlanDelete} />
+                            </div>
+                            <div className="xl:order-1 space-y-6">
+                               <Card>
+                                  <CardHeader>
+                                    <CardTitle>Assistente de Plano IA</CardTitle>
+                                    <CardDescription>Gere ou edite um plano alimentar personalizado com base em suas metas.</CardDescription>
+                                  </CardHeader>
+                                  <CardContent>
+                                    {userProfile && <PlanEditor userProfile={userProfile} onPlanSaved={() => {}} isProfessional={false} />}
+                                  </CardContent>
+                                </Card>
+                                
+                                <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} className="bg-card rounded-2xl border p-4 shadow-sm">
+                                  <CollapsibleTrigger asChild>
+                                      <Button variant="ghost" className="w-full justify-between hover:bg-transparent">
+                                          <div className='text-left flex items-center gap-3'>
+                                              <History className='h-6 w-6 text-primary'/>
+                                              <div>
+                                                  <h3 className='text-lg font-semibold'>Histórico de Planos</h3>
+                                                  <p className='text-sm text-muted-foreground font-normal'>Veja e restaure seus planos gerados anteriormente.</p>
+                                              </div>
+                                          </div>
+                                          <ChevronsUpDown className={cn("h-5 w-5 transition-transform text-muted-foreground", isHistoryOpen && 'rotate-180')}/>
+                                      </Button>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent className="pt-8">
+                                      {planHistory && planHistory.length > 0 ? (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                              {planHistory.map(plan => (
+                                                  <PlanHistoryCard key={plan.id} plan={plan} onRestore={handleRestorePlan} isRestoring={isRestoring} isCurrent={comparePlans(activePlan, plan)} />
+                                              ))}
+                                          </div>
+                                      ) : (
+                                          <p className='text-muted-foreground text-center py-4'>Nenhum plano antigo no seu histórico.</p>
+                                      )}
+                                  </CollapsibleContent>
+                              </Collapsible>
+                            </div>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -271,5 +275,3 @@ export default function PlanPage() {
     </AppLayout>
   );
 }
-
-    

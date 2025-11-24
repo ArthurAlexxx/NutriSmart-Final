@@ -14,15 +14,20 @@ interface ChatViewProps {
 }
 
 export default function ChatView({ messages, isResponding, onSendMessage }: ChatViewProps) {
-  const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if(scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
   }, [messages, isResponding]);
 
   return (
     <div className="flex-1 flex flex-col justify-between min-h-0">
-      <div className="flex-1 overflow-y-auto">
+      <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
@@ -33,10 +38,9 @@ export default function ChatView({ messages, isResponding, onSendMessage }: Chat
               <p className="text-muted-foreground">O Chef está pensando...</p>
             </div>
           )}
-          <div ref={endOfMessagesRef} />
         </div>
-      </div>
-      <div className="shrink-0">
+      </ScrollArea>
+      <div className="shrink-0 border-t">
         <ChatInput onSendMessage={onSendMessage} isResponding={isResponding} />
       </div>
     </div>
