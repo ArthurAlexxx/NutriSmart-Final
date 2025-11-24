@@ -115,7 +115,7 @@ function RegisterForm() {
           subscriptionStatus: 'free',
           profileType: 'patient',
           role: 'patient',
-          unlockedAchievements: ['first-steps'], // Unlock first achievement
+          unlockedAchievements: ['first-steps'],
           status: 'active',
       };
       
