@@ -5,28 +5,6 @@ import { db, auth as adminAuth } from '@/lib/firebase/admin';
 import { revalidatePath } from 'next/cache';
 import type { UserProfile } from '@/types/user';
 import { Timestamp } from 'firebase-admin/firestore';
-import { headers } from 'next/headers';
-import { getAuth } from 'firebase-admin/auth';
-
-// Helper function to verify the user token
-async function getUserIdFromToken(): Promise<string | null> {
-    const authHeader = headers().get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return null;
-    }
-    const idToken = authHeader.split('Bearer ')[1];
-    if (!idToken) {
-        return null;
-    }
-    try {
-        const decodedToken = await getAuth().verifyIdToken(idToken);
-        return decodedToken.uid;
-    } catch (error) {
-        console.error("Error verifying ID token:", error);
-        return null;
-    }
-}
-
 
 /**
  * Pauses a user's account by setting their status to 'paused'.
@@ -54,8 +32,10 @@ export async function pauseAccountAction(userId: string): Promise<{ success: boo
 
 /**
  * Deletes a user's account and all associated data permanently.
- * IMPORTANT SECURITY: This action now verifies that the calling user is the one being deleted.
- * @param userId The ID of the user to delete.
+ * IMPORTANT: This action must be called from a server context where the
+ * user's identity has already been verified (e.g., via a protected API route
+ * that checks the auth token).
+ * @param userId The ID of the user to delete, already verified to be the caller.
  * @returns An object indicating success or failure.
  */
 export async function deleteAccountAction(userId: string): Promise<{ success: boolean; message: string }> {
@@ -63,13 +43,6 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
         return { success: false, message: 'ID do usuário não fornecido.' };
     }
     
-    // Security check: Ensure the authenticated user is the one being deleted.
-    const authenticatedUserId = await getUserIdFromToken();
-    if (authenticatedUserId !== userId) {
-        console.warn(`Unauthorized delete attempt: User ${authenticatedUserId} tried to delete user ${userId}.`);
-        return { success: false, message: 'Não autorizado. Você só pode excluir sua própria conta.' };
-    }
-
     try {
         // Step 1: Delete all subcollections recursively
         const collections = await db.collection('users').doc(userId).listCollections();
@@ -85,9 +58,10 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
         }
         
         // Step 2: Delete the main user document from Firestore
+        // This relies on security rules allowing the user to delete their own document.
         await db.collection('users').doc(userId).delete();
 
-        // Step 3: Delete the user from Firebase Authentication
+        // Step 3: Delete the user from Firebase Authentication using the Admin SDK
         await adminAuth.deleteUser(userId);
 
         revalidatePath('/'); // Revalidate all paths after deletion

@@ -11,9 +11,12 @@ service cloud.firestore {
 
     // Users Collection: Usuários só podem acessar seus próprios dados.
     match /users/{userId} {
+      // Usuário pode ler e atualizar seu próprio perfil.
       allow read, update: if request.auth.uid == userId;
-      // Permite a criação de perfil apenas durante o cadastro do próprio usuário.
+      // Usuário pode criar seu próprio perfil durante o cadastro.
       allow create: if request.auth.uid == userId;
+      // Usuário pode EXCLUIR seu próprio perfil.
+      allow delete: if request.auth.uid == userId;
     }
 
     // Subcoleções de Usuários: Acesso restrito ao dono dos dados.
