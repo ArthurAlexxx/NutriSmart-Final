@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft, LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, signInWithPopup, GoogleAuthProvider, sendEmailVerification, type User } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
@@ -62,6 +62,23 @@ export default function LoginPage() {
     }
   }, [user, effectiveSubscriptionStatus, isUserLoading, isAdmin, router, toast]);
 
+  const handleResendVerification = async (userToVerify: User) => {
+    try {
+      await sendEmailVerification(userToVerify);
+      toast({
+        title: "E-mail de Verificação Reenviado",
+        description: "Verifique sua caixa de entrada para o novo link.",
+      });
+    } catch (error: any) {
+      console.error("Resend Verification Error:", error);
+      toast({
+        title: "Erro ao Reenviar",
+        description: "Não foi possível reenviar o e-mail de verificação. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -76,13 +93,19 @@ export default function LoginPage() {
 
       // Check for email verification
       if (!userCredential.user.emailVerified) {
+          const userToVerify = userCredential.user;
           await signOut(auth); // Sign out the user immediately
           setLoading(false);
           toast({
               title: "Verificação Necessária",
-              description: "Sua conta foi criada, mas seu e-mail ainda não foi verificado. Por favor, verifique sua caixa de entrada e clique no link de verificação.",
+              description: "Seu e-mail ainda não foi verificado. Por favor, verifique sua caixa de entrada.",
               variant: "destructive",
               duration: 8000,
+              action: (
+                <Button variant="secondary" onClick={() => handleResendVerification(userToVerify)}>
+                  Reenviar E-mail
+                </Button>
+              ),
           });
           return;
       }
