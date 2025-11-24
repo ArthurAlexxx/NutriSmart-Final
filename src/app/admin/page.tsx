@@ -86,7 +86,7 @@ function AdminDashboardPage() {
   }, [users]);
   
    const userGrowthData = useMemo(() => {
-    if (!users) return [];
+    if (!users || users.length === 0) return [];
     const sortedUsers = [...users].sort((a, b) => a.createdAt.toDate().getTime() - b.createdAt.toDate().getTime());
     let cumulative = 0;
     const dataMap = new Map<string, number>();
@@ -103,8 +103,9 @@ function AdminDashboardPage() {
     const today = new Date();
     const result = [];
     let lastValue = 0;
-
-    for (let d = firstDate; d <= today; d.setDate(d.getDate() + 1)) {
+    
+    // Use a new date object for the loop to avoid modifying the original `firstDate`
+    for (let d = new Date(firstDate.setHours(0,0,0,0)); d <= today; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
         if (dataMap.has(dateStr)) {
             lastValue = dataMap.get(dateStr)!;
