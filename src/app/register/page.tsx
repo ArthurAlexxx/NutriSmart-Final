@@ -221,7 +221,7 @@ const RegisterForm = () => {
       </div>
     </div>
   );
-}
+};
 
 export default function RegisterPage() {
     return (
