@@ -65,7 +65,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
-  const [isUploading, setIsUploading] = useState(isUploading);
+  const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
