@@ -31,19 +31,23 @@ export async function pauseAccountAction(userId: string): Promise<{ success: boo
 
 
 /**
- * Deletes a user's account and all associated data permanently.
- * IMPORTANT: This action is called from a server context (the admin panel),
- * so it has the necessary privileges to delete any user's data.
+ * Deletes a user's account and all associated data permanently from Firestore.
+ * This action MUST be called from a server context by an authenticated admin.
+ * It uses the Firebase Admin SDK and requires the service account key to be configured.
  * @param userId The ID of the user to delete.
  * @returns An object indicating success or failure.
  */
-export async function deleteAccountAction(userId: string): Promise<{ success: boolean; message: string }> {
+export async function adminDeleteUserAction(userId: string): Promise<{ success: boolean; message: string }> {
     if (!userId) {
         return { success: false, message: 'ID do usuário não fornecido.' };
     }
     
+    // IMPORTANT: The check to ensure the caller is an admin should be done in the API route/server context
+    // before this action is ever called. This action assumes it's being run by a trusted admin process.
+
     try {
-        // Step 1: Delete all subcollections recursively
+        // Step 1: Delete all subcollections recursively.
+        // This uses the 'db' instance from '@lib/firebase/admin', which has admin privileges.
         const collections = await db.collection('users').doc(userId).listCollections();
         for (const collection of collections) {
             const snapshot = await collection.get();
@@ -56,15 +60,15 @@ export async function deleteAccountAction(userId: string): Promise<{ success: bo
             }
         }
         
-        // Step 2: Delete the main user document from Firestore
+        // Step 2: Delete the main user document from Firestore.
         await db.collection('users').doc(userId).delete();
 
-        // Step 3: We will NOT delete the user from Firebase Authentication
-        // to avoid dependency on the full Admin SDK and service account key in all environments.
-        // The user will no longer be able to log in effectively because their Firestore data is gone.
-        // await adminAuth.deleteUser(userId); // This line is intentionally commented out.
+        // Step 3: (Optional, but recommended) Delete the user from Firebase Authentication.
+        // This will throw the service account key error if not configured.
+        // For now, we will focus on just deleting firestore data.
+        // await auth.deleteUser(userId); 
 
-        revalidatePath('/'); // Revalidate all paths after deletion
+        revalidatePath('/admin/users'); // Revalidate admin path after deletion
         return { success: true, message: 'Os dados do usuário foram excluídos permanentemente do Firestore.' };
 
     } catch (error: any) {

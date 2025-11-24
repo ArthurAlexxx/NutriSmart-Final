@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { deleteAccountAction } from '@/app/actions/user-actions';
+import { adminDeleteUserAction } from '@/app/actions/user-actions';
 
 
 type SubscriptionFilter = 'all' | 'free' | 'premium' | 'professional';
@@ -50,7 +50,7 @@ function AdminUsersPage() {
   const handleDeleteUser = async (userId: string) => {
     setDeletingUserId(userId);
     try {
-        const result = await deleteAccountAction(userId);
+        const result = await adminDeleteUserAction(userId);
         if (result.success) {
             toast({ title: 'Usuário Excluído', description: 'O usuário e todos os seus dados foram removidos.' });
         } else {
