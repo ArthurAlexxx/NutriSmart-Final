@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/types/user';
@@ -81,6 +81,12 @@ function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
+      await sendEmailVerification(user);
+      toast({
+        title: "Verifique seu e-mail",
+        description: "Enviamos um link de verificação para o seu e-mail.",
+      });
+
       const userRef = doc(firestore, 'users', user.uid);
       const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 

@@ -1,3 +1,4 @@
+
 // src/components/profile-settings-modal.tsx
 'use client';
 
@@ -9,14 +10,14 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2 } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from './ui/badge';
 import Link from 'next/link';
-import { signOut } from 'firebase/auth';
+import { signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
@@ -24,13 +25,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { pauseAccountAction, deleteAccountAction } from '@/app/actions/user-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 
-const formSchema = z.object({
+const profileFormSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   phone: z.string().min(10, 'O celular é obrigatório.').optional(),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.').optional(),
 });
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-type ProfileFormValues = z.infer<typeof formSchema>;
+const emailFormSchema = z.object({
+    newEmail: z.string().email("O novo e-mail é inválido."),
+    password: z.string().min(1, "A senha é obrigatória para alterar o e-mail."),
+});
+type EmailFormValues = z.infer<typeof emailFormSchema>;
+
 
 type NavItem = 'personal' | 'sharing' | 'subscription' | 'advanced';
 
@@ -61,12 +68,20 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  
+  const isGoogleProvider = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(formSchema),
+  const profileForm = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+  });
+
+  const emailForm = useForm<EmailFormValues>({
+      resolver: zodResolver(emailFormSchema),
+      defaultValues: { newEmail: '', password: '' },
   });
   
-  const { isSubmitting, isDirty } = form.formState;
+  const { isSubmitting: isProfileSubmitting, isDirty: isProfileDirty } = profileForm.formState;
+  const { isSubmitting: isEmailSubmitting } = emailForm.formState;
   
    useEffect(() => {
     if (isOpen) {
@@ -76,13 +91,17 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
 
   useEffect(() => {
     if (userProfile) {
-      form.reset({
+      profileForm.reset({
         fullName: userProfile.fullName || '',
         phone: userProfile.phone || '',
         taxId: userProfile.taxId || '',
       });
+      emailForm.reset({
+          newEmail: '',
+          password: '',
+      });
     }
-  }, [userProfile, form]);
+  }, [userProfile, profileForm, emailForm, isOpen]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -96,16 +115,16 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     }
   };
 
-  const onSubmit = async (data: ProfileFormValues) => {
-    if (!isDirty) {
+  const onProfileSubmit = async (data: ProfileFormValues) => {
+    if (!isProfileDirty) {
       onOpenChange(false);
       return;
     }
     try {
         const updatedProfile: Partial<UserProfile> = {};
-        if (form.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
-        if (form.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
-        if (form.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
+        if (profileForm.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
+        if (profileForm.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
+        if (profileForm.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
         
         await onProfileUpdate(updatedProfile);
         toast({
@@ -120,6 +139,45 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         });
     } finally {
         onOpenChange(false);
+    }
+  };
+
+  const onEmailSubmit = async (data: EmailFormValues) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      toast({ title: 'Erro', description: 'Usuário não encontrado.', variant: 'destructive' });
+      return;
+    }
+
+    const credential = EmailAuthProvider.credential(user.email, data.password);
+
+    try {
+        await reauthenticateWithCredential(user, credential);
+        await updateEmail(user, data.newEmail);
+        // We also need to update the email in our Firestore user profile
+        await onProfileUpdate({ email: data.newEmail });
+        
+        toast({
+            title: 'E-mail Atualizado!',
+            description: 'Seu e-mail de login foi alterado. Um link de verificação foi enviado para o novo endereço.',
+        });
+        emailForm.reset();
+        onOpenChange(false); // Close modal on success
+
+    } catch (error: any) {
+        let description = 'Ocorreu um erro desconhecido.';
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            description = 'A senha informada está incorreta. Tente novamente.';
+        } else if (error.code === 'auth/email-already-in-use') {
+            description = 'O novo e-mail fornecido já está em uso por outra conta.';
+        } else if (error.code === 'auth/requires-recent-login') {
+             description = 'Esta operação é sensível e requer um login recente. Por favor, saia e entre novamente na sua conta.';
+        }
+        toast({
+            title: 'Erro ao Alterar E-mail',
+            description,
+            variant: 'destructive',
+        });
     }
   };
   
@@ -208,26 +266,26 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         case 'personal':
             return (
                 <Card className="w-full shadow-none border-none">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <Form {...profileForm}>
+                        <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
                             <CardHeader>
                                 <CardTitle>Dados Pessoais</CardTitle>
                                 <CardDescription>Mantenha seus dados de contato e identificação atualizados.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <FormField control={form.control} name="fullName" render={({ field }) => (
+                                <FormField control={profileForm.control} name="fullName" render={({ field }) => (
                                     <FormItem><FormLabel>Nome Completo *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                <FormField control={profileForm.control} name="phone" render={({ field }) => (
                                     <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={form.control} name="taxId" render={({ field }) => (
+                                <FormField control={profileForm.control} name="taxId" render={({ field }) => (
                                     <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isSubmitting || !isDirty}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                <Button type="submit" disabled={isProfileSubmitting || !isProfileDirty}>
+                                    {isProfileSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Salvar Alterações
                                 </Button>
                             </CardFooter>
@@ -286,10 +344,32 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             return (
                  <Card className="w-full shadow-none border-none">
                     <CardHeader>
-                        <CardTitle>Zona de Perigo</CardTitle>
-                        <CardDescription>Ações que afetam sua conta de forma permanente.</CardDescription>
+                        <CardTitle>Opções Avançadas</CardTitle>
+                        <CardDescription>Gerencie o acesso e a segurança da sua conta.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className={cn("border p-4 rounded-lg", isGoogleProvider ? "bg-muted/50" : "bg-background")}>
+                            <h4 className="font-semibold flex items-center gap-2 text-foreground"><Mail className="h-5 w-5"/> Alterar E-mail</h4>
+                             <p className="text-sm text-muted-foreground mt-1 mb-3">Altere o e-mail associado à sua conta. Você precisará confirmar sua senha.</p>
+                            {isGoogleProvider ? (
+                                <p className="text-sm text-yellow-600">Você fez login com o Google. Para alterar seu e-mail, você deve alterá-lo na sua conta do Google.</p>
+                            ) : (
+                                <Form {...emailForm}>
+                                    <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-3">
+                                        <FormField control={emailForm.control} name="newEmail" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Novo E-mail</FormLabel><FormControl><Input type="email" placeholder="novo@email.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        <FormField control={emailForm.control} name="password" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Senha Atual</FormLabel><FormControl><Input type="password" placeholder="Sua senha atual" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        <Button type="submit" size="sm" disabled={isEmailSubmitting}>
+                                            {isEmailSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                            Alterar E-mail
+                                        </Button>
+                                    </form>
+                                </Form>
+                            )}
+                        </div>
                         <div className="border border-yellow-500/50 bg-yellow-500/5 p-4 rounded-lg">
                             <h4 className="font-semibold flex items-center gap-2 text-yellow-600"><PauseCircle className="h-5 w-5"/> Pausar Conta</h4>
                             <p className="text-sm text-muted-foreground mt-1 mb-3">Sua conta ficará inativa e você será desconectado. Seus dados serão mantidos para quando você voltar.</p>

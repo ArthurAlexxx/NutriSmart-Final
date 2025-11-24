@@ -39,9 +39,12 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
     } catch (error: any) {
       let description = 'Ocorreu um erro desconhecido. Tente novamente.';
-      if (error.code === 'auth/user-not-found') {
-        description = 'Nenhuma conta encontrada com este e-mail. Verifique o e-mail digitado.';
-      } else if (error.code === 'auth/invalid-email') {
+      // We don't want to reveal if a user exists or not, so we avoid specific error messages.
+      // But for better DX, we can log it.
+      console.error("Password Reset Error:", error.code);
+      // For a better user experience in case of a clear invalid email format error from Firebase,
+      // we can show a specific message.
+      if (error.code === 'auth/invalid-email') {
           description = "O formato do e-mail é inválido. Por favor, corrija e tente novamente."
       }
       toast({

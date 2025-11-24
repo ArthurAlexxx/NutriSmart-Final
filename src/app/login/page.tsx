@@ -159,11 +159,11 @@ export default function LoginPage() {
                     name="password"
                     render={({ field }) => (
                     <FormItem>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                             <FormLabel>Senha</FormLabel>
                             <Link
                                 href="/forgot-password"
-                                className="ml-auto inline-block text-xs text-primary underline"
+                                className="text-xs font-semibold text-primary hover:underline"
                             >
                                 Esqueceu a senha?
                             </Link>
