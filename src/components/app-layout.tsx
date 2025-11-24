@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -47,7 +48,6 @@ const navItemsAdmin = [
     { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-admin-finance' },
     { href: '/admin/logs', label: 'Logs', icon: Webhook, id: 'nav-admin-logs' },
 ];
-
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
   const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
@@ -141,9 +141,19 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     
     if (isAdmin) {
         return (
+          <>
             <NavSection title="Admin">
                 {navItemsAdmin.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
             </NavSection>
+            <Separator className="my-4" />
+            <NavSection title="Páginas Paciente">
+                {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+            </NavSection>
+            <Separator className="my-4" />
+            <NavSection title="Páginas Profissional">
+              {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+            </NavSection>
+          </>
         )
     }
 
