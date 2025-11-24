@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft, LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
@@ -43,6 +43,11 @@ export default function LoginPage() {
   useEffect(() => {
     // This effect handles redirection AFTER the user state is fully resolved.
     if (!isUserLoading && user) {
+        if (!user.emailVerified && user.providerData.some(p => p.providerId === 'password')) {
+            // This case should be handled by handleLogin, but as a safeguard.
+            return;
+        }
+
         toast({
             title: "Login bem-sucedido!",
             description: "Redirecionando para o seu painel...",
@@ -67,8 +72,22 @@ export default function LoginPage() {
     }
 
     try {
-      // This just initiates the login. The useEffect above will handle the redirect.
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+
+      // Check for email verification
+      if (!userCredential.user.emailVerified) {
+          await signOut(auth); // Sign out the user immediately
+          setLoading(false);
+          toast({
+              title: "Verificação Necessária",
+              description: "Sua conta foi criada, mas seu e-mail ainda não foi verificado. Por favor, verifique sua caixa de entrada e clique no link de verificação.",
+              variant: "destructive",
+              duration: 8000,
+          });
+          return;
+      }
+      
+      // If verified, the useEffect will handle the redirect.
       
     } catch (error: any) {
       setLoading(false); // Stop loading on error
