@@ -24,7 +24,7 @@ export default function ChatView({ messages, isResponding, onSendMessage }: Chat
   }, [messages, isResponding]);
 
   return (
-    <div className="flex-1 flex flex-col justify-between min-h-0">
+    <div className="flex-1 flex flex-col min-h-0">
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6">
           {messages.map((message) => (
