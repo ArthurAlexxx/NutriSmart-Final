@@ -1,4 +1,3 @@
-
 // src/app/admin/page.tsx
 'use client';
 
@@ -8,12 +7,13 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, query, orderBy, where, getCountFromServer, Timestamp } from 'firebase/firestore';
 import { subDays } from 'date-fns';
 import AppLayout from '@/components/app-layout';
-import { Loader2, Users, UserPlus, DollarSign, Crown } from 'lucide-react';
+import { Loader2, Users, UserPlus, DollarSign, Crown, BarChart3 } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/page-header';
 
 function AdminDashboardPage() {
   const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
@@ -134,24 +134,22 @@ function AdminDashboardPage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-        <div>
-            <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
-                <Users className='h-8 w-8 text-primary' />
-                Dashboard do Administrador
-            </h1>
-            <p className="text-muted-foreground">Visão geral do crescimento e métricas da plataforma.</p>
-        </div>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+        <PageHeader 
+            icon={BarChart3}
+            title="Métricas da Plataforma"
+            description="Visão geral do crescimento e principais indicadores do sistema."
+        />
 
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          {summaryCards.map(card => (
-            <Card key={card.title} className="hover:bg-accent/50 transition-colors">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {summaryCards.map((card, index) => (
+            <Card key={card.title} className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500" style={{animationDelay: `${index * 100}ms`}}>
               <Link href={card.href || '#'}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-br from-secondary/30 to-transparent">
                   <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                   <card.Icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <div className="text-2xl font-bold">{card.value}</div>
                 </CardContent>
               </Link>
@@ -159,20 +157,20 @@ function AdminDashboardPage() {
           ))}
         </div>
         
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
-            <Card className="lg:col-span-3">
-                <CardHeader>
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-5 animate-in fade-in-50 duration-500 delay-200">
+            <Card className="lg:col-span-3 shadow-md rounded-2xl border-border/50 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
                     <CardTitle>Crescimento de Usuários</CardTitle>
                 </CardHeader>
-                <CardContent className="pl-2">
+                <CardContent className="pl-2 pt-6">
                     <DashboardCharts chartType="user-growth" data={userGrowthData} />
                 </CardContent>
             </Card>
-            <Card className="lg:col-span-2">
-                <CardHeader>
+            <Card className="lg:col-span-2 shadow-md rounded-2xl border-border/50 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
                     <CardTitle>Distribuição de Planos</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <DashboardCharts chartType="plan-distribution" data={planDistribution} />
                 </CardContent>
             </Card>

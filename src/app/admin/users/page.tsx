@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-
+import { PageHeader } from '@/components/page-header';
+import { StatsCard } from '@/components/stats-card';
 
 type SubscriptionFilter = 'all' | 'free' | 'premium' | 'professional';
 
@@ -72,7 +73,7 @@ function AdminUsersPage() {
         return query(baseCollection, orderBy('createdAt', 'desc'));
     }
 
-    // Esta consulta requer o índice composto que você está criando!
+    // This query requires a composite index
     return query(baseCollection, where('subscriptionStatus', '==', filter), orderBy('createdAt', 'desc'));
 
   }, [isAdmin, firestore, filter]);
@@ -130,80 +131,96 @@ function AdminUsersPage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left mb-8">
-            <div>
-                <h1 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
-                    <Users className='h-8 w-8 text-primary' />
-                    Gerenciamento de Usuários
-                </h1>
-                <p className="text-muted-foreground">Visualize e gerencie os usuários do sistema.</p>
-            </div>
-             <div className="relative w-full sm:max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Buscar por nome ou email..."
-                    className="w-full rounded-lg bg-background pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-        </div>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+        <PageHeader 
+            icon={Users}
+            title="Gerenciamento de Usuários"
+            description="Visualize, filtre e gerencie todos os usuários da plataforma."
+            action={
+                 <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Buscar por nome ou email..."
+                        className="w-full rounded-lg bg-background pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            }
+        />
 
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4 mb-8">
-          {summaryCards.map(card => (
-            <Card key={card.title} className={cn("cursor-pointer hover:bg-accent transition-colors", filter === card.filter && "ring-2 ring-primary")} onClick={() => setFilter(card.filter as SubscriptionFilter)}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{card.count}</div>
-              </CardContent>
-            </Card>
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {summaryCards.map((card, index) => (
+            <div key={card.title} className="animate-in fade-in-50 duration-500" style={{animationDelay: `${index * 100}ms`}}>
+                <Card 
+                    className={cn(
+                        "cursor-pointer shadow-md rounded-2xl border-border/50 overflow-hidden transition-all duration-300", 
+                        filter === card.filter ? "ring-2 ring-primary scale-105" : "hover:scale-105 hover:bg-accent"
+                    )} 
+                    onClick={() => setFilter(card.filter as SubscriptionFilter)}
+                >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-br from-secondary/30 to-transparent">
+                        <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                        <card.Icon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <div className="text-2xl font-bold">{card.count}</div>
+                    </CardContent>
+                </Card>
+            </div>
           ))}
         </div>
         
-        <div className="border rounded-lg overflow-hidden">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead>Data de Cadastro</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {isLoadingUsers ? (
-                         <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
-                    ) : filteredUsers.length > 0 ? (
-                        filteredUsers.map(u => (
-                            <TableRow key={u.id}>
-                                <TableCell>
-                                    <div className="font-medium">{u.fullName}</div>
-                                    <div className="text-sm text-muted-foreground">{u.email}</div>
-                                </TableCell>
-                                <TableCell>{getRoleBadge(u)}</TableCell>
-                                <TableCell>{getSubscriptionBadge(u)}</TableCell>
-                                <TableCell>{u.createdAt ? format(u.createdAt.toDate(), 'dd/MM/yyyy', {locale: ptBR}) : 'N/A'}</TableCell>
-                                <TableCell className="text-right space-x-2">
-                                    <Button asChild variant="outline" size="sm">
-                                        <Link href={`/admin/users/${u.id}`}>
-                                            <Eye className="h-3 w-3 mr-2" /> Gerenciar
-                                        </Link>
-                                    </Button>
+        <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-300">
+            <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent pb-4">
+                 <CardTitle>Lista de Usuários</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Usuário</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Plano</TableHead>
+                            <TableHead>Data de Cadastro</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoadingUsers ? (
+                            <TableRow><TableCell colSpan={5} className="h-48 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></TableCell></TableRow>
+                        ) : filteredUsers.length > 0 ? (
+                            filteredUsers.map(u => (
+                                <TableRow key={u.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{u.fullName}</div>
+                                        <div className="text-sm text-muted-foreground">{u.email}</div>
+                                    </TableCell>
+                                    <TableCell>{getRoleBadge(u)}</TableCell>
+                                    <TableCell>{getSubscriptionBadge(u)}</TableCell>
+                                    <TableCell>{u.createdAt ? format(u.createdAt.toDate(), 'dd/MM/yyyy', {locale: ptBR}) : 'N/A'}</TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={`/admin/users/${u.id}`}>
+                                                <Eye className="h-3 w-3 mr-2" /> Gerenciar
+                                            </Link>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-48 text-center">
+                                    <p className='font-medium'>Nenhum usuário encontrado</p>
+                                    <p className='text-muted-foreground text-sm'>Tente limpar a busca ou alterar o filtro de plano.</p>
                                 </TableCell>
                             </TableRow>
-                        ))
-                    ) : (
-                        <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

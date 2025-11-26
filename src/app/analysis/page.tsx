@@ -1,4 +1,3 @@
-
 // src/app/analysis/page.tsx
 'use client';
 
@@ -8,7 +7,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Database, Trash2, Lightbulb, BrainCircuit, Calendar, Settings, BarChart3 } from 'lucide-react';
+import { Loader2, Database, Trash2, Lightbulb, BrainCircuit, Calendar, Settings, BarChart3, TrendingUp, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { subDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 import AppLayout from '@/components/app-layout';
@@ -24,6 +23,7 @@ import SubscriptionOverlay from '@/components/subscription-overlay';
 import InsightsCard from '@/components/analysis/insights-card';
 import { generateAnalysisInsightsAction } from '@/app/actions/ai-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
 
 
 type Period = 7 | 15 | 30;
@@ -254,9 +254,9 @@ export default function AnalysisPage() {
     }
     
     return (
-      <div className="w-full space-y-8 relative">
+      <div className="w-full space-y-6 sm:space-y-8 relative">
         {isFeatureLocked && <SubscriptionOverlay />}
-        <div className={cn("w-full space-y-8", isFeatureLocked && 'blur-md pointer-events-none')}>
+        <div className={cn("w-full space-y-6 sm:space-y-8", isFeatureLocked && 'blur-md pointer-events-none')}>
           <div className="w-full space-y-6">
             <SummaryCards
               totalNutrients={totalNutrients}
@@ -268,25 +268,32 @@ export default function AnalysisPage() {
             </p>
           </div>
           
-           <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Opções de Visualização</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-full sm:w-auto">
-                        {( [7, 15, 30] as Period[]).map(p => (
-                            <Button 
-                                key={p} 
-                                onClick={() => setPeriod(p)}
-                                variant={period === p ? 'primary' : 'ghost'}
-                                size="sm"
-                                className={cn("rounded-md flex-1 sm:flex-initial", period === p && 'bg-background text-foreground shadow-sm hover:bg-background/90')}
-                            >
-                                <Calendar className="mr-2 h-4 w-4" /> {p} Dias
-                            </Button>
-                        ))}
+           <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                        <div className="flex-1 text-center sm:text-left">
+                            <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                <Settings className="h-5 w-5 text-primary" />
+                                Opções de Visualização
+                            </CardTitle>
+                        </div>
+                        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-secondary/50 border border-border/50 w-full sm:w-auto">
+                            {( [7, 15, 30] as Period[]).map(p => (
+                                <Button 
+                                    key={p} 
+                                    onClick={() => setPeriod(p)}
+                                    variant={period === p ? 'default' : 'ghost'}
+                                    size="sm"
+                                    className={cn("rounded-lg flex-1 sm:flex-initial transition-all duration-200", period === p && 'shadow-sm')}
+                                >
+                                    <Calendar className="mr-2 h-4 w-4" /> {p} Dias
+                                </Button>
+                            ))}
+                        </div>
                     </div>
-                     <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked} className="w-full sm:w-auto">
+                </CardHeader>
+                <CardContent className="pt-6">
+                     <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
                         {isGeneratingInsights ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -318,15 +325,11 @@ export default function AnalysisPage() {
         onProfileUpdate={onProfileUpdate}
     >
         <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col gap-8 print-container overflow-x-hidden">
-             <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left no-print">
-                <div className="animate-fade-in flex-1">
-                    <h2 className="text-3xl font-bold font-heading flex items-center gap-3">
-                        <BarChart3 className="h-8 w-8 text-primary"/>
-                        Análise de Desempenho
-                    </h2>
-                    <p className="text-muted-foreground mt-1">Seu progresso e tendências de consumo.</p>
-                </div>
-            </div>
+             <PageHeader 
+                icon={TrendingUp}
+                title="Análise de Desempenho"
+                description="Seu progresso e tendências de consumo ao longo do tempo."
+             />
             
             {isDemoUser && (
                 <div className="no-print p-4 border-2 border-dashed rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-secondary/30">

@@ -1,4 +1,3 @@
-
 // src/app/history/page.tsx
 'use client';
 
@@ -20,7 +19,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useUser, useFirestore } from '@/firebase';
-
+import { PageHeader } from '@/components/page-header';
 
 export default function HistoryPage() {
   const { user, isUserLoading, userProfile, onProfileUpdate } = useUser();
@@ -124,8 +123,8 @@ export default function HistoryPage() {
   if (loading || isUserLoading || !user) {
     return (
        <AppLayout user={user} userProfile={userProfile} onProfileUpdate={() => {}}>
-         <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
-           <Loader2 className="h-16 w-16 animate-spin text-primary" />
+         <div className="flex min-h-[50vh] w-full flex-col items-center justify-center">
+           <Loader2 className="h-12 w-12 animate-spin text-primary" />
            <p className="mt-4 text-muted-foreground">Carregando dados...</p>
         </div>
       </AppLayout>
@@ -138,54 +137,60 @@ export default function HistoryPage() {
         userProfile={userProfile}
         onProfileUpdate={handleProfileUpdateWithToast}
     >
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col gap-8">
-            <div className="animate-fade-in text-center sm:text-left">
-                <h2 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">
-                    <HistoryIcon className="h-8 w-8 text-primary"/>
-                    Histórico Nutricional
-                </h2>
-                <p className="text-muted-foreground">Navegue pelos dias para ver o detalhe de suas refeições.</p>
-            </div>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+         <PageHeader 
+            icon={HistoryIcon}
+            title="Histórico Nutricional"
+            description="Navegue pelos dias para ver o detalhe de suas refeições."
+        />
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>Selecione um Dia</CardTitle>
-                    <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <HistoryKanbanCalendar
-                      selectedDate={selectedDate}
-                      onDateSelect={setSelectedDate}
-                    />
-                </CardContent>
-            </Card>
+        <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-100">
+            <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                <CardTitle>Selecione um Dia</CardTitle>
+                <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                <HistoryKanbanCalendar
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                />
+            </CardContent>
+        </Card>
 
-            {(loading) && allMealEntries.length === 0 ? (
-                <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">
+        {(loading) && allMealEntries.length === 0 ? (
+            <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+                <div className="lg:col-span-8 space-y-6 sm:space-y-8">
+                    <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
+                        <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                             <CardTitle>Refeições de {getLocalDateString(selectedDate)}</CardTitle>
+                             <CardDescription>
+                                {dailyData.mealEntries.length} {dailyData.mealEntries.length === 1 ? 'refeição registrada' : 'refeições registradas'} neste dia.
+                             </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                            <ConsumedFoodsList 
+                                mealEntries={dailyData.mealEntries} 
+                                onMealDeleted={handleMealDeleted}
+                                onMealEdit={() => {}}
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2 space-y-8">
-                       <Card className="shadow-sm rounded-2xl">
-                          <CardContent className="p-4">
-                               <ConsumedFoodsList 
-                                  mealEntries={dailyData.mealEntries} 
-                                  onMealDeleted={handleMealDeleted}
-                                  onMealEdit={() => {}}
-                              />
-                          </CardContent>
-                       </Card>
-                    </div>
 
-                    <div className="lg:col-span-1 space-y-8">
+                <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:sticky lg:top-24">
+                    <div className="animate-in fade-in-50 duration-500 delay-300">
                       <SummaryCards totalNutrients={dailyData.totalNutrients} />
+                    </div>
+                    <div className="animate-in fade-in-50 duration-500 delay-400">
                       <WaterIntakeSummary hydrationEntry={dailyData.hydrationEntry} />
                     </div>
                 </div>
-             )}
-        </div>
+            </div>
+            )}
       </div>
     </AppLayout>
   );
