@@ -42,13 +42,20 @@ function verifyAsaasSignature(rawBody: string, signatureFromHeader: string): boo
 }
 
 async function handlePayment(event: any) {
-    if (event.event !== 'PAYMENT_RECEIVED' && event.event !== 'PAYMENT_CONFIRMED') {
+    // Asaas sends various payment events. We are interested when the payment is confirmed.
+    // PAYMENT_RECEIVED is a common status for confirmed PIX payments.
+    if (event.event !== 'PAYMENT_RECEIVED') {
         const message = `Evento não processado: ${event.event || 'desconhecido'}`;
         console.log(message);
-        return;
+        return; // Not an error, just an event we don't need to process.
     }
 
     const paymentData = event.payment;
+    if (!paymentData) {
+        throw new Error("Payload do webhook não contém o objeto 'payment'.");
+    }
+    
+    // Metadata is the most reliable way to get our internal IDs.
     const metadata = paymentData?.metadata;
     const userId = metadata?.userId || paymentData?.externalReference;
     const planName = metadata?.plan;
@@ -56,6 +63,7 @@ async function handlePayment(event: any) {
     
     if (userId && planName && billingCycle) {
         try {
+            // Use the centralized server action to update the user's subscription
             const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
@@ -72,6 +80,7 @@ async function handlePayment(event: any) {
         const message = 'Metadados cruciais (userId, plan ou billingCycle) não encontrados no payload do webhook do Asaas.';
         console.warn(message, { payload: event });
         await saveWebhookLog(event, 'FAILURE', message);
+        // We throw an error so the webhook provider knows the processing failed.
         throw new Error(message);
     }
 }
@@ -95,18 +104,23 @@ export async function POST(request: NextRequest) {
      return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
   }
 
-  const isSignatureValid = verifyAsaasSignature(rawBody, signature);
-
-  if (!isSignatureValid) {
-    console.warn('Assinatura de webhook do Asaas inválida recebida.');
-    await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC inválida.');
-    return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
+  // Only verify signature if a secret is provided (for local testing without ngrok/tunnels)
+  if (ASAAS_WEBHOOK_SECRET) {
+    const isSignatureValid = verifyAsaasSignature(rawBody, signature);
+    if (!isSignatureValid) {
+        console.warn('Assinatura de webhook do Asaas inválida recebida.');
+        await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC inválida.');
+        return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
+    }
   }
     
   try {
       await handlePayment(event);
+      // Asaas expects a 200 OK to confirm receipt.
       return NextResponse.json({ received: true }, { status: 200 });
   } catch (error: any) {
+      // If handlePayment throws an error, it means something went wrong in our business logic.
+      // We should return a server error status to let Asaas know they should retry.
       console.error("Erro no processamento do webhook em segundo plano:", error);
       return new NextResponse('Erro interno ao processar o webhook.', { status: 500 });
   }

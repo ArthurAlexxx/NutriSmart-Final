@@ -1,9 +1,16 @@
 // src/app/api/checkout/[chargeId]/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 
+const getAsaasApiUrl = () => {
+    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox');
+    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+
 export async function GET(request: NextRequest, { params }: { params: { chargeId: string } }) {
   const chargeId = params.chargeId;
   const asaasApiKey = process.env.ASAAS_API_KEY;
+  const asaasApiUrl = getAsaasApiUrl();
   
   if (!chargeId) {
     return NextResponse.json({ error: 'ID da cobrança não fornecido.' }, { status: 400 });
@@ -15,8 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
   }
 
   try {
-    const asaasApiUrl = `https://www.asaas.com/api/v3/payments/${chargeId}`;
-    const response = await fetch(asaasApiUrl, {
+    const response = await fetch(`${asaasApiUrl}/payments/${chargeId}`, {
       method: 'GET',
       headers: {
         'access_token': asaasApiKey,
@@ -32,13 +38,14 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
        return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
     
-    const status = data.status; // e.g., PENDING, CONFIRMED, RECEIVED
-
-    if (status === 'CONFIRMED' || status === 'RECEIVED') {
-        return NextResponse.json({ status: 'PAID', chargeId: chargeId });
+    // Status pode ser: PENDING, RECEIVED, CONFIRMED, OVERDUE, REFUNDED, RECEIVED_IN_CASH, etc.
+    // CONFIRMED e RECEIVED indicam pagamento bem-sucedido.
+    const paidStatuses = ['RECEIVED', 'CONFIRMED'];
+    if (paidStatuses.includes(data.status)) {
+        return NextResponse.json({ status: 'PAID', chargeId: data.id });
     }
 
-    return NextResponse.json({ status: 'PENDING' });
+    return NextResponse.json({ status: data.status });
 
   } catch (error: any) {
     console.error(`Error checking payment status for chargeId ${chargeId}:`, error);
