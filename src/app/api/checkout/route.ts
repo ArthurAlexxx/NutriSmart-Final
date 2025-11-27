@@ -14,7 +14,7 @@ const plans: { [key: string]: { monthly: number, yearly: number } } = {
 };
 
 const getAsaasApiUrl = () => {
-    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox');
+    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
     return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
 };
 
