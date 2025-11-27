@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useUser } from "@/firebase";
-import { Check, MoveRight, Loader2 } from "lucide-react";
+import { Check, MoveRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import PaymentModal from "../payment-modal";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const plans = [
     {
@@ -53,7 +53,6 @@ const plans = [
         ],
         description: 'A experiência completa com todo o poder da IA para acelerar seus resultados.',
         buttonText: 'Adquirir Acesso',
-        href: '/checkout?plan=premium',
         isPopular: true,
     },
     {
@@ -79,35 +78,30 @@ const plans = [
 
 function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, userProfile, effectiveSubscriptionStatus } = useUser();
-  const { toast } = useToast();
+  const { user, effectiveSubscriptionStatus } = useUser();
+  const router = useRouter();
 
   const handleCtaClick = (plan: typeof plans[0]) => {
-    if (!user || !userProfile) {
-        // Not logged in, redirect to register/login
-        window.location.href = plan.name === 'PROFISSIONAL' ? plan.href : '/register';
+    const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
+    if (isCurrentPlan) return;
+
+    if (!user) {
+        // Not logged in, default behavior
+        router.push(plan.href || '/register');
+        return;
+    }
+
+    if (plan.name === 'GRATUITO') {
+        router.push('/dashboard');
         return;
     }
     
-    // User is logged in
-    if (plan.name === 'GRATUITO') {
-      window.location.href = '/dashboard';
-      return;
-    }
-
-    const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
-
-    if (isCurrentPlan) return;
-    
-    setSelectedPlan(plan);
-    setIsModalOpen(true);
+    // Logged in, redirect to checkout page with params
+    router.push(`/checkout?plan=${plan.name}&yearly=${isYearly}`);
   };
 
 
   return (
-    <>
     <div className="w-full py-20 lg:py-24">
       <div className="mx-auto px-4">
         <div className="flex text-center justify-center items-center gap-4 flex-col">
@@ -140,7 +134,7 @@ function Pricing() {
               const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
               const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
               const displayPrice = isYearly ? plan.yearlyPrice : plan.price;
-              const displayPeriod = isYearly ? '/mês (cobrado anualmente)' : '/mês';
+              const displayPeriod = isYearly && plan.name !== 'GRATUITO' ? '/mês (cobrado anualmente)' : '/mês';
 
               return (
                 <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl", plan.isPopular && "shadow-2xl border-primary")}>
@@ -183,9 +177,7 @@ function Pricing() {
                             onClick={() => handleCtaClick(plan)}
                             disabled={isCurrentPlan}
                          >
-                            <>
-                             {ctaText} <MoveRight className="w-4 h-4" />
-                            </>
+                            {ctaText} <MoveRight className="w-4 h-4" />
                         </Button>
                     </CardFooter>
                 </Card>
@@ -194,16 +186,6 @@ function Pricing() {
         </div>
       </div>
     </div>
-    {user && userProfile && selectedPlan && (
-        <PaymentModal 
-            isOpen={isModalOpen}
-            onOpenChange={setIsModalOpen}
-            plan={selectedPlan}
-            isYearly={isYearly}
-            userProfile={userProfile}
-        />
-    )}
-    </>
   );
 }
 
