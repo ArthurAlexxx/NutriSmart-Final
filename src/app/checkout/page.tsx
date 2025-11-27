@@ -47,7 +47,7 @@ function CheckoutPageContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [paymentResult, setPaymentResult] = useState<any>(null);
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('PIX');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CREDIT_CARD');
     const [error, setError] = useState<string | null>(null);
 
     const planName = searchParams.get('plan')?.toUpperCase() as keyof typeof plansConfig;
@@ -84,7 +84,12 @@ function CheckoutPageContent() {
     
     const planDetails = plansConfig[planName];
     const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.price;
-    const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
+    let totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
+
+    if (paymentMethod === 'PIX') {
+        totalAmount = Math.round(totalAmount * 1.10 * 100) / 100;
+    }
+
     const periodText = isYearly ? 'anual' : 'mensal';
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
@@ -107,6 +112,8 @@ function CheckoutPageContent() {
         setIsLoading(true);
         setError(null);
         try {
+            if (!user) throw new Error("Usuário não autenticado.");
+
             const response = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -192,20 +199,20 @@ function CheckoutPageContent() {
                         </CardHeader>
                         <CardContent>
                            <RadioGroup defaultValue={paymentMethod} onValueChange={(value: PaymentMethod) => setPaymentMethod(value)} className="space-y-3">
+                                <Label htmlFor="card" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'CREDIT_CARD' && 'ring-2 ring-primary border-primary')}>
+                                    <CreditCard className="h-6 w-6 text-primary" />
+                                    <div><p className="font-semibold">Cartão de Crédito</p><p className="text-sm text-muted-foreground">Pagamento seguro e recorrente.</p></div>
+                                    <RadioGroupItem value="CREDIT_CARD" id="card" className="ml-auto" />
+                                </Label>
                                 <Label htmlFor="pix" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'PIX' && 'ring-2 ring-primary border-primary')}>
                                     <QrCode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">PIX</p><p className="text-sm text-muted-foreground">Pagamento instantâneo com QR Code.</p></div>
+                                    <div><p className="font-semibold">PIX</p><p className="text-sm text-muted-foreground">Pagamento único com +10% de taxa.</p></div>
                                     <RadioGroupItem value="PIX" id="pix" className="ml-auto" />
                                 </Label>
                                 <Label htmlFor="boleto" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'BOLETO' && 'ring-2 ring-primary border-primary')}>
                                     <Barcode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">Boleto Bancário</p><p className="text-sm text-muted-foreground">Vencimento em 3 dias úteis.</p></div>
+                                    <div><p className="font-semibold">Boleto Bancário</p><p className="text-sm text-muted-foreground">Pagamento único, vencimento em 3 dias.</p></div>
                                     <RadioGroupItem value="BOLETO" id="boleto" className="ml-auto" />
-                                </Label>
-                                <Label htmlFor="card" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'CREDIT_CARD' && 'ring-2 ring-primary border-primary')}>
-                                    <CreditCard className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">Cartão de Crédito</p><p className="text-sm text-muted-foreground">Pague com link seguro do Asaas.</p></div>
-                                    <RadioGroupItem value="CREDIT_CARD" id="card" className="ml-auto" />
                                 </Label>
                             </RadioGroup>
                         </CardContent>
@@ -283,13 +290,16 @@ function CheckoutPageContent() {
                                     <span className="font-semibold capitalize">{periodText}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Valor {isYearly ? 'mensal' : ''}</span>
+                                    <span className="text-muted-foreground">Valor {isYearly && paymentMethod !== 'CREDIT_CARD' ? 'mensal' : ''}</span>
                                     <span className="font-semibold">R$ {monthlyPrice.toFixed(2)}</span>
                                 </div>
                                  <div className="border-t pt-4 flex justify-between font-bold text-lg">
                                     <span>Total</span>
                                     <span>R$ {totalAmount.toFixed(2)}</span>
                                 </div>
+                                {paymentMethod === 'PIX' && (
+                                    <p className='text-xs text-muted-foreground text-right -mt-2'>(+10% taxa PIX)</p>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

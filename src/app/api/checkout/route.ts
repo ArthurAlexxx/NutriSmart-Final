@@ -81,39 +81,45 @@ export async function POST(request: Request) {
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
-        const subscriptionValue = isYearly ? planDetails.yearlyPrice : planDetails.monthly;
         const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
+        const subscriptionValue = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
-        const paymentLinkPayload = {
-            name: description,
-            description: `Acesso ao plano ${planName} do Nutrinea.`,
+        const subscriptionPayload = {
+            customer: customerId,
             billingType: "CREDIT_CARD",
-            chargeType: "RECURRENT",
-            subscriptionCycle: cycle,
+            cycle: cycle,
             value: subscriptionValue,
-            externalReference: userId, // Pass the user ID here for webhook reconciliation
+            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            description: description,
+            externalReference: userId,
         };
 
-        const createPaymentLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
+        const createSubscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'access_token': asaasApiKey,
             },
-            body: JSON.stringify(paymentLinkPayload),
+            body: JSON.stringify(subscriptionPayload),
         });
 
-        const paymentLinkData = await createPaymentLinkResponse.json() as any;
-        if (!createPaymentLinkResponse.ok || paymentLinkData.errors) {
-            console.error('Asaas Payment Link Creation Error:', paymentLinkData.errors);
-            throw new Error(paymentLinkData.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
+        const subscriptionData = await createSubscriptionResponse.json() as any;
+        if (!createSubscriptionResponse.ok || subscriptionData.errors) {
+            console.error('Asaas Subscription Creation Error:', subscriptionData.errors);
+            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+        }
+
+        // The first invoice is created automatically, we redirect the user to it.
+        const firstInvoiceUrl = subscriptionData.invoices[0]?.invoiceUrl;
+        if (!firstInvoiceUrl) {
+           throw new Error('Não foi possível obter a fatura inicial da assinatura.');
         }
 
         return NextResponse.json({
             type: 'CREDIT_CARD',
-            id: paymentLinkData.id,
-            url: paymentLinkData.url, // The URL to redirect the user to
+            id: subscriptionData.id,
+            url: firstInvoiceUrl, // The URL to redirect the user to
         });
 
     } else {
