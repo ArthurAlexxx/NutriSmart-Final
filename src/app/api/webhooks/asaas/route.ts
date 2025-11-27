@@ -18,7 +18,7 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             createdAt: new Date(),
         };
         await db.collection('webhook_logs').add(logData);
-    } catch (logError: any) {
+    } catch (logError: any) => {
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
 }
@@ -42,11 +42,16 @@ function verifyAsaasSignature(rawBody: string, signatureFromHeader: string): boo
 }
 
 async function handlePayment(event: any) {
-    // Asaas sends various payment events. We are interested when the payment is confirmed.
+    const eventName = event?.event;
+    if (!eventName) {
+        await saveWebhookLog(event, 'SUCCESS', 'Evento ignorado: campo "event" ausente no payload.');
+        console.log('Webhook recebido, mas ignorado por não conter o campo "event".');
+        return; // Não é um erro, apenas ignoramos.
+    }
+
     const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
-    
-    if (!successfulPaymentEvents.includes(event.event)) {
-        const message = `Evento não processado: ${event.event || 'desconhecido'}`;
+    if (!successfulPaymentEvents.includes(eventName)) {
+        const message = `Evento não processado: ${eventName}`;
         await saveWebhookLog(event, 'SUCCESS', message); // Log as success because we correctly ignored it
         console.log(message);
         return; // Not an error, just an event we don't need to process.
@@ -54,10 +59,12 @@ async function handlePayment(event: any) {
 
     const paymentData = event.payment;
     if (!paymentData) {
-        throw new Error("Payload do webhook não contém o objeto 'payment'.");
+        const message = `Evento ${eventName} ignorado: payload não contém o objeto 'payment'.`;
+        await saveWebhookLog(event, 'SUCCESS', message);
+        console.log(message);
+        return;
     }
     
-    // Metadata is the most reliable way to get our internal IDs.
     const metadata = paymentData?.metadata;
     const userId = metadata?.userId || paymentData?.externalReference;
     const planName = metadata?.plan;
@@ -65,25 +72,24 @@ async function handlePayment(event: any) {
     
     if (userId && planName && billingCycle) {
         try {
-            // Use the centralized server action to update the user's subscription
             const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
             } else {
-                throw new Error(updateResult.message);
+                // This is a business logic failure, should be logged as such but not cause a 500 error to Asaas
+                await saveWebhookLog(event, 'FAILURE', updateResult.message);
+                console.error(`Falha na lógica de negócio ao processar webhook: ${updateResult.message}`);
             }
         } catch (dbError: any) {
             const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
-            throw new Error(errorMessage);
+            // We don't rethrow here to avoid sending a 500 status to Asaas. We've logged it, that's enough.
         }
     } else {
-        const message = 'Metadados cruciais (userId, plan ou billingCycle) não encontrados no payload do webhook do Asaas.';
+        const message = 'Webhook de pagamento recebido, mas metadados cruciais (userId, plan ou billingCycle) não encontrados. O processamento foi ignorado.';
         console.warn(message, { payload: event });
-        await saveWebhookLog(event, 'FAILURE', message);
-        // We throw an error so the webhook provider knows the processing failed.
-        throw new Error(message);
+        await saveWebhookLog(event, 'SUCCESS', message); // Logged as SUCCESS because we received it correctly, just couldn't process.
     }
 }
 
@@ -94,26 +100,29 @@ export async function POST(request: NextRequest) {
     rawBody = await request.text();
     event = JSON.parse(rawBody);
   } catch (error: any) {
-      console.error('Erro fatal ao fazer parse do corpo do webhook:', error.message);
+      const errorMessage = `Erro fatal ao fazer parse do corpo do webhook: ${error.message}`;
+      console.error(errorMessage);
+      await saveWebhookLog({body: rawBody}, 'FAILURE', errorMessage);
       return new NextResponse('Payload malformado.', { status: 400 });
   }
 
   // Only verify signature if a secret is provided.
-  // This allows local testing or sandbox environments to work without a configured secret.
-  if (ASAAS_WEBHOOK_SECRET) {
+  if (process.env.ASAAS_WEBHOOK_SECRET) {
     const headerPayload = headers();
     const signature = headerPayload.get('asaas-webhook-signature');
     
     if (!signature) {
-       console.warn('Requisição de webhook do Asaas recebida sem assinatura no cabeçalho.');
-       await saveWebhookLog(event, 'FAILURE', 'Assinatura do webhook ausente no cabeçalho.');
-       return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
+       const msg = 'Requisição de webhook do Asaas recebida sem assinatura no cabeçalho.';
+       console.warn(msg);
+       await saveWebhookLog(event, 'FAILURE', msg);
+       return new NextResponse('Assinatura do webhook ausente.', { status: 403 });
     }
 
     const isSignatureValid = verifyAsaasSignature(rawBody, signature);
     if (!isSignatureValid) {
-        console.warn('Assinatura de webhook do Asaas inválida recebida.');
-        await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC inválida.');
+        const msg = 'Assinatura de webhook do Asaas inválida recebida.';
+        console.warn(msg);
+        await saveWebhookLog(event, 'FAILURE', msg);
         return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
   } else {
@@ -121,14 +130,19 @@ export async function POST(request: NextRequest) {
   }
     
   try {
-      await handlePayment(event);
-      // Asaas expects a 200 OK to confirm receipt with a specific message.
-      return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
+      // Process the payment logic without blocking the response.
+      // We don't await this, so we can immediately return a 200 OK to Asaas.
+      handlePayment(event);
+      
+      // Asaas expects a 200 OK to confirm receipt.
+      return NextResponse.json({ message: "Webhook recebido com sucesso e agendado para processamento." }, { status: 200 });
+
   } catch (error: any) {
-      // If handlePayment throws an error, it means something went wrong in our business logic.
-      // We should return a server error status to let Asaas know they should retry.
-      console.error("Erro no processamento do webhook em segundo plano:", error);
-      return new NextResponse('Erro interno ao processar o webhook.', { status: 500 });
+      // This catch block is a fallback, but the logic inside handlePayment should prevent it.
+      console.error("Erro inesperado no handler do webhook:", error);
+      // We still return 200 OK because we've received it, even if processing failed.
+      // The error is logged internally.
+      return NextResponse.json({ message: "Webhook recebido, mas ocorreu um erro interno no processamento." }, { status: 200 });
   }
 }
 
