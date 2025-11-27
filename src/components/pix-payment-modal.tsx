@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Copy, Clock, CheckCircle, ArrowRight, User as UserIcon, RefreshCw } from 'lucide-react';
+import { Loader2, Copy, Clock, CheckCircle, ArrowRight, User as UserIcon, RefreshCw, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { Button } from './ui/button';
@@ -20,6 +20,7 @@ import { Input } from './ui/input';
 
 const formSchema = z.object({
   fullName: z.string().min(3, 'O nome completo é obrigatório.'),
+  email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().min(10, 'O celular é obrigatório.'),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
 });
@@ -53,6 +54,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: userProfile.fullName || '',
+      email: userProfile.email || '',
       phone: userProfile.phone || '',
       taxId: userProfile.taxId || '',
     }
@@ -62,6 +64,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
     if (isOpen && (plan.name !== lastPlanName || form.formState.isSubmitSuccessful)) {
         form.reset({
             fullName: userProfile.fullName || '',
+            email: userProfile.email || '',
             phone: userProfile.phone || '',
             taxId: userProfile.taxId || '',
         });
@@ -121,13 +124,14 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const handleFormSubmit = async (data: CustomerDataFormValues) => {
     setIsLoading(true);
     try {
-        const { fullName, phone, taxId } = data;
+        const { fullName, phone, taxId, email } = data;
+        // The email is not part of the userProfile to update, but is required for Asaas.
         if (fullName !== userProfile.fullName || phone !== userProfile.phone || taxId !== userProfile.taxId) {
             await onProfileUpdate({ fullName, phone, taxId });
         }
         const customerDataForApi = {
             name: fullName,
-            email: userProfile.email,
+            email: email,
             phone: phone,
             taxId: taxId,
         };
@@ -222,6 +226,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)} id="customer-data-form" className="space-y-4">
                             <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Seu nome completo" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                            <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                             <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                             <FormField control={form.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         </form>
