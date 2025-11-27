@@ -98,22 +98,26 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Payload malformado.', { status: 400 });
   }
 
-  const headerPayload = headers();
-  const signature = headerPayload.get('asaas-webhook-signature');
-  
-  if (!signature) {
-     console.warn('Requisição de webhook do Asaas recebida sem assinatura no cabeçalho.');
-     return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
-  }
-
-  // Only verify signature if a secret is provided (for local testing without ngrok/tunnels)
+  // Only verify signature if a secret is provided.
+  // This allows local testing or sandbox environments to work without a configured secret.
   if (ASAAS_WEBHOOK_SECRET) {
+    const headerPayload = headers();
+    const signature = headerPayload.get('asaas-webhook-signature');
+    
+    if (!signature) {
+       console.warn('Requisição de webhook do Asaas recebida sem assinatura no cabeçalho.');
+       await saveWebhookLog(event, 'FAILURE', 'Assinatura do webhook ausente no cabeçalho.');
+       return new NextResponse('Assinatura do webhook ausente.', { status: 400 });
+    }
+
     const isSignatureValid = verifyAsaasSignature(rawBody, signature);
     if (!isSignatureValid) {
         console.warn('Assinatura de webhook do Asaas inválida recebida.');
         await saveWebhookLog(event, 'FAILURE', 'Assinatura HMAC inválida.');
         return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
+  } else {
+    console.log("INFO: Nenhuma variável ASAAS_WEBHOOK_SECRET configurada. Pulando verificação de assinatura.");
   }
     
   try {
