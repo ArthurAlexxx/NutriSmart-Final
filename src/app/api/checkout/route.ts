@@ -4,12 +4,12 @@ import { format } from 'date-fns';
 
 const plans: { [key: string]: { monthly: number, yearlyPrice: number } } = {
   PREMIUM: {
-    monthly: 2990,
-    yearlyPrice: 2390, // R$ 23.90 em centavos
+    monthly: 29.90,
+    yearlyPrice: 23.90,
   },
   PROFISSIONAL: {
-    monthly: 4990,
-    yearlyPrice: 3990, // R$ 39.90 em centavos
+    monthly: 49.90,
+    yearlyPrice: 39.90,
   }
 };
 
@@ -81,57 +81,54 @@ export async function POST(request: Request) {
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
-        const subscriptionValue = isYearly ? planDetails.yearlyPrice / 100 : planDetails.monthly / 100;
+        const subscriptionValue = isYearly ? planDetails.yearlyPrice : planDetails.monthly;
+        const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
+        const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
-        const subscriptionPayload = {
-            customer: customerId,
+        const paymentLinkPayload = {
+            name: description,
+            description: `Acesso ao plano ${planName} do Nutrinea.`,
             billingType: "CREDIT_CARD",
-            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            chargeType: "RECURRENT",
+            subscriptionCycle: cycle,
             value: subscriptionValue,
-            cycle: isYearly ? 'YEARLY' : 'MONTHLY',
-            description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
-            externalReference: userId,
+            externalReference: userId, // Pass the user ID here for webhook reconciliation
         };
 
-        const createSubscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
+        const createPaymentLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'access_token': asaasApiKey,
             },
-            body: JSON.stringify(subscriptionPayload),
+            body: JSON.stringify(paymentLinkPayload),
         });
 
-        const subscriptionData = await createSubscriptionResponse.json() as any;
-        if (!createSubscriptionResponse.ok || subscriptionData.errors) {
-            console.error('Asaas Subscription Creation Error:', subscriptionData.errors);
-            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
-        }
-
-        const latestPayment = subscriptionData.payments?.[0];
-        if (!latestPayment?.invoiceUrl) {
-            throw new Error('Não foi possível obter o link de pagamento da assinatura.');
+        const paymentLinkData = await createPaymentLinkResponse.json() as any;
+        if (!createPaymentLinkResponse.ok || paymentLinkData.errors) {
+            console.error('Asaas Payment Link Creation Error:', paymentLinkData.errors);
+            throw new Error(paymentLinkData.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
         }
 
         return NextResponse.json({
             type: 'CREDIT_CARD',
-            id: latestPayment.id,
-            invoiceUrl: latestPayment.invoiceUrl,
+            id: paymentLinkData.id,
+            url: paymentLinkData.url, // The URL to redirect the user to
         });
 
     } else {
-        const basePriceInCents = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-        let finalPriceInCents = basePriceInCents;
+        const basePrice = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+        let finalPrice = basePrice;
         // Add a 10% surcharge for PIX payments
         if (billingType === 'PIX') {
-            finalPriceInCents = Math.round(finalPriceInCents * 1.10);
+            finalPrice = Math.round(finalPrice * 1.10 * 100) / 100;
         }
         
         // Handle PIX and BOLETO as single payments
         const paymentPayload = {
             customer: customerId,
             billingType: billingType,
-            value: finalPriceInCents / 100, // Convert back to reais
+            value: finalPrice,
             dueDate: format(new Date(), 'yyyy-MM-dd'),
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,
