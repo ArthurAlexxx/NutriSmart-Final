@@ -6,6 +6,34 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { addMonths, addYears } from 'date-fns';
 
 /**
+ * Extracts plan information from a payment description string.
+ * @param description - The payment description (e.g., "Assinatura PREMIUM Anual - Nutrinea").
+ * @returns An object with the planName and billingCycle.
+ */
+function extractPlanInfoFromDescription(description: string): { planName: 'PREMIUM' | 'PROFISSIONAL' | null, billingCycle: 'monthly' | 'yearly' | null } {
+    if (!description) return { planName: null, billingCycle: null };
+    
+    const lowerCaseDesc = description.toLowerCase();
+    
+    let planName: 'PREMIUM' | 'PROFISSIONAL' | null = null;
+    if (lowerCaseDesc.includes('premium')) {
+        planName = 'PREMIUM';
+    } else if (lowerCaseDesc.includes('profissional')) {
+        planName = 'PROFISSIONAL';
+    }
+
+    let billingCycle: 'monthly' | 'yearly' | null = null;
+    if (lowerCaseDesc.includes('anual')) {
+        billingCycle = 'yearly';
+    } else if (lowerCaseDesc.includes('mensal')) {
+        billingCycle = 'monthly';
+    }
+
+    return { planName, billingCycle };
+}
+
+
+/**
  * Updates a user's subscription status in Firestore.
  * This action is called by a trusted server process (like a webhook) which has admin privileges.
  * @param userId - The ID of the user to update.
@@ -66,37 +94,42 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         return { success: false, message: "UserID ou ChargeID inválido." };
     }
 
-    const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
-    if (!abacateApiKey) {
-        console.error("ABACATE_PAY_API_KEY is not configured on the server.");
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const isSandbox = asaasApiKey?.includes('sandbox') || asaasApiKey?.includes('hmlg');
+    const asaasApiUrl = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+
+    if (!asaasApiKey) {
+        console.error("ASAAS_API_KEY is not configured on the server.");
         return { success: false, message: "Gateway de pagamento não configurado." };
     }
 
     try {
-        // 1. Verify payment with AbacatePay
-        const abacateApiUrl = `https://api.abacatepay.com/v1/pixQrCode/check?id=${chargeId}`;
-        const response = await fetch(abacateApiUrl, {
+        // 1. Verify payment with Asaas
+        const response = await fetch(`${asaasApiUrl}/payments/${chargeId}`, {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${abacateApiKey}` },
+            headers: { 'access_token': asaasApiKey },
             cache: 'no-store',
         });
 
         const data = await response.json();
 
-        if (!response.ok || data.data?.status !== 'PAID') {
+        const paidStatuses = ['RECEIVED', 'CONFIRMED'];
+        if (!response.ok || !paidStatuses.includes(data.status)) {
             return { success: false, message: "Pagamento não confirmado ou ainda pendente." };
         }
         
-        const metadata = data.data?.pixQrCode?.metadata;
-        if (!metadata || metadata.externalId !== userId) {
-             return { success: false, message: "Metadados de pagamento inválidos ou não correspondem ao usuário." };
+        // Asaas sends our user ID in the externalReference field
+        if (data.externalReference !== userId) {
+             return { success: false, message: "Dados de pagamento inválidos ou não correspondem ao usuário." };
         }
         
-        const planName = metadata.plan as 'PREMIUM' | 'PROFISSIONAL';
-        const billingCycle = metadata.billingCycle as 'monthly' | 'yearly';
+        const { planName, billingCycle } = extractPlanInfoFromDescription(data.description);
         
-        // 2. Update user document in Firestore using the Admin SDK
-        // This leverages the server's admin privileges via our robust admin initialization.
+        if (!planName || !billingCycle) {
+            return { success: false, message: "Não foi possível determinar o plano a partir da descrição do pagamento." };
+        }
+
+        // 2. Update user document in Firestore
         const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
 
         if (updateResult.success) {

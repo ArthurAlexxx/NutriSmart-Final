@@ -67,6 +67,7 @@ async function handlePayment(event: any) {
         return;
     }
     
+    // Correctly get the user ID from the externalReference field.
     const userId = paymentData?.externalReference;
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     
@@ -85,7 +86,8 @@ async function handlePayment(event: any) {
             await saveWebhookLog(event, 'FAILURE', errorMessage);
         }
     } else {
-        const message = `Webhook de pagamento recebido, mas dados cruciais (userId, plan ou billingCycle) não puderam ser extraídos. externalReference: ${userId}, description: ${paymentData?.description}. O processamento foi ignorado.`;
+        // Log a warning if essential data is missing, but still treat as a "handled" case.
+        const message = `Webhook de pagamento recebido, mas dados cruciais não puderam ser extraídos. externalReference: ${userId}, description: ${paymentData?.description}.`;
         console.warn(message, { payload: event });
         await saveWebhookLog(event, 'SUCCESS', message);
     }
@@ -102,10 +104,10 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Payload malformado.', { status: 400 });
   }
     
-  // Process the payment logic without signature verification
+  // Process the payment logic without signature verification for now
   await handlePayment(event);
       
-  // Always return a success response to Asaas to prevent retries/penalties
+  // Always return a success response to Asaas to prevent retries.
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
 }
 
