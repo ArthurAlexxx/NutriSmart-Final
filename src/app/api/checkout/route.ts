@@ -30,25 +30,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
   }
 
-  const plan = plans[planName as keyof typeof plans];
-  
-  if (!userId || !planName || !customerData) {
-    return NextResponse.json({ error: 'Dados insuficientes para gerar a cobrança (usuário, plano ou dados do cliente).' }, { status: 400 });
-  }
-
-  if (!plan) {
-    return NextResponse.json({ error: 'Plano não encontrado.' }, { status: 404 });
+  if (!userId || !customerData) {
+    return NextResponse.json({ error: 'Dados insuficientes para processar (usuário ou dados do cliente).' }, { status: 400 });
   }
   
   if (!customerData.name || !customerData.email || !customerData.taxId) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  const amountPerMonthInCents = isYearly ? plan.yearly : plan.monthly;
-  const totalAmountInCents = isYearly ? amountPerMonthInCents * 12 : amountPerMonthInCents;
-  const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
-  const totalValue = totalAmountInCents / 100;
-
   try {
     let customerId: string;
 
@@ -88,51 +77,10 @@ export async function POST(request: Request) {
         customerId = newCustomerData.id;
     }
     
-    // 3. Create the payment (charge)
-    const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': asaasApiKey,
-      },
-      body: JSON.stringify({
-        customer: customerId,
-        billingType: 'PIX',
-        value: totalValue,
-        dueDate: new Date(new Date().getTime() + 3600 * 1000).toISOString().split('T')[0], // Expires in 1 hour
-        description,
-        externalReference: userId,
-        metadata: {
-          userId: userId,
-          plan: planName,
-          billingCycle: isYearly ? 'yearly' : 'monthly',
-        },
-      }),
-    });
-
-    const paymentData = await paymentResponse.json() as any;
-
-    if (!paymentResponse.ok || paymentData.errors) {
-      console.error('Asaas API Error:', paymentData.errors);
-      const errorMessage = paymentData.errors?.[0]?.description || 'Erro ao comunicar com o gateway de pagamento.';
-      throw new Error(errorMessage);
-    }
-    
-    // 4. Get the PIX QR Code for the created payment
-    const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentData.id}/pixQrCode`, {
-        headers: { 'access_token': asaasApiKey }
-    });
-
-    const qrCodeData = await qrCodeResponse.json() as any;
-    
-    if (!qrCodeResponse.ok) {
-        throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
-    }
-
+    // DEBUG: Return success after customer creation/retrieval
     return NextResponse.json({
-      id: paymentData.id,
-      brCode: qrCodeData.payload,
-      brCodeBase64: qrCodeData.encodedImage,
+        message: 'Cliente criado/encontrado com sucesso!',
+        customerId: customerId,
     });
 
   } catch (error: any) {
