@@ -5,11 +5,11 @@ import { format } from 'date-fns';
 const plans: { [key: string]: { monthly: number, yearlyPrice: number } } = {
   PREMIUM: {
     monthly: 2990,
-    yearlyPrice: 239,
+    yearlyPrice: 2390, // R$ 23.90 em centavos
   },
   PROFISSIONAL: {
     monthly: 4990,
-    yearlyPrice: 399,
+    yearlyPrice: 3990, // R$ 39.90 em centavos
   }
 };
 
@@ -78,21 +78,16 @@ export async function POST(request: Request) {
         throw new Error('Plano selecionado inválido.');
     }
     
-    const basePriceInReais = isYearly ? (planDetails.yearlyPrice * 12) / 100 : planDetails.monthly / 100;
-    let finalPrice = basePriceInReais;
-
-    // Add a 10% surcharge for PIX payments
-    if (billingType === 'PIX') {
-        finalPrice = parseFloat((finalPrice * 1.10).toFixed(2));
-    }
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
+        const subscriptionValue = isYearly ? planDetails.yearlyPrice / 100 : planDetails.monthly / 100;
+
         const subscriptionPayload = {
             customer: customerId,
             billingType: "CREDIT_CARD",
             nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-            value: isYearly ? planDetails.yearlyPrice : planDetails.price / 100, // Asaas subscription value is per cycle
+            value: subscriptionValue,
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,
@@ -125,11 +120,18 @@ export async function POST(request: Request) {
         });
 
     } else {
+        const basePriceInCents = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+        let finalPriceInCents = basePriceInCents;
+        // Add a 10% surcharge for PIX payments
+        if (billingType === 'PIX') {
+            finalPriceInCents = Math.round(finalPriceInCents * 1.10);
+        }
+        
         // Handle PIX and BOLETO as single payments
         const paymentPayload = {
             customer: customerId,
             billingType: billingType,
-            value: finalPrice,
+            value: finalPriceInCents / 100, // Convert back to reais
             dueDate: format(new Date(), 'yyyy-MM-dd'),
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,
