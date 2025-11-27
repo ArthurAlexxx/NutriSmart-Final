@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     
   try {
       await handlePayment(event);
-      // Asaas expects a 200 OK to confirm receipt.
+      // Asaas expects a 200 OK to confirm receipt with a specific message.
       return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
   } catch (error: any) {
       // If handlePayment throws an error, it means something went wrong in our business logic.
