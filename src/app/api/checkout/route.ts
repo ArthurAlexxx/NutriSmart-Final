@@ -73,89 +73,113 @@ export async function POST(request: Request) {
         customerId = newCustomerData.id;
     }
 
-    // 3. Create a new Payment (Cobrança)
     const planDetails = plans[planName as keyof typeof plans];
     if (!planDetails) {
         throw new Error('Plano selecionado inválido.');
     }
-    const priceInCents = isYearly ? planDetails.yearly * 12 : planDetails.monthly;
+    const priceInCents = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
     const priceInReais = priceInCents / 100;
     
-    const paymentPayload = {
-        customer: customerId,
-        billingType: billingType,
-        value: priceInReais,
-        dueDate: format(new Date(), 'yyyy-MM-dd'),
-        description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
-        externalReference: userId,
-        metadata: {
-            userId: userId,
-            plan: planName,
-            billingCycle: isYearly ? 'yearly' : 'monthly',
-        }
-    };
-
-    const createPaymentResponse = await fetch(`${asaasApiUrl}/payments`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'access_token': asaasApiKey,
-        },
-        body: JSON.stringify(paymentPayload),
-    });
-
-    const paymentData = await createPaymentResponse.json() as any;
-    if (!createPaymentResponse.ok || paymentData.errors) {
-        console.error('Asaas Payment Creation Error:', paymentData.errors);
-        throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
-    }
-
-    const paymentId = paymentData.id;
-
-    // 4. Get specific payment info based on billing type
-    if (billingType === 'PIX') {
-        const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-            method: 'GET',
-            headers: { 'access_token': asaasApiKey },
-            cache: 'no-store',
-        });
-        const qrCodeData = await qrCodeResponse.json() as any;
-        if (!qrCodeResponse.ok || qrCodeData.errors) {
-            throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
-        }
-        return NextResponse.json({
-            type: 'PIX',
-            id: paymentId,
-            payload: qrCodeData.payload,
-            encodedImage: qrCodeData.encodedImage,
-        });
-    }
-
-    if (billingType === 'BOLETO') {
-        const idFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
-            headers: { 'access_token': asaasApiKey }
-        });
-        const idFieldData = await idFieldResponse.json() as any;
-         if (!idFieldResponse.ok) throw new Error(idFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
-        return NextResponse.json({
-            type: 'BOLETO',
-            id: paymentId,
-            identificationField: idFieldData.identificationField,
-            bankSlipUrl: paymentData.bankSlipUrl,
-        });
-    }
-
+    // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
-        // For credit card, we return the invoice URL which contains the payment link
+        const subscriptionPayload = {
+            customer: customerId,
+            billingType: "CREDIT_CARD",
+            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            value: isYearly ? planDetails.yearlyPrice : planDetails.monthly / 100, // Asaas subscription value is per cycle
+            cycle: isYearly ? 'YEARLY' : 'MONTHLY',
+            description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
+            externalReference: userId,
+        };
+
+        const createSubscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'access_token': asaasApiKey,
+            },
+            body: JSON.stringify(subscriptionPayload),
+        });
+
+        const subscriptionData = await createSubscriptionResponse.json() as any;
+        if (!createSubscriptionResponse.ok || subscriptionData.errors) {
+            console.error('Asaas Subscription Creation Error:', subscriptionData.errors);
+            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+        }
+
+        const latestPayment = subscriptionData.payments?.[0];
+        if (!latestPayment?.invoiceUrl) {
+            throw new Error('Não foi possível obter o link de pagamento da assinatura.');
+        }
+
         return NextResponse.json({
             type: 'CREDIT_CARD',
-            id: paymentId,
-            invoiceUrl: paymentData.invoiceUrl,
+            id: latestPayment.id,
+            invoiceUrl: latestPayment.invoiceUrl,
         });
+
+    } else {
+        // Handle PIX and BOLETO as single payments
+        const paymentPayload = {
+            customer: customerId,
+            billingType: billingType,
+            value: priceInReais,
+            dueDate: format(new Date(), 'yyyy-MM-dd'),
+            description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
+            externalReference: userId,
+        };
+
+        const createPaymentResponse = await fetch(`${asaasApiUrl}/payments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'access_token': asaasApiKey,
+            },
+            body: JSON.stringify(paymentPayload),
+        });
+
+        const paymentData = await createPaymentResponse.json() as any;
+        if (!createPaymentResponse.ok || paymentData.errors) {
+            console.error('Asaas Payment Creation Error:', paymentData.errors);
+            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
+        }
+
+        const paymentId = paymentData.id;
+
+        if (billingType === 'PIX') {
+            const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const qrCodeData = await qrCodeResponse.json() as any;
+            if (!qrCodeResponse.ok || qrCodeData.errors) {
+                throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
+            }
+            return NextResponse.json({
+                type: 'PIX',
+                id: paymentId,
+                payload: qrCodeData.payload,
+                encodedImage: qrCodeData.encodedImage,
+            });
+        }
+
+        if (billingType === 'BOLETO') {
+             const idFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
+                headers: { 'access_token': asaasApiKey }
+            });
+            const idFieldData = await idFieldResponse.json() as any;
+            if (!idFieldResponse.ok) throw new Error(idFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
+            
+            return NextResponse.json({
+                type: 'BOLETO',
+                id: paymentId,
+                identificationField: idFieldData.identificationField,
+                bankSlipUrl: paymentData.bankSlipUrl,
+            });
+        }
     }
 
     return NextResponse.json({ error: 'Tipo de cobrança não suportado.' }, { status: 400 });
-
 
   } catch (error: any) {
     console.error('Checkout API Route Error:', error);
