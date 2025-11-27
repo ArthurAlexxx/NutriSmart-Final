@@ -32,6 +32,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
+  const planDetails = plans[planName as keyof typeof plans];
+  if (!planDetails) {
+      return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
+  }
+
   try {
     let customerId: string;
 
@@ -71,24 +76,29 @@ export async function POST(request: Request) {
         }
         customerId = newCustomerData.id;
     }
-
-    const planDetails = plans[planName as keyof typeof plans];
-    if (!planDetails) {
-        throw new Error('Plano selecionado inválido.');
-    }
-    
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
+
+        let cycle: 'MONTHLY' | 'YEARLY';
+        let finalPrice: number;
+
+        if (isYearly) {
+            cycle = 'YEARLY';
+            finalPrice = Math.round(planDetails.yearlyPrice * 12 * 100) / 100;
+        } else {
+            cycle = 'MONTHLY';
+            finalPrice = planDetails.monthly;
+        }
 
         const paymentLinkPayload = {
             name: description,
             description: `Acesso ao plano ${planName} do Nutrinea.`,
             billingType: "CREDIT_CARD",
             chargeType: "RECURRENT",
-            subscriptionCycle: isYearly ? 'YEARLY' : 'MONTHLY',
-            value: isYearly ? planDetails.yearlyPrice : planDetails.monthly,
+            subscriptionCycle: cycle,
+            value: finalPrice,
             maxInstallmentCount: isYearly ? 12 : 1, 
             notificationEnabled: true,
         };
@@ -109,20 +119,14 @@ export async function POST(request: Request) {
             throw new Error(linkData?.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
         }
 
-        // We need to associate our internal user with the subscription that will be created.
-        // Asaas allows passing the externalReference for the subscription through the payment link update.
-        // The customer is also attached to the link here.
         const updatePayload = {
             customer: customerId,
             subscriptionExternalReference: userId,
         };
 
         const updateLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks/${linkData.id}`, {
-             method: 'POST', // POST for update on this endpoint
-             headers: {
-                'Content-Type': 'application/json',
-                'access_token': asaasApiKey,
-            },
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
             body: JSON.stringify(updatePayload),
         });
 
@@ -132,22 +136,20 @@ export async function POST(request: Request) {
             throw new Error(errorData?.errors?.[0]?.description || 'Falha ao associar usuário ao link de pagamento.');
         }
 
-
         return NextResponse.json({
             type: 'CREDIT_CARD',
             id: linkData.id,
-            url: linkData.url, // The URL to redirect the user to
+            url: linkData.url,
         });
 
     } else {
         const basePrice = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         let finalPrice = basePrice;
-        // Add a 10% surcharge for PIX payments
+        
         if (billingType === 'PIX') {
             finalPrice = Math.round(finalPrice * 1.10 * 100) / 100;
         }
         
-        // Handle PIX and BOLETO as single payments
         const paymentPayload = {
             customer: customerId,
             billingType: billingType,
