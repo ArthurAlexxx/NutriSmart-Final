@@ -1,25 +1,23 @@
-
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 
-// Definindo os preços e planos de forma estruturada.
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
   PREMIUM: {
-    monthly: 2990, // R$ 29,90 em centavos
-    yearly: 2390, // R$ 23,90 em centavos (com desconto anual)
+    monthly: 2990,
+    yearly: 2390,
   },
   PROFISSIONAL: {
-    monthly: 4990, // R$ 49,90 em centavos
-    yearly: 3990, // R$ 39,90 em centavos (com desconto anual)
+    monthly: 4990,
+    yearly: 3990,
   }
 };
 
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData } = await request.json();
-  const abacateApiKey = process.env.ABACATE_PAY_API_KEY;
+  const asaasApiKey = process.env.ASAAS_API_KEY;
 
-  if (!abacateApiKey) {
-      console.error('ABACATE_PAY_API_KEY não está configurada no servidor.');
+  if (!asaasApiKey) {
+      console.error('ASAAS_API_KEY não está configurada no servidor.');
       return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
   }
 
@@ -33,30 +31,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Plano não encontrado.' }, { status: 404 });
   }
   
-  if (!customerData.name || !customerData.email || !customerData.cellphone || !customerData.taxId) {
-      return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, Celular, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
+  if (!customerData.name || !customerData.email || !customerData.taxId) {
+      return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
   const amountPerMonthInCents = isYearly ? plan.yearly : plan.monthly;
   const totalAmountInCents = isYearly ? amountPerMonthInCents * 12 : amountPerMonthInCents;
   const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
+  const totalValue = totalAmountInCents / 100;
 
   try {
-    const abacateApiUrl = 'https://api.abacatepay.com/v1/pixQrCode/create';
+    const asaasApiUrl = 'https://www.asaas.com/api/v3/payments';
 
-    const response = await fetch(abacateApiUrl, {
+    const response = await fetch(asaasApiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${abacateApiKey}`,
         'Content-Type': 'application/json',
+        'access_token': asaasApiKey,
       },
       body: JSON.stringify({
-        amount: totalAmountInCents,
+        customer: customerData.id,
+        billingType: 'PIX',
+        value: totalValue,
+        dueDate: new Date(new Date().getTime() + 3600 * 1000).toISOString().split('T')[0], // Expires in 1 hour
         description,
-        customer: customerData,
-        expiresIn: 3600, // QR Code expira em 1 hora
+        externalReference: userId,
         metadata: {
-          externalId: userId,
+          userId: userId,
           plan: planName,
           billingCycle: isYearly ? 'yearly' : 'monthly',
         },
@@ -65,18 +66,27 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    if (!response.ok || data.error) {
-      console.error('AbacatePay API Error:', data.error);
-      const errorMessage = data.error?.message || data.error || 'Erro ao comunicar com o gateway de pagamento.';
+    if (!response.ok || data.errors) {
+      console.error('Asaas API Error:', data.errors);
+      const errorMessage = data.errors?.[0]?.description || 'Erro ao comunicar com o gateway de pagamento.';
       throw new Error(errorMessage);
     }
     
-    const base64Image = data.data.brCodeBase64.replace('data:image/png;base64,', '');
+    // After creating payment, we need to get the QR Code
+    const qrCodeResponse = await fetch(`https://www.asaas.com/api/v3/payments/${data.id}/pixQrCode`, {
+        headers: { 'access_token': asaasApiKey }
+    });
+
+    const qrCodeData = await qrCodeResponse.json();
+    
+    if (!qrCodeResponse.ok) {
+        throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
+    }
 
     return NextResponse.json({
-      id: data.data.id,
-      brCode: data.data.brCode,
-      brCodeBase64: base64Image,
+      id: data.id,
+      brCode: qrCodeData.payload,
+      brCodeBase64: qrCodeData.encodedImage,
     });
 
   } catch (error: any) {

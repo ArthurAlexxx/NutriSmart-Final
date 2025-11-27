@@ -1,4 +1,3 @@
-
 // src/app/admin/finance/page.tsx
 'use client';
 
@@ -8,7 +7,7 @@ import { collection, query, orderBy, where, onSnapshot, Unsubscribe } from 'fire
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import type { WebhookLog } from '@/types/webhook';
 
 import AppLayout from '@/components/app-layout';
@@ -19,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { MonthPicker } from '@/components/ui/month-picker';
 import { Loader2, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/page-header';
 
 interface PaymentData {
     id: string;
@@ -66,16 +66,16 @@ export default function AdminFinancePage() {
         const successfulPayments: PaymentData[] = [];
         snapshot.forEach(doc => {
             const log = doc.data() as WebhookLog;
-            const metadata = log.payload?.data?.pixQrCode?.metadata;
-            const amount = log.payload?.data?.pixQrCode?.amount;
-
-            if (metadata && amount) {
+            const paymentData = log.payload?.payment;
+            
+            if (paymentData) {
+                const metadata = paymentData.metadata;
                 successfulPayments.push({
                     id: doc.id,
-                    userId: metadata.externalId,
-                    amount: amount / 100, // Convert cents to currency unit
-                    plan: metadata.plan,
-                    billingCycle: metadata.billingCycle,
+                    userId: metadata?.userId || paymentData.externalReference || 'N/A',
+                    amount: paymentData.value,
+                    plan: metadata?.plan || 'N/A',
+                    billingCycle: metadata?.billingCycle || 'N/A',
                     paymentDate: log.createdAt.toDate(),
                 });
             }
@@ -115,15 +115,11 @@ export default function AdminFinancePage() {
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
       <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground font-heading flex items-center gap-3">
-                <DollarSign className='h-8 w-8 text-primary' />
-                Painel Financeiro
-            </h1>
-            <p className="text-muted-foreground">Receita e transações de assinaturas da plataforma.</p>
-          </div>
-        </div>
+        <PageHeader 
+          icon={DollarSign}
+          title="Painel Financeiro"
+          description="Receita e transações de assinaturas da plataforma."
+        />
 
         <Card>
           <CardContent className="p-4">
