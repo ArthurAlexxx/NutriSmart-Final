@@ -1,4 +1,3 @@
-
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
@@ -89,8 +88,8 @@ export async function POST(request: Request) {
             billingType: "CREDIT_CARD",
             chargeType: "RECURRENT",
             subscriptionCycle: isYearly ? 'YEARLY' : 'MONTHLY',
-            value: isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly,
-            maxInstallmentCount: 1, 
+            value: isYearly ? planDetails.yearlyPrice : planDetails.monthly,
+            maxInstallmentCount: isYearly ? 12 : 1, 
             notificationEnabled: true,
         };
 
@@ -215,5 +214,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Erro interno do servidor.' }, { status: 500 });
   }
 }
-
-    
