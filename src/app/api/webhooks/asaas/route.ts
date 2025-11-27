@@ -105,7 +105,8 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Payload malformado.', { status: 400 });
   }
 
-  if (process.env.ASAAS_WEBHOOK_SECRET) {
+  // Only verify signature if the secret is set in the environment
+  if (ASAAS_WEBHOOK_SECRET) {
     const headerPayload = headers();
     const signature = headerPayload.get('asaas-webhook-signature');
     
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
     console.log("INFO: Nenhuma variável ASAAS_WEBHOOK_SECRET configurada. Pulando verificação de assinatura.");
   }
     
+  // If signature is valid or not required, process the payment.
   handlePayment(event);
       
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
