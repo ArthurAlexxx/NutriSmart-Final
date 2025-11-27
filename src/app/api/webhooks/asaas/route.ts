@@ -18,7 +18,7 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
             createdAt: new Date(),
         };
         await db.collection('webhook_logs').add(logData);
-    } catch (logError: any) => {
+    } catch (logError: any) {
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
 }
@@ -44,9 +44,10 @@ function verifyAsaasSignature(rawBody: string, signatureFromHeader: string): boo
 async function handlePayment(event: any) {
     const eventName = event?.event;
     if (!eventName) {
-        await saveWebhookLog(event, 'SUCCESS', 'Evento ignorado: campo "event" ausente no payload.');
-        console.log('Webhook recebido, mas ignorado por não conter o campo "event".');
-        return; // Não é um erro, apenas ignoramos.
+        const message = 'Evento ignorado: campo "event" ausente no payload.';
+        await saveWebhookLog(event, 'SUCCESS', message);
+        console.log(message);
+        return;
     }
 
     const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
@@ -54,7 +55,7 @@ async function handlePayment(event: any) {
         const message = `Evento não processado: ${eventName}`;
         await saveWebhookLog(event, 'SUCCESS', message); // Log as success because we correctly ignored it
         console.log(message);
-        return; // Not an error, just an event we don't need to process.
+        return;
     }
 
     const paymentData = event.payment;
@@ -76,7 +77,6 @@ async function handlePayment(event: any) {
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
             } else {
-                // This is a business logic failure, should be logged as such but not cause a 500 error to Asaas
                 await saveWebhookLog(event, 'FAILURE', updateResult.message);
                 console.error(`Falha na lógica de negócio ao processar webhook: ${updateResult.message}`);
             }
@@ -84,12 +84,11 @@ async function handlePayment(event: any) {
             const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
             console.error(errorMessage);
             await saveWebhookLog(event, 'FAILURE', errorMessage);
-            // We don't rethrow here to avoid sending a 500 status to Asaas. We've logged it, that's enough.
         }
     } else {
         const message = 'Webhook de pagamento recebido, mas metadados cruciais (userId, plan ou billingCycle) não encontrados. O processamento foi ignorado.';
         console.warn(message, { payload: event });
-        await saveWebhookLog(event, 'SUCCESS', message); // Logged as SUCCESS because we received it correctly, just couldn't process.
+        await saveWebhookLog(event, 'SUCCESS', message);
     }
 }
 
@@ -106,7 +105,6 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Payload malformado.', { status: 400 });
   }
 
-  // Only verify signature if a secret is provided.
   if (process.env.ASAAS_WEBHOOK_SECRET) {
     const headerPayload = headers();
     const signature = headerPayload.get('asaas-webhook-signature');
@@ -129,21 +127,9 @@ export async function POST(request: NextRequest) {
     console.log("INFO: Nenhuma variável ASAAS_WEBHOOK_SECRET configurada. Pulando verificação de assinatura.");
   }
     
-  try {
-      // Process the payment logic without blocking the response.
-      // We don't await this, so we can immediately return a 200 OK to Asaas.
-      handlePayment(event);
+  handlePayment(event);
       
-      // Asaas expects a 200 OK to confirm receipt.
-      return NextResponse.json({ message: "Webhook recebido com sucesso e agendado para processamento." }, { status: 200 });
-
-  } catch (error: any) {
-      // This catch block is a fallback, but the logic inside handlePayment should prevent it.
-      console.error("Erro inesperado no handler do webhook:", error);
-      // We still return 200 OK because we've received it, even if processing failed.
-      // The error is logged internally.
-      return NextResponse.json({ message: "Webhook recebido, mas ocorreu um erro interno no processamento." }, { status: 200 });
-  }
+  return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
 }
 
 export async function GET() {
