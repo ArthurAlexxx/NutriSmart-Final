@@ -81,9 +81,6 @@ export async function POST(request: Request) {
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
-        const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        // For 'YEARLY' cycle, the value is the total for the year. For 'MONTHLY', it's the monthly price.
-        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
         const paymentLinkPayload = {
@@ -91,11 +88,10 @@ export async function POST(request: Request) {
             description: `Acesso ao plano ${planName} do Nutrinea.`,
             billingType: "CREDIT_CARD",
             chargeType: "RECURRENT",
-            subscriptionCycle: cycle,
-            value: value,
-            maxInstallmentCount: 1, // Cannot be parceled
+            subscriptionCycle: isYearly ? 'YEARLY' : 'MONTHLY',
+            value: isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly,
+            maxInstallmentCount: 1, 
             notificationEnabled: true,
-            // The 'customer' field is no longer needed here as it's part of the payment link URL itself
         };
 
         const createLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
@@ -219,3 +215,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Erro interno do servidor.' }, { status: 500 });
   }
 }
+
+    
