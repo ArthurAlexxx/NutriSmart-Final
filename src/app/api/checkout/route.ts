@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     // Add a 10% surcharge for PIX payments
     if (billingType === 'PIX') {
-        finalPrice *= 1.10;
+        finalPrice = parseFloat((finalPrice * 1.10).toFixed(2));
     }
     
     // 3. Handle payment based on billingType
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
             customer: customerId,
             billingType: "CREDIT_CARD",
             nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-            value: isYearly ? planDetails.yearlyPrice / 100 : planDetails.monthly / 100, // Asaas subscription value is per cycle
+            value: isYearly ? planDetails.yearlyPrice : planDetails.price / 100, // Asaas subscription value is per cycle
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,

@@ -191,14 +191,18 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     if (profile) {
         const storedStatus = profile.subscriptionStatus || 'free';
-        const expiresAt = profile.subscriptionExpiresAt ? (profile.subscriptionExpiresAt as any).toDate() : null;
-
-        const isExpired = expiresAt ? new Date() > expiresAt : false;
         
-        if (storedStatus === 'premium' && !isExpired) {
-            effectiveStatus = 'premium';
-        } else if (storedStatus === 'professional' && !isExpired) {
-            effectiveStatus = 'professional';
+        // Handle Firestore Timestamp object or JavaScript Date object
+        const expiresAt = profile.subscriptionExpiresAt 
+            ? (profile.subscriptionExpiresAt as Timestamp).toDate 
+              ? (profile.subscriptionExpiresAt as Timestamp).toDate() 
+              : profile.subscriptionExpiresAt as Date
+            : null;
+
+        const isExpired = expiresAt ? new Date() > expiresAt : true;
+        
+        if (storedStatus !== 'free' && !isExpired) {
+            effectiveStatus = storedStatus;
         }
     }
 
