@@ -14,6 +14,7 @@ const paymentFormSchema = z.object({
     customerId: z.string().min(1, "O ID do Cliente é obrigatório."),
     value: z.coerce.number().positive("O valor deve ser maior que zero."),
     description: z.string().min(3, "A descrição é obrigatória."),
+    billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD']),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -74,7 +75,7 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
         // 1. Create Payment
         const paymentPayload = {
             customer: data.customerId,
-            billingType: 'PIX',
+            billingType: data.billingType,
             value: data.value,
             dueDate: format(new Date(), 'yyyy-MM-dd'),
             description: data.description,
@@ -100,21 +101,35 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
         
         const paymentId = paymentData.id;
 
-        // 2. Get PIX QR Code
-        const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-            method: 'GET',
-            headers: { 'access_token': asaasApiKey },
-            cache: 'no-store',
-        });
-
-        const qrCodeData = await qrCodeResponse.json();
-         if (!qrCodeResponse.ok) {
-            console.error('Asaas QR Code Fetch Error:', qrCodeData);
-            const errorMessage = qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code.';
-            throw new Error(errorMessage);
+        // 2. Get specific payment info based on billing type
+        if (data.billingType === 'PIX') {
+            const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
+                method: 'GET',
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const qrCodeData = await qrCodeResponse.json();
+            if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
+            return { type: 'PIX', ...qrCodeData };
+        }
+        
+        if (data.billingType === 'BOLETO') {
+             const identificationFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
+                method: 'GET',
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const identificationFieldData = await identificationFieldResponse.json();
+            if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
+            return { type: 'BOLEto', ...identificationFieldData, bankSlipUrl: paymentData.bankSlipUrl };
+        }
+        
+        if (data.billingType === 'CREDIT_CARD') {
+            // For credit card link, the URL is in the original payment response
+            return { type: 'CREDIT_CARD', transactionReceiptUrl: paymentData.transactionReceiptUrl };
         }
 
-        return qrCodeData;
+        throw new Error('Tipo de cobrança não suportado.');
 
     } catch (error: any) {
         console.error('Error creating Asaas payment:', error);

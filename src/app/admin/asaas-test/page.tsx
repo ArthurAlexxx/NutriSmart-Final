@@ -1,11 +1,11 @@
 // src/app/admin/asaas-test/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import AppLayout from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +13,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Send, QrCode, Copy } from 'lucide-react';
+import { Loader2, Send, QrCode, Copy, CreditCard, Barcode, CheckCircle, XCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { createAsaasCustomerAction, createAsaasPaymentAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import type { WebhookLog } from '@/types/webhook';
+import { format } from 'date-fns';
+import Link from 'next/link';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -31,6 +36,7 @@ const paymentFormSchema = z.object({
   customerId: z.string().min(1, "O ID do Cliente é obrigatório."),
   value: z.coerce.number().positive("O valor deve ser maior que zero."),
   description: z.string().min(3, "A descrição é obrigatória."),
+  billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD'], { required_error: 'Selecione um método de pagamento.' }),
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -43,6 +49,15 @@ export default function AsaasTestPage() {
     const [customerApiResponse, setCustomerApiResponse] = useState<any>(null);
     const [paymentApiResponse, setPaymentApiResponse] = useState<any>(null);
 
+    const firestore = useFirestore();
+    const webhookLogsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'webhook_logs'), orderBy('createdAt', 'desc'), limit(1));
+    }, [firestore]);
+
+    const { data: latestWebhook } = useCollection<WebhookLog>(webhookLogsQuery);
+    const lastLog = latestWebhook?.[0];
+
     const customerForm = useForm<CustomerFormValues>({
         resolver: zodResolver(customerFormSchema),
         defaultValues: { name: '', cpfCnpj: '', email: '', phone: '' },
@@ -50,7 +65,7 @@ export default function AsaasTestPage() {
 
     const paymentForm = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentFormSchema),
-        defaultValues: { customerId: '', value: 1.00, description: 'Pagamento de Teste' },
+        defaultValues: { customerId: '', value: 1.00, description: 'Pagamento de Teste', billingType: 'PIX' },
     });
 
     const onCustomerSubmit = async (data: CustomerFormValues) => {
@@ -90,6 +105,66 @@ export default function AsaasTestPage() {
         return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>
     }
     
+    const renderPaymentResult = () => {
+        if (!paymentApiResponse || paymentApiResponse.status !== 'success') {
+            return (
+                <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
+                    <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
+                </ScrollArea>
+            );
+        }
+
+        const { data } = paymentApiResponse;
+
+        switch (data.type) {
+            case 'PIX':
+                return (
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 bg-white rounded-lg border">
+                            <img src={`data:image/png;base64,${data.encodedImage}`} alt="PIX QR Code" width={150} height={150} />
+                        </div>
+                        <Button onClick={() => handleCopyCode(data.payload)} variant="outline" className='w-full'>
+                            <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
+                        </Button>
+                    </div>
+                );
+            case 'BOLETO':
+                 return (
+                    <div className="flex flex-col items-center gap-4 text-left w-full">
+                         <div className="p-4 border rounded-lg w-full">
+                            <FormLabel>Linha Digitável</FormLabel>
+                            <p className="text-sm break-all">{data.identificationField}</p>
+                         </div>
+                        <Button onClick={() => handleCopyCode(data.identificationField)} variant="outline" className='w-full'>
+                            <Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável
+                        </Button>
+                        <Button asChild variant="secondary" className="w-full">
+                            <a href={data.bankSlipUrl} target="_blank" rel="noopener noreferrer">
+                                <Barcode className="mr-2 h-4 w-4" /> Ver Boleto (PDF)
+                            </a>
+                        </Button>
+                    </div>
+                 );
+            case 'CREDIT_CARD':
+                return (
+                    <div className="flex flex-col items-center gap-4 text-left w-full">
+                        <div className="p-4 border rounded-lg w-full">
+                            <FormLabel>Link de Pagamento</FormLabel>
+                             <p className="text-sm text-primary break-all">O link foi gerado e pode ser enviado ao cliente.</p>
+                         </div>
+                        <Button asChild variant="default" className="w-full">
+                            <a href={data.transactionReceiptUrl} target="_blank" rel="noopener noreferrer">
+                                <CreditCard className="mr-2 h-4 w-4" /> Abrir Link de Pagamento
+                            </a>
+                        </Button>
+                    </div>
+                );
+            default:
+                return <p>Tipo de pagamento desconhecido.</p>;
+        }
+    };
+
+
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="p-4 sm:p-6 lg:p-8 space-y-8">
@@ -120,16 +195,27 @@ export default function AsaasTestPage() {
                         </Card>
                         
                          <Card>
-                            <CardHeader><CardTitle>Passo 2: Criar Cobrança PIX</CardTitle><CardDescription>Use o ID do cliente criado para gerar uma cobrança PIX.</CardDescription></CardHeader>
+                            <CardHeader><CardTitle>Passo 2: Criar Cobrança</CardTitle><CardDescription>Use o ID do cliente para gerar uma cobrança.</CardDescription></CardHeader>
                             <CardContent>
                                 <Form {...paymentForm}>
                                     <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
                                         <FormField control={paymentForm.control} name="customerId" render={({ field }) => (<FormItem><FormLabel>ID do Cliente</FormLabel><FormControl><Input {...field} placeholder="Preenchido após o Passo 1" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={paymentForm.control} name="billingType" render={({ field }) => (
+                                            <FormItem><FormLabel>Método de Pagamento</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                                                <SelectTrigger><SelectValue placeholder="Selecione o método" /></SelectTrigger>
+                                            </FormControl><SelectContent>
+                                                <SelectItem value="PIX">PIX</SelectItem>
+                                                <SelectItem value="BOLETO">Boleto</SelectItem>
+                                                <SelectItem value="CREDIT_CARD">Cartão de Crédito (Link)</SelectItem>
+                                            </SelectContent></Select><FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <FormField control={paymentForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={paymentForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descrição</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <Button type="submit" disabled={isLoadingPayment}>
                                             {isLoadingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            <QrCode className="mr-2 h-4 w-4"/> Gerar PIX
+                                            <QrCode className="mr-2 h-4 w-4"/> Gerar Cobrança
                                         </Button>
                                     </form>
                                 </Form>
@@ -137,7 +223,22 @@ export default function AsaasTestPage() {
                         </Card>
                     </div>
 
-                    <div className='space-y-8'>
+                    <div className='space-y-8 sticky top-24'>
+                        {lastLog && (
+                            <Card className="border-green-500 bg-green-500/5">
+                                <CardHeader>
+                                    <CardTitle className='flex items-center gap-2'>
+                                        {lastLog.status === 'SUCCESS' ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
+                                        Último Webhook Recebido
+                                    </CardTitle>
+                                    <CardDescription>{lastLog.createdAt ? format(lastLog.createdAt.toDate(), "dd/MM/yyyy HH:mm:ss") : 'N/A'}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm font-semibold">{lastLog.details}</p>
+                                    <p className="text-xs text-muted-foreground mt-2">Isso confirma que nosso sistema recebeu a notificação do Asaas. Veja a auditoria completa em <Link href="/admin/logs" className='underline'>Logs de Webhooks</Link>.</p>
+                                </CardContent>
+                            </Card>
+                        )}
                         {customerApiResponse && (
                             <Card>
                                 <CardHeader><CardTitle>Resposta - Cliente</CardTitle></CardHeader>
@@ -150,26 +251,9 @@ export default function AsaasTestPage() {
                         )}
                         {paymentApiResponse && (
                              <Card>
-                                <CardHeader><CardTitle>Resposta - Cobrança PIX</CardTitle></CardHeader>
+                                <CardHeader><CardTitle>Resposta - Cobrança</CardTitle></CardHeader>
                                 <CardContent className='space-y-4'>
-                                    {paymentApiResponse.status === 'success' ? (
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="p-4 bg-white rounded-lg border">
-                                                <img src={`data:image/png;base64,${paymentApiResponse.data.encodedImage}`} alt="PIX QR Code" width={150} height={150} />
-                                            </div>
-                                            <Button onClick={() => handleCopyCode(paymentApiResponse.data.payload)} variant="outline" className='w-full'>
-                                                <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
-                                            </Button>
-                                             <div className='w-full text-left'>
-                                                <h4 className='font-semibold'>Webhook de Retorno:</h4>
-                                                <p className='text-sm text-muted-foreground'>O pagamento será confirmado automaticamente via webhook. Para testes locais, pague o PIX e verifique os logs no painel do Asaas.</p>
-                                             </div>
-                                        </div>
-                                    ) : (
-                                        <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
-                                            <pre className="text-sm">{JSON.stringify(paymentApiResponse.data, null, 2)}</pre>
-                                        </ScrollArea>
-                                    )}
+                                    {renderPaymentResult()}
                                 </CardContent>
                             </Card>
                         )}
