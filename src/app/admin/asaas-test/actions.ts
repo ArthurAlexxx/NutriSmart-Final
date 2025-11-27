@@ -126,7 +126,7 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
             // Combine the initial payment response (for bankSlipUrl) with the identification field data
             return { 
                 type: 'BOLETO', 
-                ...identificationFieldData, 
+                identificationField: identificationFieldData.identificationField,
                 bankSlipUrl: paymentData.bankSlipUrl 
             };
         }
