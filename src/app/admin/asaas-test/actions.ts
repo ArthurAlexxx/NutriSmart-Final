@@ -4,22 +4,17 @@
 import * as z from 'zod';
 import { format } from 'date-fns';
 
-const customerFormSchema = z.object({
+const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().optional(),
+  billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD']),
+  value: z.coerce.number().positive("O valor deve ser maior que zero."),
+  description: z.string().min(3, "A descrição é obrigatória."),
 });
 
-const paymentFormSchema = z.object({
-    customerId: z.string().min(1, "O ID do Cliente é obrigatório."),
-    value: z.coerce.number().positive("O valor deve ser maior que zero."),
-    description: z.string().min(3, "A descrição é obrigatória."),
-    billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD']),
-});
-
-type CustomerFormValues = z.infer<typeof customerFormSchema>;
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 const getAsaasApiUrl = () => {
     const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -28,54 +23,50 @@ const getAsaasApiUrl = () => {
 };
 
 
-export async function createAsaasCustomerAction(data: CustomerFormValues): Promise<any> {
+export async function createCustomerAndPaymentAction(data: FormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
 
     if (!asaasApiKey) {
         throw new Error('ASAAS_API_KEY não está configurada no servidor.');
     }
-    
+
     try {
-        const response = await fetch(`${asaasApiUrl}/customers`, {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/json',
-                'access_token': asaasApiKey,
-            },
-            body: JSON.stringify(data),
+        // 1. Check if customer exists
+        const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${data.cpfCnpj}`, {
+            headers: { 'access_token': asaasApiKey },
             cache: 'no-store',
         });
+        const searchResult = await customerSearchResponse.json();
 
-        const responseData = await response.json();
+        let customerId: string;
 
-        if (!response.ok) {
-            console.error('Asaas API Error:', responseData);
-            const errorMessage = responseData.errors?.[0]?.description || `Falha na requisição: ${response.statusText}`;
-            throw new Error(errorMessage);
+        if (searchResult.totalCount > 0) {
+            customerId = searchResult.data[0].id;
+        } else {
+            // 2. If not, create customer
+            const createCustomerPayload = {
+                name: data.name,
+                email: data.email,
+                mobilePhone: data.phone,
+                cpfCnpj: data.cpfCnpj,
+            };
+            const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+                body: JSON.stringify(createCustomerPayload),
+                cache: 'no-store',
+            });
+            const newCustomerData = await createCustomerResponse.json();
+            if (!createCustomerResponse.ok) {
+                throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
+            }
+            customerId = newCustomerData.id;
         }
 
-        return responseData;
-
-    } catch (error: any) {
-        console.error('Error creating Asaas customer:', error);
-        throw new Error(error.message || 'Erro desconhecido ao criar cliente no Asaas.');
-    }
-}
-
-export async function createAsaasPaymentAction(data: PaymentFormValues): Promise<any> {
-    const asaasApiKey = process.env.ASAAS_API_KEY;
-    const asaasApiUrl = getAsaasApiUrl();
-
-    if (!asaasApiKey) {
-        throw new Error('ASAAS_API_KEY não está configurada no servidor.');
-    }
-
-    try {
-        // 1. Create Payment
+        // 3. Create Payment
         const paymentPayload = {
-            customer: data.customerId,
+            customer: customerId,
             billingType: data.billingType,
             value: data.value,
             dueDate: format(new Date(), 'yyyy-MM-dd'),
@@ -84,25 +75,19 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
 
         const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
             method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/json',
-                'access_token': asaasApiKey,
-            },
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
             body: JSON.stringify(paymentPayload),
             cache: 'no-store',
         });
 
         const paymentData = await paymentResponse.json();
         if (!paymentResponse.ok) {
-            console.error('Asaas Payment Creation Error:', paymentData);
-            const errorMessage = paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.';
-            throw new Error(errorMessage);
+            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
         }
         
         const paymentId = paymentData.id;
 
-        // 2. Get specific payment info based on billing type
+        // 4. Get specific payment info based on billing type
         if (data.billingType === 'PIX') {
             const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
                 method: 'GET',
@@ -123,7 +108,6 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
             const identificationFieldData = await identificationFieldResponse.json();
             if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
             
-            // Combine the initial payment response (for bankSlipUrl) with the identification field data
             return { 
                 type: 'BOLETO', 
                 identificationField: identificationFieldData.identificationField,
@@ -132,14 +116,13 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
         }
         
         if (data.billingType === 'CREDIT_CARD') {
-            // For credit card link, the URL is in the original payment response
             return { type: 'CREDIT_CARD', transactionReceiptUrl: paymentData.transactionReceiptUrl };
         }
 
         throw new Error('Tipo de cobrança não suportado.');
 
     } catch (error: any) {
-        console.error('Error creating Asaas payment:', error);
-        throw new Error(error.message || 'Erro desconhecido ao criar cobrança no Asaas.');
+        console.error('Error in createCustomerAndPaymentAction:', error);
+        throw new Error(error.message || 'Erro desconhecido ao processar a requisição no Asaas.');
     }
 }

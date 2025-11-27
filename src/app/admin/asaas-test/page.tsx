@@ -1,7 +1,7 @@
 // src/app/admin/asaas-test/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Send, QrCode, Copy, CreditCard, Barcode, CheckCircle, XCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { createAsaasCustomerAction, createAsaasPaymentAction } from './actions';
+import { createCustomerAndPaymentAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
@@ -23,30 +23,22 @@ import type { WebhookLog } from '@/types/webhook';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
-const customerFormSchema = z.object({
+const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().optional(),
-});
-
-type CustomerFormValues = z.infer<typeof customerFormSchema>;
-
-const paymentFormSchema = z.object({
-  customerId: z.string().min(1, "O ID do Cliente é obrigatório."),
+  billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD'], { required_error: 'Selecione um método de pagamento.' }),
   value: z.coerce.number().positive("O valor deve ser maior que zero."),
   description: z.string().min(3, "A descrição é obrigatória."),
-  billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD'], { required_error: 'Selecione um método de pagamento.' }),
 });
 
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 export default function AsaasTestPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
     const { toast } = useToast();
-    const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
-    const [isLoadingPayment, setIsLoadingPayment] = useState(false);
-    const [customerApiResponse, setCustomerApiResponse] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [paymentApiResponse, setPaymentApiResponse] = useState<any>(null);
 
     const firestore = useFirestore();
@@ -58,47 +50,36 @@ export default function AsaasTestPage() {
     const { data: latestWebhook } = useCollection<WebhookLog>(webhookLogsQuery);
     const lastLog = latestWebhook?.[0];
 
-    const customerForm = useForm<CustomerFormValues>({
-        resolver: zodResolver(customerFormSchema),
-        defaultValues: { name: '', cpfCnpj: '', email: '', phone: '' },
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+          name: '',
+          cpfCnpj: '',
+          email: '',
+          phone: '',
+          billingType: 'PIX',
+          value: 1.00,
+          description: 'Pagamento de Teste',
+        },
     });
 
-    const paymentForm = useForm<PaymentFormValues>({
-        resolver: zodResolver(paymentFormSchema),
-        defaultValues: { customerId: '', value: 1.00, description: 'Pagamento de Teste', billingType: 'PIX' },
-    });
-
-    const onCustomerSubmit = async (data: CustomerFormValues) => {
-        setIsLoadingCustomer(true);
-        setCustomerApiResponse(null);
-        try {
-            const result = await createAsaasCustomerAction(data);
-            setCustomerApiResponse({ status: 'success', data: result });
-            paymentForm.setValue('customerId', result.id); // Sincroniza o ID do cliente
-            toast({ title: "Cliente Criado!", description: `ID ${result.id} preenchido no Passo 2.` });
-        } catch (error: any) {
-            setCustomerApiResponse({ status: 'error', data: { message: error.message } });
-        } finally {
-            setIsLoadingCustomer(false);
-        }
-    };
-    
-    const onPaymentSubmit = async (data: PaymentFormValues) => {
-        setIsLoadingPayment(true);
+    const onSubmit = async (data: FormValues) => {
+        setIsLoading(true);
         setPaymentApiResponse(null);
         try {
-            const result = await createAsaasPaymentAction(data);
+            const result = await createCustomerAndPaymentAction(data);
             setPaymentApiResponse({ status: 'success', data: result });
+            toast({ title: "Cobrança Gerada!", description: `Cobrança via ${data.billingType} foi criada com sucesso.` });
         } catch (error: any) {
             setPaymentApiResponse({ status: 'error', data: { message: error.message } });
         } finally {
-            setIsLoadingPayment(false);
+            setIsLoading(false);
         }
     };
     
     const handleCopyCode = (code: string) => {
         navigator.clipboard.writeText(code);
-        toast({ title: 'Código Copiado!', description: 'Você pode usar o PIX Copia e Cola no seu banco.' });
+        toast({ title: 'Código Copiado!', description: 'Você pode usar o código no seu banco.' });
     };
 
     if (isUserLoading) {
@@ -164,43 +145,30 @@ export default function AsaasTestPage() {
         }
     };
 
-
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="p-4 sm:p-6 lg:p-8 space-y-8">
                 <PageHeader
                     icon={Send}
                     title="Teste de API - Asaas"
-                    description="Página para testes manuais de integração com a API do Asaas."
+                    description="Página para testes manuais de ponta a ponta com a API do Asaas."
                 />
 
                 <div className='grid grid-cols-1 lg:grid-cols-2 gap-8 items-start'>
                     <div className='space-y-8'>
                         <Card>
-                            <CardHeader><CardTitle>Passo 1: Criar Cliente</CardTitle><CardDescription>Envie uma requisição para criar um novo cliente na plataforma Asaas.</CardDescription></CardHeader>
+                            <CardHeader><CardTitle>Gerar Cliente e Cobrança</CardTitle><CardDescription>Preencha os dados para criar um cliente (ou usar um existente) e gerar uma cobrança.</CardDescription></CardHeader>
                             <CardContent>
-                                <Form {...customerForm}>
-                                    <form onSubmit={customerForm.handleSubmit(onCustomerSubmit)} className="space-y-4">
-                                        <FormField control={customerForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} placeholder="Nome do Cliente" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={customerForm.control} name="cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} placeholder="000.000.000-00" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" placeholder="cliente@email.com" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular (Opcional)</FormLabel><FormControl><Input {...field} placeholder="(XX) XXXXX-XXXX" /></FormControl><FormMessage /></FormItem>)} />
-                                        <Button type="submit" disabled={isLoadingCustomer}>
-                                            {isLoadingCustomer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Criar Cliente
-                                        </Button>
-                                    </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
-                        
-                         <Card>
-                            <CardHeader><CardTitle>Passo 2: Criar Cobrança</CardTitle><CardDescription>Use o ID do cliente para gerar uma cobrança.</CardDescription></CardHeader>
-                            <CardContent>
-                                <Form {...paymentForm}>
-                                    <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
-                                        <FormField control={paymentForm.control} name="customerId" render={({ field }) => (<FormItem><FormLabel>ID do Cliente</FormLabel><FormControl><Input {...field} placeholder="Preenchido após o Passo 1" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={paymentForm.control} name="billingType" render={({ field }) => (
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} placeholder="Nome do Cliente" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} placeholder="000.000.000-00" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" placeholder="cliente@email.com" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular (Opcional)</FormLabel><FormControl><Input {...field} placeholder="(XX) XXXXX-XXXX" /></FormControl><FormMessage /></FormItem>)} />
+                                        
+                                        <Separator className="my-6" />
+
+                                        <FormField control={form.control} name="billingType" render={({ field }) => (
                                             <FormItem><FormLabel>Método de Pagamento</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
                                                 <SelectTrigger><SelectValue placeholder="Selecione o método" /></SelectTrigger>
@@ -211,11 +179,12 @@ export default function AsaasTestPage() {
                                             </SelectContent></Select><FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={paymentForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={paymentForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descrição</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <Button type="submit" disabled={isLoadingPayment}>
-                                            {isLoadingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            <QrCode className="mr-2 h-4 w-4"/> Gerar Cobrança
+                                        <FormField control={form.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descrição</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        
+                                        <Button type="submit" disabled={isLoading} className="w-full">
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <QrCode className="mr-2 h-4 w-4"/>}
+                                            Gerar Cobrança
                                         </Button>
                                     </form>
                                 </Form>
@@ -239,19 +208,9 @@ export default function AsaasTestPage() {
                                 </CardContent>
                             </Card>
                         )}
-                        {customerApiResponse && (
-                            <Card>
-                                <CardHeader><CardTitle>Resposta - Cliente</CardTitle></CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
-                                        <pre className="text-sm">{JSON.stringify(customerApiResponse.data, null, 2)}</pre>
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
-                        )}
                         {paymentApiResponse && (
                              <Card>
-                                <CardHeader><CardTitle>Resposta - Cobrança</CardTitle></CardHeader>
+                                <CardHeader><CardTitle>Resultado da Cobrança</CardTitle></CardHeader>
                                 <CardContent className='space-y-4'>
                                     {renderPaymentResult()}
                                 </CardContent>
