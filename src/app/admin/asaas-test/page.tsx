@@ -66,6 +66,14 @@ export default function AsaasTestPage() {
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true);
         setPaymentApiResponse(null);
+
+        if (data.billingType === 'CREDIT_CARD') {
+            window.open('https://sandbox.asaas.com/c/339x2iwzo849irrx', '_blank');
+            toast({ title: "Link Aberto!", description: `O link de pagamento com cartão foi aberto em uma nova aba.` });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const result = await createCustomerAndPaymentAction(data);
             setPaymentApiResponse({ status: 'success', data: result });
