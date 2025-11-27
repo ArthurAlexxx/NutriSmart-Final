@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
@@ -16,6 +17,11 @@ const plans: { [key: string]: { monthly: number, yearlyPrice: number } } = {
 const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
     return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+const getAsaasInvoiceBaseUrl = () => {
+    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
+    return isSandbox ? 'https://sandbox.asaas.com/i' : 'https://www.asaas.com/i';
 };
 
 
@@ -82,14 +88,14 @@ export async function POST(request: Request) {
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
         const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        const subscriptionValue = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
         const subscriptionPayload = {
             customer: customerId,
             billingType: "CREDIT_CARD",
             cycle: cycle,
-            value: subscriptionValue,
+            value: value,
             nextDueDate: format(new Date(), 'yyyy-MM-dd'),
             description: description,
             externalReference: userId,
@@ -105,13 +111,15 @@ export async function POST(request: Request) {
         });
 
         const subscriptionData = await createSubscriptionResponse.json() as any;
-        if (!createSubscriptionResponse.ok || subscriptionData.errors) {
-            console.error('Asaas Subscription Creation Error:', subscriptionData.errors);
-            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+        if (!createSubscriptionResponse.ok || !subscriptionData || subscriptionData.errors) {
+            console.error('Asaas Subscription Creation Error:', subscriptionData?.errors);
+            throw new Error(subscriptionData?.errors?.[0]?.description || 'Falha ao criar a assinatura.');
         }
 
         // The first invoice is created automatically, we redirect the user to it.
-        const firstInvoiceUrl = subscriptionData.invoices[0]?.invoiceUrl;
+        // We construct the URL manually as the 'invoices' array might not be in the response.
+        const firstInvoiceUrl = `${getAsaasInvoiceBaseUrl()}/${subscriptionData.id}`;
+        
         if (!firstInvoiceUrl) {
            throw new Error('Não foi possível obter a fatura inicial da assinatura.');
         }
