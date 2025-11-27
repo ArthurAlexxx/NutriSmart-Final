@@ -3,8 +3,8 @@
 
 import OpenAI from 'openai';
 import type { Totals } from '@/types/meal';
-import { analyzeMealFromPhoto } from '@/app/ai/flows/analyze-meal-from-photo';
-import type { AnalyzeMealOutput } from '@/app/ai/flows/analyze-meal-from-photo';
+import { analyzeMealFromPhotoAction } from '@/app/actions/ai-actions';
+import type { AnalyzeMealOutput } from '@/lib/ai-schemas';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -107,7 +107,7 @@ export async function getNutritionalInfo(data: AddMealFormData): Promise<GetNutr
  */
 export async function getNutritionalInfoFromPhoto(photoDataUri: string, mealType: string): Promise<GetNutritionalInfoResult> {
   try {
-    const result: AnalyzeMealOutput = await analyzeMealFromPhoto({ photoDataUri, mealType });
+    const result: AnalyzeMealOutput = await analyzeMealFromPhotoAction({ photoDataUri, mealType });
 
     const totals: Totals = {
       calorias: result.calories,
@@ -126,4 +126,3 @@ export async function getNutritionalInfoFromPhoto(photoDataUri: string, mealType
     };
   }
 }
-    

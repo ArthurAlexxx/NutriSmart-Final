@@ -8,7 +8,7 @@
  * - AnalyzeMealOutput - The return type for the analyzeMealFromPhoto function.
  */
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 export const AnalyzeMealInputSchema = z.object({
   photoDataUri: z
