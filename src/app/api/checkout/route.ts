@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         headers: { 'access_token': asaasApiKey }
     });
     
-    const searchResult = await customerSearchResponse.json();
+    const searchResult = await customerSearchResponse.json() as any;
 
     if (searchResult.totalCount > 0) {
         customerId = searchResult.data[0].id;
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
                 externalReference: userId,
             }),
         });
-        const newCustomerData = await createCustomerResponse.json();
+        const newCustomerData = await createCustomerResponse.json() as any;
         if (!createCustomerResponse.ok) {
             throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
         }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       }),
     });
 
-    const paymentData = await paymentResponse.json();
+    const paymentData = await paymentResponse.json() as any;
 
     if (!paymentResponse.ok || paymentData.errors) {
       console.error('Asaas API Error:', paymentData.errors);
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         headers: { 'access_token': asaasApiKey }
     });
 
-    const qrCodeData = await qrCodeResponse.json();
+    const qrCodeData = await qrCodeResponse.json() as any;
     
     if (!qrCodeResponse.ok) {
         throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
