@@ -1,6 +1,5 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
-import fetch from 'node-fetch';
 import { format } from 'date-fns';
 
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
