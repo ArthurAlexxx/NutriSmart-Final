@@ -1,13 +1,9 @@
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
-import * as crypto from 'crypto';
-import { headers } from 'next/headers';
 import { updateUserSubscriptionAction } from '@/app/actions/billing-actions';
 
 export const dynamic = 'force-dynamic';
-
-const ASAAS_WEBHOOK_SECRET = process.env.ASAAS_WEBHOOK_SECRET;
 
 async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', details: string) {
     try {
@@ -21,24 +17,6 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
     } catch (logError: any) {
         console.error("CRITICAL: Failed to save webhook log.", logError.message);
     }
-}
-
-function verifyAsaasSignature(rawBody: string, signatureFromHeader: string): boolean {
-  if (!ASAAS_WEBHOOK_SECRET) {
-    console.error("Asaas webhook secret is not configured.");
-    return false;
-  }
-  try {
-    const expectedSig = crypto
-      .createHmac("sha256", ASAAS_WEBHOOK_SECRET)
-      .update(rawBody)
-      .digest("hex");
-
-    return expectedSig === signatureFromHeader;
-  } catch (error) {
-    console.error("Error during Asaas signature verification:", error);
-    return false;
-  }
 }
 
 async function handlePayment(event: any) {
@@ -93,45 +71,20 @@ async function handlePayment(event: any) {
 }
 
 export async function POST(request: NextRequest) {
-  let rawBody;
   let event;
   try {
-    rawBody = await request.text();
-    event = JSON.parse(rawBody);
+    event = await request.json();
   } catch (error: any) {
       const errorMessage = `Erro fatal ao fazer parse do corpo do webhook: ${error.message}`;
       console.error(errorMessage);
-      await saveWebhookLog({body: rawBody}, 'FAILURE', errorMessage);
+      await saveWebhookLog({body: "Invalid JSON"}, 'FAILURE', errorMessage);
       return new NextResponse('Payload malformado.', { status: 400 });
   }
-
-  // Only verify signature if the secret is set in the environment
-  if (ASAAS_WEBHOOK_SECRET) {
-    const headerPayload = headers();
-    const signature = headerPayload.get('asaas-webhook-signature');
     
-    if (!signature) {
-       const msg = 'Requisição de webhook do Asaas recebida sem assinatura no cabeçalho.';
-       console.warn(msg);
-       await saveWebhookLog(event, 'FAILURE', msg);
-       return new NextResponse('Assinatura do webhook ausente.', { status: 403 });
-    }
-
-    const isSignatureValid = verifyAsaasSignature(rawBody, signature);
-    if (!isSignatureValid) {
-        const msg = 'Assinatura de webhook do Asaas inválida recebida.';
-        console.warn(msg);
-        await saveWebhookLog(event, 'FAILURE', msg);
-        return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
-    }
-  } else {
-    // This message is important for debugging in environments without the secret.
-    console.log("INFO: Nenhuma variável ASAAS_WEBHOOK_SECRET configurada. Pulando verificação de assinatura.");
-  }
-    
-  // If signature is valid or not required, process the payment.
+  // Process the payment logic without signature verification
   await handlePayment(event);
       
+  // Always return a success response to Asaas to prevent retries/penalties
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
 }
 
