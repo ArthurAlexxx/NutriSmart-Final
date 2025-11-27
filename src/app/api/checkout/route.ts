@@ -115,7 +115,9 @@ export async function POST(request: Request) {
     // 4. Get specific payment info based on billing type
     if (billingType === 'PIX') {
         const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-            headers: { 'access_token': asaasApiKey }
+            method: 'GET',
+            headers: { 'access_token': asaasApiKey },
+            cache: 'no-store',
         });
         const qrCodeData = await qrCodeResponse.json() as any;
         if (!qrCodeResponse.ok || qrCodeData.errors) {
