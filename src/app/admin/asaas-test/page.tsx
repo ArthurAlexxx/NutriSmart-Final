@@ -29,16 +29,8 @@ const formSchema = z.object({
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().optional(),
   billingType: z.enum(['PIX', 'BOLETO', 'CREDIT_CARD'], { required_error: 'Selecione um método de pagamento.' }),
-  value: z.coerce.number().positive("O valor deve ser maior que zero."),
+  value: z.coerce.number().min(5, "O valor mínimo para cobranças é R$ 5,00."),
   description: z.string().min(3, "A descrição é obrigatória."),
-}).refine(data => {
-    if (data.billingType === 'BOLETO') {
-        return data.value >= 5;
-    }
-    return true;
-}, {
-    message: 'O valor mínimo para boletos é R$ 5,00.',
-    path: ['value'], // apply the error to the value field
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -66,7 +58,7 @@ export default function AsaasTestPage() {
           email: '',
           phone: '',
           billingType: 'PIX',
-          value: 1.00,
+          value: 5.00,
           description: 'Pagamento de Teste',
         },
     });
