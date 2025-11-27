@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
         const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        // The value per cycle. For yearly, it's monthly price * 12. For monthly, it's just the monthly price.
+        // For 'YEARLY' cycle, the value is the total for the year. For 'MONTHLY', it's the monthly price.
         const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
             value: value,
             maxInstallmentCount: 1, // Cannot be parceled
             notificationEnabled: true,
-            customer: customerId,
+            // The 'customer' field is no longer needed here as it's part of the payment link URL itself
         };
 
         const createLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
@@ -113,13 +114,15 @@ export async function POST(request: Request) {
             throw new Error(linkData?.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
         }
 
-        // The externalReference needs to be set on the subscription that will be created.
-        // We do this by updating the payment link to pass the externalReference to the subscription.
+        // We need to associate our internal user with the subscription that will be created.
+        // Asaas allows passing the externalReference for the subscription through the payment link update.
+        // The customer is also attached to the link here.
         const updatePayload = {
+            customer: customerId,
             subscriptionExternalReference: userId,
         };
 
-        await fetch(`${asaasApiUrl}/paymentLinks/${linkData.id}`, {
+        const updateLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks/${linkData.id}`, {
              method: 'POST', // POST for update on this endpoint
              headers: {
                 'Content-Type': 'application/json',
@@ -127,6 +130,12 @@ export async function POST(request: Request) {
             },
             body: JSON.stringify(updatePayload),
         });
+
+        if (!updateLinkResponse.ok) {
+            const errorData = await updateLinkResponse.json();
+            console.error('Asaas Payment Link Update Error:', errorData?.errors);
+            throw new Error(errorData?.errors?.[0]?.description || 'Falha ao associar usuário ao link de pagamento.');
+        }
 
 
         return NextResponse.json({

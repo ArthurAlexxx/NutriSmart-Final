@@ -1,3 +1,4 @@
+
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -67,8 +68,8 @@ async function handlePayment(event: any) {
         return;
     }
     
-    // Correctly get the user ID from the externalReference field.
-    const userId = paymentData?.externalReference;
+    // For single payments, externalReference is on payment. For subscriptions, it's on subscription.
+    const userId = paymentData?.externalReference || paymentData?.subscription?.externalReference;
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     
     if (userId && planName && billingCycle) {
