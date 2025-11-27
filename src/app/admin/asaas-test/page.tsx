@@ -113,7 +113,7 @@ export default function AsaasTestPage() {
                  return (
                     <div className="flex flex-col items-center gap-4 text-left w-full">
                          <div className="p-4 border rounded-lg w-full">
-                            <FormLabel>Linha Digitável</FormLabel>
+                            <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2">Linha Digitável</p>
                             <p className="text-sm break-all">{data.identificationField}</p>
                          </div>
                         <Button onClick={() => handleCopyCode(data.identificationField)} variant="outline" className='w-full'>
@@ -130,7 +130,7 @@ export default function AsaasTestPage() {
                 return (
                     <div className="flex flex-col items-center gap-4 text-left w-full">
                         <div className="p-4 border rounded-lg w-full">
-                            <FormLabel>Link de Pagamento</FormLabel>
+                            <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2">Link de Pagamento</p>
                              <p className="text-sm text-primary break-all">O link foi gerado e pode ser enviado ao cliente.</p>
                          </div>
                         <Button asChild variant="default" className="w-full">
