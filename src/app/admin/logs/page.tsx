@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PageHeader } from '@/components/page-header';
 
 function AdminLogsPage() {
   const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
@@ -51,17 +52,13 @@ function AdminLogsPage() {
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-8">
-            <div>
-                <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
-                    <Webhook className='h-8 w-8 text-primary' />
-                    Logs de Webhooks
-                </h1>
-                <p className="text-muted-foreground">Auditoria de eventos recebidos pelo gateway de pagamento.</p>
-            </div>
-        </div>
+        <PageHeader
+            icon={Webhook}
+            title="Logs de Webhooks"
+            description="Auditoria de eventos recebidos pelo gateway de pagamento Asaas."
+        />
         
-        <Card>
+        <Card className="mt-8">
           <CardHeader>
             <CardTitle>Histórico de Eventos</CardTitle>
             <CardDescription>Logs de todos os webhooks recebidos pela plataforma.</CardDescription>

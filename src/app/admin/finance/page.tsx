@@ -68,7 +68,7 @@ export default function AdminFinancePage() {
             const log = doc.data() as WebhookLog;
             const paymentData = log.payload?.payment;
             
-            if (paymentData) {
+            if (paymentData && (log.details.includes('PAYMENT_RECEIVED') || log.details.includes('PAYMENT_CONFIRMED'))) {
                 const metadata = paymentData.metadata;
                 successfulPayments.push({
                     id: doc.id,
