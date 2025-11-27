@@ -1,3 +1,4 @@
+// src/app/admin/asaas-test/actions.ts
 'use server';
 
 import * as z from 'zod';
@@ -121,7 +122,13 @@ export async function createAsaasPaymentAction(data: PaymentFormValues): Promise
             });
             const identificationFieldData = await identificationFieldResponse.json();
             if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
-            return { type: 'BOLEto', ...identificationFieldData, bankSlipUrl: paymentData.bankSlipUrl };
+            
+            // Combine the initial payment response (for bankSlipUrl) with the identification field data
+            return { 
+                type: 'BOLETO', 
+                ...identificationFieldData, 
+                bankSlipUrl: paymentData.bankSlipUrl 
+            };
         }
         
         if (data.billingType === 'CREDIT_CARD') {
