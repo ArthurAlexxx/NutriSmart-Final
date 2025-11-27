@@ -37,7 +37,6 @@
       "type": "object",
       "description": "Represents a structured meal plan for a user.",
       "properties": {
-        "id": { "type": "string" },
         "name": { "type": "string" },
         "meals": { 
           "type": "array", 
@@ -48,7 +47,7 @@
         "proteinGoal": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
+      "required": ["meals", "hydrationGoal", "calorieGoal", "proteinGoal", "createdAt"]
     },
     "MealPlanItem": {
       "title": "MealPlanItem",
@@ -167,7 +166,7 @@
         "path": "/users/{userId}/plans/{planId}",
         "definition": {
           "schema": { "$ref": "#/entities/ActivePlan" },
-          "description": "Stores user-specific meal plans, such as the active plan."
+          "description": "Stores user-specific meal plans, such as the active plan. Only 'active' is used for planId."
         }
       },
        {

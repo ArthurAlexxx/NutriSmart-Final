@@ -10,7 +10,7 @@ import { Loader2, BookCopy, BrainCircuit, ChevronsUpDown, History, BookUp, Trash
 import type { UserProfile } from '@/types/user';
 import type { ActivePlan } from '@/types/plan';
 import type { Room } from '@/types/room';
-import PlanEditor from '@/components/pro/plan-editor';
+import PlanEditor from '@/app/pro/plan-editor';
 import MealPlanView from '@/components/meal-plan-view';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"

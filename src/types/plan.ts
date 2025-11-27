@@ -18,3 +18,15 @@ export interface ActivePlan {
     proteinGoal: number; 
     createdAt: Timestamp | { seconds: number; nanoseconds: number; };
 }
+
+// Added for plan templates library
+export interface PlanTemplate {
+    id: string;
+    name: string;
+    description: string;
+    calorieGoal: number;
+    proteinGoal: number;
+    hydrationGoal: number;
+    meals: MealPlanItem[];
+    createdAt: Timestamp;
+}
