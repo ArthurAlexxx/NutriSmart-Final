@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
   }
 
-  if (!userId || !customerData || !customerData.name || !customerData.email || !customerData.taxId) {
+  if (!userId || !customerData || !customerData.fullName || !customerData.email || !customerData.taxId) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
@@ -38,7 +38,8 @@ export async function POST(request: Request) {
 
     // 1. Check if customer exists in Asaas
     const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
-        headers: { 'access_token': asaasApiKey }
+        headers: { 'access_token': asaasApiKey },
+        cache: 'no-store',
     });
     
     const searchResult = await customerSearchResponse.json() as any;
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     } else {
         // 2. If not, create the customer
         const createCustomerPayload = {
-            name: customerData.name,
+            name: customerData.fullName,
             email: customerData.email,
             mobilePhone: customerData.phone,
             cpfCnpj: customerData.taxId,

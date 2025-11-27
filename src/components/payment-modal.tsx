@@ -82,7 +82,7 @@ export default function PaymentModal({ isOpen, onOpenChange, plan, isYearly, use
   }, [isOpen, userProfile, form, plan.name, lastPlanName, paymentResult]);
 
 
-  const generatePayment = async (customerData: any, billingType: PaymentMethod) => {
+  const generatePayment = async (customerData: CustomerDataFormValues, billingType: PaymentMethod) => {
     setIsLoading(true);
     setError(null);
 
@@ -113,6 +113,7 @@ export default function PaymentModal({ isOpen, onOpenChange, plan, isYearly, use
     } catch (err: any) {
         setError(err.message);
         setPaymentStatus('ERROR');
+        setStep('result'); // Show error in the result step
         toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
         setIsLoading(false);
