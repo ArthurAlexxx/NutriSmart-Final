@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createAsaasCustomerAction } from './actions';
 
 const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -24,44 +25,6 @@ const formSchema = z.object({
 });
 
 type CustomerFormValues = z.infer<typeof formSchema>;
-
-async function createAsaasCustomerAction(data: CustomerFormValues): Promise<any> {
-    'use server';
-
-    const asaasApiKey = process.env.ASAAS_API_KEY;
-    const isSandbox = asaasApiKey?.includes('sandbox') || asaasApiKey?.includes('hmlg');
-    const asaasApiUrl = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
-
-    if (!asaasApiKey) {
-        throw new Error('ASAAS_API_KEY não está configurada no servidor.');
-    }
-    
-    try {
-        const response = await fetch(`${asaasApiUrl}/customers`, {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/json',
-                'access_token': asaasApiKey,
-            },
-            body: JSON.stringify(data),
-        });
-
-        const responseData = await response.json();
-
-        if (!response.ok) {
-            console.error('Asaas API Error:', responseData);
-            const errorMessage = responseData.errors?.[0]?.description || `Falha na requisição: ${response.statusText}`;
-            throw new Error(errorMessage);
-        }
-
-        return responseData;
-
-    } catch (error: any) {
-        console.error('Error creating Asaas customer:', error);
-        throw new Error(error.message || 'Erro desconhecido ao criar cliente no Asaas.');
-    }
-}
 
 export default function AsaasTestPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
