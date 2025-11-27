@@ -81,7 +81,8 @@ export async function POST(request: Request) {
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
         const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        const value = isYearly ? planDetails.yearlyPrice : planDetails.monthly;
+        // The value per cycle. For yearly, it's monthly price * 12. For monthly, it's just the monthly price.
+        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
         const paymentLinkPayload = {
@@ -91,7 +92,8 @@ export async function POST(request: Request) {
             chargeType: "RECURRENT",
             subscriptionCycle: cycle,
             value: value,
-            externalReference: userId,
+            maxInstallmentCount: 1, // Cannot be parceled
+            notificationEnabled: true,
             customer: customerId,
         };
 
@@ -105,10 +107,27 @@ export async function POST(request: Request) {
         });
 
         const linkData = await createLinkResponse.json() as any;
+        
         if (!createLinkResponse.ok || !linkData || linkData.errors) {
             console.error('Asaas Payment Link Creation Error:', linkData?.errors);
             throw new Error(linkData?.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
         }
+
+        // The externalReference needs to be set on the subscription that will be created.
+        // We do this by updating the payment link to pass the externalReference to the subscription.
+        const updatePayload = {
+            subscriptionExternalReference: userId,
+        };
+
+        await fetch(`${asaasApiUrl}/paymentLinks/${linkData.id}`, {
+             method: 'POST', // POST for update on this endpoint
+             headers: {
+                'Content-Type': 'application/json',
+                'access_token': asaasApiKey,
+            },
+            body: JSON.stringify(updatePayload),
+        });
+
 
         return NextResponse.json({
             type: 'CREDIT_CARD',
