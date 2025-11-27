@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import fetch from 'node-fetch';
@@ -62,22 +63,26 @@ export async function POST(request: Request) {
         customerId = searchResult.data[0].id;
     } else {
         // 2. If not, create the customer
+        const createCustomerPayload = {
+            name: customerData.name,
+            email: customerData.email,
+            mobilePhone: customerData.phone,
+            cpfCnpj: customerData.taxId,
+            externalReference: userId,
+        };
+
         const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'access_token': asaasApiKey,
             },
-            body: JSON.stringify({
-                name: customerData.name,
-                email: customerData.email,
-                mobilePhone: customerData.phone,
-                cpfCnpj: customerData.taxId,
-                externalReference: userId,
-            }),
+            body: JSON.stringify(createCustomerPayload),
         });
+        
         const newCustomerData = await createCustomerResponse.json() as any;
-        if (!createCustomerResponse.ok) {
+        if (!createCustomerResponse.ok || newCustomerData.errors) {
+            console.error('Asaas Customer Creation Error:', newCustomerData.errors);
             throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
         }
         customerId = newCustomerData.id;
