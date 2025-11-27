@@ -2,14 +2,14 @@
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
 
-const plans: { [key: string]: { monthly: number, yearly: number } } = {
+const plans: { [key: string]: { monthly: number, yearlyPrice: number } } = {
   PREMIUM: {
     monthly: 2990,
-    yearly: 2390,
+    yearlyPrice: 239,
   },
   PROFISSIONAL: {
     monthly: 4990,
-    yearly: 3990,
+    yearlyPrice: 399,
   }
 };
 
@@ -77,8 +77,14 @@ export async function POST(request: Request) {
     if (!planDetails) {
         throw new Error('Plano selecionado inválido.');
     }
-    const priceInCents = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-    const priceInReais = priceInCents / 100;
+    
+    const basePriceInReais = isYearly ? (planDetails.yearlyPrice * 12) / 100 : planDetails.monthly / 100;
+    let finalPrice = basePriceInReais;
+
+    // Add a 10% surcharge for PIX payments
+    if (billingType === 'PIX') {
+        finalPrice *= 1.10;
+    }
     
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
@@ -86,7 +92,7 @@ export async function POST(request: Request) {
             customer: customerId,
             billingType: "CREDIT_CARD",
             nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-            value: isYearly ? planDetails.yearlyPrice : planDetails.monthly / 100, // Asaas subscription value is per cycle
+            value: isYearly ? planDetails.yearlyPrice / 100 : planDetails.monthly / 100, // Asaas subscription value is per cycle
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,
@@ -123,7 +129,7 @@ export async function POST(request: Request) {
         const paymentPayload = {
             customer: customerId,
             billingType: billingType,
-            value: priceInReais,
+            value: finalPrice,
             dueDate: format(new Date(), 'yyyy-MM-dd'),
             description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
             externalReference: userId,
