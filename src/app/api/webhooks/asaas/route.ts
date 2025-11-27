@@ -125,11 +125,12 @@ export async function POST(request: NextRequest) {
         return new NextResponse('Assinatura do webhook inválida.', { status: 403 });
     }
   } else {
+    // This message is important for debugging in environments without the secret.
     console.log("INFO: Nenhuma variável ASAAS_WEBHOOK_SECRET configurada. Pulando verificação de assinatura.");
   }
     
   // If signature is valid or not required, process the payment.
-  handlePayment(event);
+  await handlePayment(event);
       
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
 }
