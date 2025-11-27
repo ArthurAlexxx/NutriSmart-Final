@@ -1,4 +1,3 @@
-
 // src/components/ui/pricing.tsx
 "use client";
 
@@ -18,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import PixPaymentModal from "../pix-payment-modal";
+import PaymentModal from "../payment-modal";
 import { useToast } from "@/hooks/use-toast";
 
 const plans = [
@@ -81,7 +80,7 @@ const plans = [
 function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
-  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { user, userProfile, effectiveSubscriptionStatus } = useUser();
   const { toast } = useToast();
 
@@ -103,7 +102,7 @@ function Pricing() {
     if (isCurrentPlan) return;
     
     setSelectedPlan(plan);
-    setIsPixModalOpen(true);
+    setIsModalOpen(true);
   };
 
 
@@ -196,9 +195,9 @@ function Pricing() {
       </div>
     </div>
     {user && userProfile && selectedPlan && (
-        <PixPaymentModal 
-            isOpen={isPixModalOpen}
-            onOpenChange={setIsPixModalOpen}
+        <PaymentModal 
+            isOpen={isModalOpen}
+            onOpenChange={setIsModalOpen}
             plan={selectedPlan}
             isYearly={isYearly}
             userProfile={userProfile}

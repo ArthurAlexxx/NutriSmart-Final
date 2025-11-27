@@ -21,7 +21,7 @@ const getAsaasApiUrl = () => {
 
 
 export async function POST(request: Request) {
-  const { userId, planName, isYearly, customerData } = await request.json();
+  const { userId, planName, isYearly, customerData, billingType } = await request.json();
   const asaasApiKey = process.env.ASAAS_API_KEY;
   const asaasApiUrl = getAsaasApiUrl();
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     
     const paymentPayload = {
         customer: customerId,
-        billingType: 'PIX',
+        billingType: billingType,
         value: priceInReais,
         dueDate: format(new Date(), 'yyyy-MM-dd'),
         description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
@@ -112,22 +112,47 @@ export async function POST(request: Request) {
 
     const paymentId = paymentData.id;
 
-    // 4. Get the PIX QR Code for the created payment
-    const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-        headers: { 'access_token': asaasApiKey }
-    });
-
-    const qrCodeData = await qrCodeResponse.json() as any;
-    if (!qrCodeResponse.ok || qrCodeData.errors) {
-         console.error('Asaas QR Code Fetch Error:', qrCodeData.errors);
-        throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
+    // 4. Get specific payment info based on billing type
+    if (billingType === 'PIX') {
+        const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
+            headers: { 'access_token': asaasApiKey }
+        });
+        const qrCodeData = await qrCodeResponse.json() as any;
+        if (!qrCodeResponse.ok || qrCodeData.errors) {
+            throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
+        }
+        return NextResponse.json({
+            type: 'PIX',
+            id: paymentId,
+            payload: qrCodeData.payload,
+            encodedImage: qrCodeData.encodedImage,
+        });
     }
 
-    return NextResponse.json({
-        id: paymentId,
-        brCode: qrCodeData.payload,
-        brCodeBase64: qrCodeData.encodedImage,
-    });
+    if (billingType === 'BOLETO') {
+        const idFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
+            headers: { 'access_token': asaasApiKey }
+        });
+        const idFieldData = await idFieldResponse.json() as any;
+         if (!idFieldResponse.ok) throw new Error(idFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
+        return NextResponse.json({
+            type: 'BOLETO',
+            id: paymentId,
+            identificationField: idFieldData.identificationField,
+            bankSlipUrl: paymentData.bankSlipUrl,
+        });
+    }
+
+    if (billingType === 'CREDIT_CARD') {
+        // For credit card, we return the invoice URL which contains the payment link
+        return NextResponse.json({
+            type: 'CREDIT_CARD',
+            id: paymentId,
+            invoiceUrl: paymentData.invoiceUrl,
+        });
+    }
+
+    return NextResponse.json({ error: 'Tipo de cobrança não suportado.' }, { status: 400 });
 
 
   } catch (error: any) {
