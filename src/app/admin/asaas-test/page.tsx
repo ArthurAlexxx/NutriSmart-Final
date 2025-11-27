@@ -59,7 +59,8 @@ export default function AsaasTestPage() {
         try {
             const result = await createAsaasCustomerAction(data);
             setCustomerApiResponse({ status: 'success', data: result });
-            paymentForm.setValue('customerId', result.id);
+            paymentForm.setValue('customerId', result.id); // Sincroniza o ID do cliente
+            toast({ title: "Cliente Criado!", description: `ID ${result.id} preenchido no Passo 2.` });
         } catch (error: any) {
             setCustomerApiResponse({ status: 'error', data: { message: error.message } });
         } finally {
@@ -123,7 +124,7 @@ export default function AsaasTestPage() {
                             <CardContent>
                                 <Form {...paymentForm}>
                                     <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
-                                        <FormField control={paymentForm.control} name="customerId" render={({ field }) => (<FormItem><FormLabel>ID do Cliente</FormLabel><FormControl><Input {...field} placeholder="cus_..." /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={paymentForm.control} name="customerId" render={({ field }) => (<FormItem><FormLabel>ID do Cliente</FormLabel><FormControl><Input {...field} placeholder="Preenchido após o Passo 1" /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={paymentForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={paymentForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descrição</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <Button type="submit" disabled={isLoadingPayment}>
