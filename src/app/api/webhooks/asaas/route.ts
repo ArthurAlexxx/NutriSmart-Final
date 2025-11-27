@@ -43,9 +43,11 @@ function verifyAsaasSignature(rawBody: string, signatureFromHeader: string): boo
 
 async function handlePayment(event: any) {
     // Asaas sends various payment events. We are interested when the payment is confirmed.
-    // PAYMENT_RECEIVED is a common status for confirmed PIX payments.
-    if (event.event !== 'PAYMENT_RECEIVED') {
+    const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
+    
+    if (!successfulPaymentEvents.includes(event.event)) {
         const message = `Evento não processado: ${event.event || 'desconhecido'}`;
+        await saveWebhookLog(event, 'SUCCESS', message); // Log as success because we correctly ignored it
         console.log(message);
         return; // Not an error, just an event we don't need to process.
     }
