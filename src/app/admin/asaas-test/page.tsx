@@ -87,7 +87,9 @@ export default function AsaasTestPage() {
     }
     
     const renderPaymentResult = () => {
-        if (!paymentApiResponse || paymentApiResponse.status !== 'success') {
+        if (!paymentApiResponse) return null;
+
+        if (paymentApiResponse.status !== 'success') {
             return (
                 <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
                     <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
@@ -141,7 +143,11 @@ export default function AsaasTestPage() {
                     </div>
                 );
             default:
-                return <p>Tipo de pagamento desconhecido.</p>;
+                return (
+                    <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
+                        <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
+                    </ScrollArea>
+                );
         }
     };
 
