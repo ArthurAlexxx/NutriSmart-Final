@@ -1,4 +1,3 @@
-
 // src/components/app-layout.tsx
 'use client';
 
@@ -6,7 +5,7 @@ import React, { useState, useMemo, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook } from 'lucide-react';
+import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -47,6 +46,7 @@ const navItemsAdmin = [
     { href: '/admin/users', label: 'Usuários', icon: Users, id: 'nav-admin-users' },
     { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-admin-finance' },
     { href: '/admin/logs', label: 'Logs', icon: Webhook, id: 'nav-admin-logs' },
+    { href: '/admin/asaas-test', label: 'Teste Asaas', icon: Send, id: 'nav-admin-asaas' },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
