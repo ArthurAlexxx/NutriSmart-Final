@@ -1,5 +1,6 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
+import fetch from 'node-fetch';
 
 const plans: { [key: string]: { monthly: number, yearly: number } } = {
   PREMIUM: {
@@ -12,9 +13,16 @@ const plans: { [key: string]: { monthly: number, yearly: number } } = {
   }
 };
 
+const getAsaasApiUrl = () => {
+    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox');
+    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData } = await request.json();
   const asaasApiKey = process.env.ASAAS_API_KEY;
+  const asaasApiUrl = getAsaasApiUrl();
 
   if (!asaasApiKey) {
       console.error('ASAAS_API_KEY não está configurada no servidor.');
@@ -41,16 +49,49 @@ export async function POST(request: Request) {
   const totalValue = totalAmountInCents / 100;
 
   try {
-    const asaasApiUrl = 'https://www.asaas.com/api/v3/payments';
+    let customerId: string;
 
-    const response = await fetch(asaasApiUrl, {
+    // 1. Check if customer exists in Asaas
+    const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
+        headers: { 'access_token': asaasApiKey }
+    });
+    
+    const searchResult = await customerSearchResponse.json();
+
+    if (searchResult.totalCount > 0) {
+        customerId = searchResult.data[0].id;
+    } else {
+        // 2. If not, create the customer
+        const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'access_token': asaasApiKey,
+            },
+            body: JSON.stringify({
+                name: customerData.name,
+                email: customerData.email,
+                mobilePhone: customerData.phone,
+                cpfCnpj: customerData.taxId,
+                externalReference: userId,
+            }),
+        });
+        const newCustomerData = await createCustomerResponse.json();
+        if (!createCustomerResponse.ok) {
+            throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
+        }
+        customerId = newCustomerData.id;
+    }
+    
+    // 3. Create the payment (charge)
+    const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': asaasApiKey,
       },
       body: JSON.stringify({
-        customer: customerData.id,
+        customer: customerId,
         billingType: 'PIX',
         value: totalValue,
         dueDate: new Date(new Date().getTime() + 3600 * 1000).toISOString().split('T')[0], // Expires in 1 hour
@@ -64,16 +105,16 @@ export async function POST(request: Request) {
       }),
     });
 
-    const data = await response.json();
+    const paymentData = await paymentResponse.json();
 
-    if (!response.ok || data.errors) {
-      console.error('Asaas API Error:', data.errors);
-      const errorMessage = data.errors?.[0]?.description || 'Erro ao comunicar com o gateway de pagamento.';
+    if (!paymentResponse.ok || paymentData.errors) {
+      console.error('Asaas API Error:', paymentData.errors);
+      const errorMessage = paymentData.errors?.[0]?.description || 'Erro ao comunicar com o gateway de pagamento.';
       throw new Error(errorMessage);
     }
     
-    // After creating payment, we need to get the QR Code
-    const qrCodeResponse = await fetch(`https://www.asaas.com/api/v3/payments/${data.id}/pixQrCode`, {
+    // 4. Get the PIX QR Code for the created payment
+    const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentData.id}/pixQrCode`, {
         headers: { 'access_token': asaasApiKey }
     });
 
@@ -84,7 +125,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      id: data.id,
+      id: paymentData.id,
       brCode: qrCodeData.payload,
       brCodeBase64: qrCodeData.encodedImage,
     });

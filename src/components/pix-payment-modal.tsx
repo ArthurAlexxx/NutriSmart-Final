@@ -44,7 +44,6 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
   const [brCode, setBrCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastPlanName, setLastPlanName] = useState<string | null>(null);
-  const [asaasCustomerId, setAsaasCustomerId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { onProfileUpdate, user } = useUser();
@@ -75,42 +74,11 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         setIsLoading(false);
         setIsVerifying(false);
         setLastPlanName(plan.name);
-        setAsaasCustomerId(null);
     } else if (isOpen && qrCode) {
         setStep('qrcode');
     }
   }, [isOpen, userProfile, form, plan.name, lastPlanName, qrCode]);
 
-
-  const getOrCreateAsaasCustomer = async (customerData: any) => {
-    const asaasApiKey = process.env.NEXT_PUBLIC_ASAAS_API_KEY;
-    if (!asaasApiKey) throw new Error("Chave da API do Asaas não configurada.");
-
-    // This is a simplified version. In a real app, you'd query by CPF/CNPJ
-    // to avoid creating duplicate customers.
-    const response = await fetch('https://www.asaas.com/api/v3/customers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': asaasApiKey,
-      },
-      body: JSON.stringify({
-        name: customerData.name,
-        email: customerData.email,
-        mobilePhone: customerData.cellphone,
-        cpfCnpj: customerData.taxId,
-        externalReference: user?.uid,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-        // If customer already exists, Asaas might return an error.
-        // A robust implementation would parse the error and fetch the existing customer.
-        // For simplicity, we assume creation or fail.
-        throw new Error(data.errors?.[0]?.description || "Falha ao criar cliente no gateway.");
-    }
-    return data.id;
-  };
 
   const generateQrCode = async (customerData: any) => {
     setIsLoading(true);
@@ -118,25 +86,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
 
     try {
         if (!user) throw new Error("Usuário não autenticado.");
-
-        let customerId = asaasCustomerId;
-        if (!customerId) {
-           // This is a simplified example. In production, you would check if a customer
-           // with this CPF/CNPJ already exists in Asaas to avoid duplicates.
-           // For now, we assume we create a new one.
-           const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'access_token': process.env.NEXT_PUBLIC_ASAAS_API_KEY! },
-                body: JSON.stringify({ name: customerData.name, email: customerData.email, cpfCnpj: customerData.taxId, externalReference: user.uid }),
-           });
-           const customerApiData = await customerResponse.json();
-           if (!customerResponse.ok) throw new Error(customerApiData.errors?.[0]?.description || 'Erro ao criar cliente no gateway.');
-           customerId = customerApiData.id;
-           setAsaasCustomerId(customerId);
-        }
         
-        customerData.id = customerId;
-
         const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -178,7 +128,7 @@ export default function PixPaymentModal({ isOpen, onOpenChange, plan, isYearly, 
         const customerDataForApi = {
             name: fullName,
             email: userProfile.email,
-            cellphone: phone,
+            phone: phone,
             taxId: taxId,
         };
 
