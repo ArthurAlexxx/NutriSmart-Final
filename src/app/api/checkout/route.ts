@@ -1,4 +1,3 @@
-
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
@@ -18,12 +17,6 @@ const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
     return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
 };
-
-const getAsaasInvoiceBaseUrl = () => {
-    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
-    return isSandbox ? 'https://sandbox.asaas.com/i' : 'https://www.asaas.com/i';
-};
-
 
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData, billingType } = await request.json();
@@ -88,46 +81,39 @@ export async function POST(request: Request) {
     // 3. Handle payment based on billingType
     if (billingType === 'CREDIT_CARD') {
         const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+        const value = isYearly ? planDetails.yearlyPrice : planDetails.monthly;
         const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
-        const subscriptionPayload = {
-            customer: customerId,
+        const paymentLinkPayload = {
+            name: description,
+            description: `Acesso ao plano ${planName} do Nutrinea.`,
             billingType: "CREDIT_CARD",
-            cycle: cycle,
+            chargeType: "RECURRENT",
+            subscriptionCycle: cycle,
             value: value,
-            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-            description: description,
             externalReference: userId,
+            customer: customerId,
         };
 
-        const createSubscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
+        const createLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'access_token': asaasApiKey,
             },
-            body: JSON.stringify(subscriptionPayload),
+            body: JSON.stringify(paymentLinkPayload),
         });
 
-        const subscriptionData = await createSubscriptionResponse.json() as any;
-        if (!createSubscriptionResponse.ok || !subscriptionData || subscriptionData.errors) {
-            console.error('Asaas Subscription Creation Error:', subscriptionData?.errors);
-            throw new Error(subscriptionData?.errors?.[0]?.description || 'Falha ao criar a assinatura.');
-        }
-
-        // The first invoice is created automatically, we redirect the user to it.
-        // We construct the URL manually as the 'invoices' array might not be in the response.
-        const firstInvoiceUrl = `${getAsaasInvoiceBaseUrl()}/${subscriptionData.id}`;
-        
-        if (!firstInvoiceUrl) {
-           throw new Error('Não foi possível obter a fatura inicial da assinatura.');
+        const linkData = await createLinkResponse.json() as any;
+        if (!createLinkResponse.ok || !linkData || linkData.errors) {
+            console.error('Asaas Payment Link Creation Error:', linkData?.errors);
+            throw new Error(linkData?.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
         }
 
         return NextResponse.json({
             type: 'CREDIT_CARD',
-            id: subscriptionData.id,
-            url: firstInvoiceUrl, // The URL to redirect the user to
+            id: linkData.id,
+            url: linkData.url, // The URL to redirect the user to
         });
 
     } else {

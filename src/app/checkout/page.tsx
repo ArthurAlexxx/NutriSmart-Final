@@ -129,7 +129,7 @@ function CheckoutPageContent() {
             if (!response.ok) throw new Error(data.error || 'Falha ao gerar a cobrança.');
             
             if (data.type === 'CREDIT_CARD') {
-                window.location.href = data.url; // Redirect to Asaas payment link
+                window.location.href = data.url;
                 return;
             }
 
