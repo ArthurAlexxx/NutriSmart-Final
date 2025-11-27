@@ -19,6 +19,29 @@ async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', detai
     }
 }
 
+function extractPlanInfoFromDescription(description: string): { planName: 'PREMIUM' | 'PROFISSIONAL' | null, billingCycle: 'monthly' | 'yearly' | null } {
+    if (!description) return { planName: null, billingCycle: null };
+    
+    const lowerCaseDesc = description.toLowerCase();
+    
+    let planName: 'PREMIUM' | 'PROFISSIONAL' | null = null;
+    if (lowerCaseDesc.includes('premium')) {
+        planName = 'PREMIUM';
+    } else if (lowerCaseDesc.includes('profissional')) {
+        planName = 'PROFISSIONAL';
+    }
+
+    let billingCycle: 'monthly' | 'yearly' | null = null;
+    if (lowerCaseDesc.includes('anual')) {
+        billingCycle = 'yearly';
+    } else if (lowerCaseDesc.includes('mensal')) {
+        billingCycle = 'monthly';
+    }
+
+    return { planName, billingCycle };
+}
+
+
 async function handlePayment(event: any) {
     const eventName = event?.event;
     if (!eventName) {
@@ -44,10 +67,8 @@ async function handlePayment(event: any) {
         return;
     }
     
-    const metadata = paymentData?.metadata;
-    const userId = metadata?.userId || paymentData?.externalReference;
-    const planName = metadata?.plan;
-    const billingCycle = metadata?.billingCycle;
+    const userId = paymentData?.externalReference;
+    const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     
     if (userId && planName && billingCycle) {
         try {
@@ -64,7 +85,7 @@ async function handlePayment(event: any) {
             await saveWebhookLog(event, 'FAILURE', errorMessage);
         }
     } else {
-        const message = 'Webhook de pagamento recebido, mas metadados cruciais (userId, plan ou billingCycle) não encontrados. O processamento foi ignorado.';
+        const message = `Webhook de pagamento recebido, mas dados cruciais (userId, plan ou billingCycle) não puderam ser extraídos. externalReference: ${userId}, description: ${paymentData?.description}. O processamento foi ignorado.`;
         console.warn(message, { payload: event });
         await saveWebhookLog(event, 'SUCCESS', message);
     }

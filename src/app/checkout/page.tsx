@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 const customerFormSchema = z.object({
   fullName: z.string().min(3, 'O nome completo é obrigatório.'),
@@ -136,21 +137,18 @@ function CheckoutPageContent() {
     };
     
     const handleCheckPayment = async () => {
-        if (!paymentResult?.id || isVerifying) return;
+        if (!paymentResult?.id || isVerifying || !user) return;
         setIsVerifying(true);
         try {
-            const response = await fetch(`/api/checkout/${paymentResult.id}`);
-            const data = await response.json();
-            if (response.ok && data.status === 'PAID') {
-                localStorage.setItem(`pendingChargeId_${user.uid}`, data.chargeId);
+            const result = await verifyAndFinalizeSubscription(user.uid, paymentResult.id);
+
+            if (result.success) {
                 router.push('/checkout/success');
-            } else if (!response.ok) {
-                toast({ title: 'Erro ao Verificar', description: data.error, variant: 'destructive' });
             } else {
-                toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente.' });
+                 toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente ou não foi confirmado.' });
             }
         } catch (e: any) {
-            toast({ title: 'Erro de Conexão', variant: 'destructive' });
+            toast({ title: 'Erro de Conexão', description: e.message, variant: 'destructive' });
         } finally {
             setIsVerifying(false);
         }

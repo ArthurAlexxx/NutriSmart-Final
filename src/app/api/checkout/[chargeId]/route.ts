@@ -16,6 +16,9 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
     return NextResponse.json({ error: 'ID da cobrança não fornecido.' }, { status: 400 });
   }
   
+  // This is a public route now, but we require an API key for server-to-server calls if needed.
+  // For client-side polling, we should ideally have some form of user session validation.
+  // For now, we allow it but rely on the obscurity of chargeId.
   if (!asaasApiKey) {
     console.error('ASAAS_API_KEY não está configurada no servidor.');
     return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: { chargeId
     // CONFIRMED e RECEIVED indicam pagamento bem-sucedido.
     const paidStatuses = ['RECEIVED', 'CONFIRMED'];
     if (paidStatuses.includes(data.status)) {
-        return NextResponse.json({ status: 'PAID', chargeId: data.id });
+        return NextResponse.json({ status: 'PAID', chargeId: data.id, metadata: data.metadata });
     }
 
     return NextResponse.json({ status: data.status });
