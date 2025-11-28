@@ -203,7 +203,7 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
 export async function tokenizeCardAction(data: TokenizationFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
-     const forwarded = headers().get('x-forwarded-for');
+    const forwarded = headers().get('x-forwarded-for');
     const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
 
     if (!asaasApiKey) {
@@ -215,7 +215,7 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
             customer: data.customerId,
             creditCard: {
                 holderName: data.holderName,
-                number: data.number,
+                number: data.number.replace(/\s/g, ''), // Remove spaces from card number
                 expiryMonth: data.expiryMonth,
                 expiryYear: data.expiryYear,
                 ccv: data.ccv,

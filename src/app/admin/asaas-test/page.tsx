@@ -197,6 +197,12 @@ export default function AsaasTestPage() {
             setIsLoading(false);
         }
     };
+    
+    const formatCardNumber = (value: string) => {
+        const cleaned = value.replace(/\D/g, '');
+        const matches = cleaned.match(/(\d{1,4})/g);
+        return matches ? matches.join(' ') : '';
+    };
 
     const renderResult = () => {
         if (!apiResponse) return null;
@@ -345,7 +351,16 @@ export default function AsaasTestPage() {
                                         <Form {...tokenizationForm}>
                                             <form onSubmit={tokenizationForm.handleSubmit(onTokenizationSubmit)} className="space-y-6">
                                                 <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input placeholder="0000 0000 0000 0000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
+                                                    type="tel"
+                                                    placeholder="0000 0000 0000 0000" 
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const formatted = formatCardNumber(e.target.value);
+                                                        field.onChange(formatted);
+                                                    }}
+                                                    maxLength={19}
+                                                /></FormControl><FormMessage /></FormItem>)}/>
                                                 <div className='grid grid-cols-3 gap-4'>
                                                     <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input placeholder="AAAA" {...field} /></FormControl><FormMessage /></FormItem>)}/>
