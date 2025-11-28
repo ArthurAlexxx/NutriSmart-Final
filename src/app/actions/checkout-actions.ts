@@ -33,14 +33,22 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
             asaasCustomerId = searchResult.data[0].id;
         } else {
             const createPayload = {
-                name: customerData.fullName, email: customerData.email, mobilePhone: customerData.phone?.replace(/\D/g, ''),
-                cpfCnpj: customerData.taxId.replace(/\D/g, ''), externalReference: userId, address: customerData.address,
-                addressNumber: customerData.addressNumber, complement: customerData.complement,
-                province: customerData.province, postalCode: customerData.postalCode?.replace(/\D/g, ''),
+                name: customerData.fullName,
+                email: customerData.email,
+                mobilePhone: customerData.phone?.replace(/\D/g, ''),
+                cpfCnpj: customerData.taxId.replace(/\D/g, ''),
+                externalReference: userId,
+                address: customerData.address,
+                addressNumber: customerData.addressNumber,
+                complement: customerData.complement,
+                province: customerData.province,
+                postalCode: customerData.postalCode?.replace(/\D/g, ''),
             };
             const createResponse = await fetch(`${asaasApiUrl}/customers`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-                body: JSON.stringify(createPayload), cache: 'no-store',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+                body: JSON.stringify(createPayload),
+                cache: 'no-store',
             });
             const newCustomerData = await createResponse.json();
             if (!createResponse.ok) throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
