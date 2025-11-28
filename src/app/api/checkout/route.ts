@@ -11,15 +11,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'UserID e dados do cliente são obrigatórios.' }, { status: 400 });
     }
 
-    const result = await createCustomer({ userId, customerData });
+    // A action foi renomeada para createCustomer, mas a lógica de chamada é a mesma
+    const result = await createCustomer(userId, customerData);
 
-    if (result.success) {
-      return NextResponse.json({ asaasCustomerId: result.asaasCustomerId }, { status: 200 });
-    } else {
-      return NextResponse.json({ message: result.message }, { status: 500 });
-    }
+    // O retorno de sucesso agora é o objeto do cliente, o que é ótimo para debug.
+    return NextResponse.json(result, { status: 200 });
+
   } catch (error: any) {
     console.error('API Error in checkout route:', error);
+    // Retorna a mensagem de erro da action para o cliente.
     return NextResponse.json({ message: error.message || 'Erro interno do servidor.' }, { status: 500 });
   }
 }

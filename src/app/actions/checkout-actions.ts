@@ -17,7 +17,7 @@ const customerFormSchema = z.object({
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
 
-export async function createCustomerAction(userId: string, data: CustomerFormValues): Promise<any> {
+export async function createCustomer(userId: string, data: CustomerFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
 

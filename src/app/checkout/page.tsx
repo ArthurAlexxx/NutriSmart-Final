@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { createCustomerAction } from '@/app/actions/checkout-actions';
+import { createCustomer } from '@/app/actions/checkout-actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Schemas
@@ -68,6 +68,7 @@ function CheckoutPageContent() {
                 });
                 if (userProfile.asaasCustomerId) { 
                     setCreatedCustomer({ id: userProfile.asaasCustomerId });
+                    setStep('payment'); // Jump to payment if customer already exists
                 }
             }
         }
@@ -88,14 +89,13 @@ function CheckoutPageContent() {
         try {
             if (!user) throw new Error("Usuário não autenticado.");
 
-            const result = await createCustomerAction(user.uid, data);
+            const result = await createCustomer(user.uid, data);
             
             setApiResponse({ status: 'success', data: result, type: 'customer' });
             setCreatedCustomer(result);
             
             toast({ title: 'Tudo certo!', description: 'Seus dados foram validados. Agora escolha o método de pagamento.'});
             
-            // Wait a bit for the user to see the success message before switching step
             setTimeout(() => {
                 setStep('payment');
             }, 1500);
