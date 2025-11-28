@@ -77,10 +77,8 @@ function CheckoutPageContent() {
                     email: userProfile.email || '',
                     cpfCnpj: userProfile.taxId || '',
                 });
-                if (userProfile.asaasCustomerId) {
-                     setCreatedCustomer({ id: userProfile.asaasCustomerId, ...userProfile });
-                     setStep('payment'); // Go straight to payment if we have customer ID
-                }
+                // Garante que o fluxo sempre comece na etapa de dados
+                setStep('data');
             }
         }
     }, [user, userProfile, isUserLoading, router, customerForm]);
