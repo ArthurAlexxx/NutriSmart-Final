@@ -17,6 +17,17 @@ const customerFormSchema = z.object({
 });
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
+const paymentFormSchema = z.object({
+    billingType: z.enum(['PIX', 'BOLETO']),
+    value: z.coerce.number().positive('O valor deve ser maior que zero.'),
+    planName: z.enum(['PREMIUM', 'PROFISSIONAL']),
+    billingCycle: z.enum(['monthly', 'yearly']),
+    customerId: z.string(),
+    userId: z.string(),
+});
+type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
+
 export async function createCustomer(userId: string, data: CustomerFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
@@ -62,5 +73,79 @@ export async function createCustomer(userId: string, data: CustomerFormValues): 
         console.error('Error in createCustomer:', error);
         // Ensure a meaningful error message is thrown to the client
         throw new Error(error.message || 'Erro desconhecido ao processar a requisição no Asaas.');
+    }
+}
+
+
+export async function createPaymentAction(data: PaymentFormValues): Promise<any> {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const asaasApiUrl = getAsaasApiUrl();
+
+    if (!asaasApiKey) {
+        throw new Error('ASAAS_API_KEY não está configurada no servidor.');
+    }
+
+    try {
+        const planText = data.planName === 'PREMIUM' ? 'Premium' : 'Profissional';
+        const cycleText = data.billingCycle === 'yearly' ? 'Anual' : 'Mensal';
+        const description = `Assinatura Plano ${planText} - ${cycleText}`;
+
+        const paymentPayload = {
+            customer: data.customerId,
+            billingType: data.billingType,
+            value: data.value,
+            dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
+            description: description,
+            externalReference: data.userId,
+            metadata: {
+                userId: data.userId,
+                plan: data.planName,
+                billingCycle: data.billingCycle,
+            }
+        };
+
+        const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify(paymentPayload),
+            cache: 'no-store',
+        });
+
+        const paymentData = await paymentResponse.json();
+        if (!paymentResponse.ok) {
+            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
+        }
+
+        const chargeId = paymentData.id;
+
+        if (data.billingType === 'PIX') {
+            const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${chargeId}/pixQrCode`, {
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const qrCodeData = await qrCodeResponse.json();
+            if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
+            return { type: 'PIX', chargeId: chargeId, ...qrCodeData };
+        }
+
+        if (data.billingType === 'BOLETO') {
+            const identificationFieldResponse = await fetch(`${asaasApiUrl}/payments/${chargeId}/identificationField`, {
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const identificationFieldData = await identificationFieldResponse.json();
+            if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
+            
+            return { 
+                type: 'BOLETO', 
+                chargeId: chargeId,
+                identificationField: identificationFieldData.identificationField,
+                bankSlipUrl: paymentData.bankSlipUrl
+            };
+        }
+
+    } catch (error: any) {
+        console.error('Error in createPaymentAction:', error);
+        throw new Error(error.message || 'Erro desconhecido ao criar a cobrança.');
     }
 }
