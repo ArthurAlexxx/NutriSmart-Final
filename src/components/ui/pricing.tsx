@@ -77,7 +77,7 @@ const plans = [
 ];
 
 function Pricing() {
-  const [isYearly, setIsYearly] = useState(true);
+  const [isYearly, setIsYearly] = useState(false);
   const { user, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
 
