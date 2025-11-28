@@ -44,7 +44,7 @@ type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 const tokenizationFormSchema = z.object({
     holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
-    number: z.string().min(19, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
+    number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
     expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
@@ -200,6 +200,14 @@ export default function AsaasTestPage() {
         return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
     };
 
+    const formatExpiryYear = (value: string) => {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length === 2 && !cleaned.startsWith('20')) {
+            return `20${cleaned}`;
+        }
+        return cleaned;
+    };
+
     const renderResult = () => {
         if (!apiResponse) return null;
 
@@ -331,6 +339,7 @@ export default function AsaasTestPage() {
                                                 <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                 <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
                                                     type="tel"
+                                                    pattern="\d{4} \d{4} \d{4} \d{4}"
                                                     placeholder="0000 0000 0000 0000" 
                                                     {...field}
                                                     onChange={(e) => {
@@ -341,7 +350,15 @@ export default function AsaasTestPage() {
                                                 /></FormControl><FormMessage /></FormItem>)}/>
                                                 <div className='grid grid-cols-3 gap-4'>
                                                     <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} maxLength={2} /></FormControl><FormMessage /></FormItem>)}/>
-                                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input placeholder="AAAA" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input 
+                                                        placeholder="AAAA" 
+                                                        {...field} 
+                                                        onChange={(e) => {
+                                                          const formatted = formatExpiryYear(e.target.value);
+                                                          field.onChange(formatted);
+                                                        }}
+                                                        maxLength={4} 
+                                                    /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
                                                 </div>
                                                 <Separator />
