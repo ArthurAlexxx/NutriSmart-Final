@@ -1,5 +1,6 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/firebase/admin';
 
 const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
@@ -13,6 +14,43 @@ const plansConfig = {
 
 // A minimal 1x1 transparent JPEG encoded in Base64 with data URI prefix
 const PLACEHOLDER_IMAGE_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAEAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//9k=';
+
+async function getOrCreateAsaasCustomer(
+  customerData: { taxId: string, fullName: string, email: string, phone?: string },
+  asaasApiKey: string,
+  asaasApiUrl: string
+): Promise<string> {
+    // 1. Check if customer exists
+    const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
+        headers: { 'access_token': asaasApiKey },
+        cache: 'no-store',
+    });
+    const searchResult = await customerSearchResponse.json();
+
+    if (searchResult.totalCount > 0) {
+        return searchResult.data[0].id;
+    }
+
+    // 2. If not, create customer
+    const createCustomerPayload = {
+        name: customerData.fullName,
+        email: customerData.email,
+        mobilePhone: customerData.phone,
+        cpfCnpj: customerData.taxId,
+    };
+    const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+        body: JSON.stringify(createCustomerPayload),
+        cache: 'no-store',
+    });
+    const newCustomerData = await createCustomerResponse.json();
+    if (!createCustomerResponse.ok) {
+        console.error("Asaas customer creation error:", newCustomerData.errors);
+        throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
+    }
+    return newCustomerData.id;
+}
 
 
 export async function POST(request: Request) {
@@ -35,18 +73,27 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
     }
     
+    // Step 1: Get or Create Asaas Customer
+    const asaasCustomerId = await getOrCreateAsaasCustomer(customerData, asaasApiKey, asaasApiUrl);
+    
+    // Step 2: Save asaasCustomerId to user's profile in Firestore (non-blocking)
+    const userRef = db.collection('users').doc(userId);
+    userRef.update({ asaasCustomerId: asaasCustomerId }).catch(err => {
+        console.error(`Failed to save asaasCustomerId for user ${userId}:`, err);
+    });
+
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = 'plano'; // Using a simple, safe name to avoid API validation issues.
+    const itemName = planDetails.name;
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
     const cancelUrl = `${baseUrl}/pricing`;
 
     const checkoutPayload: any = {
-        billingTypes: [billingType],
-        chargeTypes: isSubscription ? ['RECURRENT'] : ['DETACHED'],
+        customer: asaasCustomerId,
+        billingType: billingType,
         externalReference: userId,
         minutesToExpire: 30,
         items: [
@@ -58,17 +105,6 @@ export async function POST(request: Request) {
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
-        customerData: {
-          name: customerData.fullName,
-          email: customerData.email,
-          cpfCnpj: customerData.taxId,
-          phone: customerData.phone,
-          postalCode: customerData.postalCode,
-          address: customerData.address,
-          addressNumber: customerData.addressNumber,
-          complement: customerData.complement,
-          province: customerData.province,
-        },
         callback: {
             autoRedirect: true,
             successUrl: successUrl,
@@ -78,11 +114,14 @@ export async function POST(request: Request) {
     };
     
     if (isSubscription) {
+        checkoutPayload.chargeType = 'RECURRENT';
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
             value: value,
         }
+    } else {
+        checkoutPayload.chargeType = 'DETACHED';
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
