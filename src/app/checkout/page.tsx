@@ -97,6 +97,9 @@ function CheckoutPageContent() {
                     addressNumber: userProfile.addressNumber || '', complement: userProfile.complement || '',
                     province: userProfile.province || '',
                 });
+                if (userProfile.asaasCustomerId) {
+                    setAsaasCustomerId(userProfile.asaasCustomerId);
+                }
             }
         }
     }, [user, userProfile, isUserLoading, router, customerForm]);
@@ -106,7 +109,7 @@ function CheckoutPageContent() {
     }
     
     const planDetails = plansConfig[planName];
-    const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.price;
+    const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.monthlyPrice;
     const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
     const periodText = isYearly ? 'Anual' : 'Mensal';
     const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
@@ -225,7 +228,7 @@ function CheckoutPageContent() {
                                         }}
                                         maxLength={7}
                                     /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={cardForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={cardForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </form></Form>
                         </CardContent>

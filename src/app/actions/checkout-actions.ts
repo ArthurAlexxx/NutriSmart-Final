@@ -24,7 +24,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
     if (!customerData.taxId) return { success: false, message: 'CPF/CNPJ é obrigatório.' };
 
     try {
-        const searchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
+        const searchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId.replace(/\D/g, '')}`, {
             headers: { 'access_token': asaasApiKey }, cache: 'no-store',
         });
         const searchResult = await searchResponse.json();
@@ -35,10 +35,10 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
             asaasCustomerId = searchResult.data[0].id;
         } else {
             const createPayload = {
-                name: customerData.fullName, email: customerData.email, mobilePhone: customerData.phone,
-                cpfCnpj: customerData.taxId, externalReference: userId, address: customerData.address,
+                name: customerData.fullName, email: customerData.email, mobilePhone: customerData.phone?.replace(/\D/g, ''),
+                cpfCnpj: customerData.taxId.replace(/\D/g, ''), externalReference: userId, address: customerData.address,
                 addressNumber: customerData.addressNumber, complement: customerData.complement,
-                province: customerData.province, postalCode: customerData.postalCode,
+                province: customerData.province, postalCode: customerData.postalCode?.replace(/\D/g, ''),
             };
             const createResponse = await fetch(`${asaasApiUrl}/customers`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
@@ -53,6 +53,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
         return { success: true, asaasCustomerId, message: 'Cliente criado ou encontrado.' };
 
     } catch (error: any) {
+        console.error("Error creating/finding Asaas customer:", error);
         return { success: false, message: error.message };
     }
 }
@@ -143,7 +144,7 @@ export async function tokenizeCardAndCreateSubscription(payload: TokenizeAndSubs
         const subscriptionData = await subscriptionResponse.json();
         if (!subscriptionResponse.ok) throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
 
-        // 3. Update User Profile
+        // 3. Update User Profile in Firestore
         const billingCycle = payload.subscription.cycle === 'YEARLY' ? 'yearly' : 'monthly';
         const updateResult = await updateUserSubscriptionAction(payload.subscription.userId, payload.subscription.planName, billingCycle, subscriptionData.id);
 
