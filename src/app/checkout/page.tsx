@@ -257,7 +257,7 @@ function CheckoutPageContent() {
                         <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
-                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {finalPrice.toFixed(2)}</span></div>
+                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ ${finalPrice.toFixed(2)}</span></div>
                              <p className="text-sm text-muted-foreground">{periodText}</p>
                         </CardContent>
                     </Card></div>
