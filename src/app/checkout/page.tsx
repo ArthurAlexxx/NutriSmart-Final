@@ -116,6 +116,18 @@ function CheckoutPageContent() {
             });
         }
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
+    
+    useEffect(() => {
+        // This useEffect is now only for pre-filling the form.
+        // It does NOT advance the step automatically.
+        if (userProfile) {
+            customerForm.reset({
+                name: userProfile.fullName || '',
+                email: userProfile.email || '',
+                cpfCnpj: userProfile.taxId || '',
+            });
+        }
+    }, [userProfile, customerForm]);
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -201,13 +213,14 @@ function CheckoutPageContent() {
                 creditCardToken: tokenResult.creditCardToken,
             });
 
-            setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
+            // The subscription creation response contains the first payment info
+            const firstCharge = subscriptionResult.payments?.[0];
+            if (firstCharge?.id) {
+                localStorage.setItem(`pendingChargeId_${user.uid}`, firstCharge.id);
+            }
             
-            // For credit card, the first charge happens automatically with the subscription.
-            // So we can finalize immediately after getting the webhook (or a short delay).
-            toast({ title: "Assinatura Criada!", description: "Seu plano será ativado em instantes." });
-
-            setTimeout(() => router.push('/checkout/success'), 2000);
+            setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
+            toast({ title: "Assinatura Criada!", description: "Aguardando confirmação do pagamento para ativar seu plano." });
 
         } catch (error: any) {
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
@@ -311,8 +324,21 @@ function CheckoutPageContent() {
                 </Card>
             );
         }
+
+        if (apiResponse.type === 'subscription' && apiResponse.status === 'success') {
+            return (
+                <Card className="shadow-sm">
+                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Assinatura Criada</CardTitle></CardHeader>
+                    <CardContent className="text-center space-y-4">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                        <p className="text-muted-foreground">Sua assinatura foi criada com sucesso! Estamos aguardando a confirmação do pagamento da primeira parcela para ativar seu plano.</p>
+                        <p className="text-xs text-muted-foreground">Você pode fechar esta tela. A ativação é automática.</p>
+                    </CardContent>
+                </Card>
+            );
+        }
         
-        return null; // For customer success or other types handled differently
+        return null;
     };
 
     const renderDataStep = () => (
@@ -355,54 +381,58 @@ function CheckoutPageContent() {
                     <TabsContent value="pix-boleto" className="pt-6">
                         <Form {...paymentForm}>
                              <form onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)} className="space-y-6">
-                                <FormField control={paymentForm.control} name="billingType" render={({ field }) => (
-                                    <FormItem className="space-y-3"><FormLabel>Forma de Pagamento</FormLabel><FormControl>
-                                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
-                                            <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="PIX" id="pix" /></FormControl><Label htmlFor="pix" className='flex items-center gap-2'><QrCode/> PIX</Label></FormItem>
-                                            <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="BOLETO" id="boleto" /></FormControl><Label htmlFor="boleto" className='flex items-center gap-2'><Barcode/> Boleto</Label></FormItem>
-                                        </RadioGroup>
-                                    </FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <Button type="submit" disabled={isLoading} className="w-full"><CreditCard className="mr-2 h-4 w-4"/> Gerar Cobrança</Button>
+                                <fieldset disabled={isSubscribing}>
+                                    <FormField control={paymentForm.control} name="billingType" render={({ field }) => (
+                                        <FormItem className="space-y-3"><FormLabel>Forma de Pagamento</FormLabel><FormControl>
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
+                                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="PIX" id="pix" /></FormControl><Label htmlFor="pix" className='flex items-center gap-2'><QrCode/> PIX</Label></FormItem>
+                                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="BOLETO" id="boleto" /></FormControl><Label htmlFor="boleto" className='flex items-center gap-2'><Barcode/> Boleto</Label></FormItem>
+                                            </RadioGroup>
+                                        </FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <Button type="submit" disabled={isLoading} className="w-full mt-6"><CreditCard className="mr-2 h-4 w-4"/> Gerar Cobrança</Button>
+                                </fieldset>
                              </form>
                         </Form>
                     </TabsContent>
                     <TabsContent value="cartao" className="pt-6">
                         <Form {...tokenizationForm}>
                              <form onSubmit={tokenizationForm.handleSubmit(handleSubscriptionSubmit)} className="space-y-6">
-                                <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
-                                    type="tel" placeholder="0000 0000 0000 0000" {...field}
-                                    onChange={(e) => { field.onChange(formatCardNumber(e.target.value)); }}
-                                    maxLength={19}
-                                /></FormControl><FormMessage /></FormItem>)}/>
-                                <div className='grid grid-cols-3 gap-4'>
-                                    <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} maxLength={2} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input 
-                                        placeholder="AAAA" {...field} 
-                                        onChange={(e) => { field.onChange(formatExpiryYear(e.target.value)); }}
-                                        maxLength={4} 
+                                <fieldset disabled={isSubscribing}>
+                                    <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
+                                        type="tel" placeholder="0000 0000 0000 0000" {...field}
+                                        onChange={(e) => { field.onChange(formatCardNumber(e.target.value)); }}
+                                        maxLength={19}
                                     /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
-                                </div>
-                                <Separator />
-                                <h4 className="font-semibold">Informações do Titular (para validação)</h4>
-                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <FormField control={tokenizationForm.control} name="customerName" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="customerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="customerCpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="customerPostalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="customerAddressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={tokenizationForm.control} name="customerPhone" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                </div>
-                                <Button type="submit" disabled={isSubscribing} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Assinar com Cartão</Button>
+                                    <div className='grid grid-cols-3 gap-4'>
+                                        <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} maxLength={2} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input 
+                                            placeholder="AAAA" {...field} 
+                                            onChange={(e) => { field.onChange(formatExpiryYear(e.target.value)); }}
+                                            maxLength={4} 
+                                        /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
+                                    </div>
+                                    <Separator />
+                                    <h4 className="font-semibold">Informações do Titular (para validação)</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <FormField control={tokenizationForm.control} name="customerName" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="customerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="customerCpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="customerPostalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="customerAddressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={tokenizationForm.control} name="customerPhone" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    </div>
+                                    <Button type="submit" disabled={isSubscribing} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Assinar com Cartão</Button>
+                                </fieldset>
                             </form>
                         </Form>
                     </TabsContent>
                  </Tabs>
             </CardContent>
              <CardFooter>
-                <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar e Editar Dados</Button>
+                <Button variant="outline" className="w-full" onClick={() => setStep('data')} disabled={isSubscribing}>Voltar e Editar Dados</Button>
             </CardFooter>
         </Card>
     );
