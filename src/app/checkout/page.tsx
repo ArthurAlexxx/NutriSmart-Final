@@ -34,8 +34,15 @@ const customerFormSchema = z.object({
 });
 type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
-type PaymentMethod = 'PIX' | 'BOLETO' | 'CREDIT_CARD';
-type CheckoutStep = 'data' | 'method' | 'payment';
+const cardFormSchema = z.object({
+    holderName: z.string().min(3, 'O nome no cartão é obrigatório.'),
+    number: z.string().min(16, 'O número do cartão é inválido.').max(19, 'O número do cartão é inválido.'),
+    expiry: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Data de validade inválida (MM/AA).'),
+    ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
+});
+type CardFormValues = z.infer<typeof cardFormSchema>;
+
+type CheckoutStep = 'data' | 'payment';
 
 const plansConfig = {
   PREMIUM: { name: 'Premium', price: 29.90, yearlyPrice: 23.90 },
@@ -50,85 +57,39 @@ function CheckoutPageContent() {
 
     const [step, setStep] = useState<CheckoutStep>('data');
     const [isLoading, setIsLoading] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [paymentResult, setPaymentResult] = useState<any>(null);
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CREDIT_CARD');
     const [error, setError] = useState<string | null>(null);
+    const [asaasCustomerId, setAsaasCustomerId] = useState<string | null>(null);
 
     const planName = searchParams.get('plan')?.toUpperCase() as keyof typeof plansConfig;
     const isYearly = searchParams.get('yearly') === 'true';
 
-    const form = useForm<CustomerDataFormValues>({
+    const customerForm = useForm<CustomerDataFormValues>({
         resolver: zodResolver(customerFormSchema),
         defaultValues: {
-            fullName: '',
-            email: '',
-            phone: '',
-            taxId: '',
-            postalCode: '',
-            address: '',
-            addressNumber: '',
-            complement: '',
-            province: '',
+            fullName: '', email: '', phone: '', taxId: '', postalCode: '',
+            address: '', addressNumber: '', complement: '', province: '',
         }
+    });
+
+    const cardForm = useForm<CardFormValues>({
+        resolver: zodResolver(cardFormSchema),
+        defaultValues: { holderName: '', number: '', expiry: '', ccv: '' },
     });
     
     useEffect(() => {
         if (!isUserLoading) {
-            if (!user) {
-                router.push('/login');
-            } else if (userProfile) {
-                form.reset({
-                    fullName: userProfile.fullName || '',
-                    email: userProfile.email || '',
-                    phone: userProfile.phone || '',
-                    taxId: userProfile.taxId || '',
-                    postalCode: userProfile.postalCode || '',
-                    address: userProfile.address || '',
-                    addressNumber: userProfile.addressNumber || '',
-                    complement: userProfile.complement || '',
+            if (!user) { router.push('/login'); }
+            else if (userProfile) {
+                customerForm.reset({
+                    fullName: userProfile.fullName || '', email: userProfile.email || '',
+                    phone: userProfile.phone || '', taxId: userProfile.taxId || '',
+                    postalCode: userProfile.postalCode || '', address: userProfile.address || '',
+                    addressNumber: userProfile.addressNumber || '', complement: userProfile.complement || '',
                     province: userProfile.province || '',
                 });
             }
         }
-    }, [user, userProfile, isUserLoading, router, form]);
-    
-    const handleCopyCode = (code: string) => {
-        navigator.clipboard.writeText(code);
-        toast({ title: 'Copiado para a área de transferência!' });
-    };
-
-    const handleCheckPayment = useCallback(async (chargeId: string) => {
-        if (!chargeId || isVerifying || !user) return;
-        setIsVerifying(true);
-        try {
-            const result = await verifyAndFinalizeSubscription(user.uid, chargeId);
-
-            if (result.success) {
-                router.push('/checkout/success');
-            } else {
-                 toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente ou não foi confirmado.' });
-            }
-        } catch (e: any) {
-            toast({ title: 'Erro de Conexão', description: e.message, variant: 'destructive' });
-        } finally {
-            setIsVerifying(false);
-        }
-    }, [isVerifying, user, router, toast]);
-
-    // Effect for polling PIX/Boleto payments
-    useEffect(() => {
-        if (step !== 'payment' || paymentMethod === 'CREDIT_CARD' || !paymentResult?.chargeId) {
-            return;
-        }
-
-        const interval = setInterval(() => {
-            handleCheckPayment(paymentResult.chargeId);
-        }, 5000); // Check every 5 seconds
-
-        return () => clearInterval(interval);
-    }, [step, paymentMethod, paymentResult, handleCheckPayment]);
-
+    }, [user, userProfile, isUserLoading, router, customerForm]);
 
     if (isUserLoading || !userProfile || !planName || !plansConfig[planName]) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -137,58 +98,73 @@ function CheckoutPageContent() {
     const planDetails = plansConfig[planName];
     const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
-
     const periodText = isYearly ? 'anual' : 'mensal';
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
-        if (form.formState.isDirty) {
-            try {
-                await onProfileUpdate(data);
-                toast({ title: "Dados atualizados!" });
-            } catch (e: any) {
-                toast({ title: "Erro ao salvar dados", description: e.message, variant: "destructive" });
-                setIsLoading(false);
-                return;
-            }
-        }
-        setIsLoading(false);
-        setStep('method');
-    };
-
-    const generatePayment = async () => {
-        setIsLoading(true);
         setError(null);
         try {
+            if (customerForm.formState.isDirty) {
+                await onProfileUpdate(data);
+                toast({ title: "Dados atualizados!" });
+            }
             if (!user) throw new Error("Usuário não autenticado.");
 
             const response = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.uid,
-                    planName: planName,
-                    isYearly: isYearly,
-                    customerData: form.getValues(),
-                    billingType: paymentMethod,
-                }),
+                body: JSON.stringify({ userId: user.uid, customerData: data }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Falha ao gerar o checkout.');
-            
-            setPaymentResult(data);
-            
-            if (paymentMethod === 'CREDIT_CARD' && data.url) {
-                window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
-            }
-            
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+            setAsaasCustomerId(result.asaasCustomerId);
             setStep('payment');
-
         } catch (err: any) {
             setError(err.message);
-            toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+            toast({ title: "Erro ao verificar dados", description: err.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
+        }
+    };
+    
+    const handlePaymentSubmit = async (data: CardFormValues) => {
+        setIsLoading(true);
+        setError(null);
+        toast({ title: 'Processando...', description: 'Tokenizando seu cartão de forma segura...' });
+        
+        // TODO: In the next step, we will implement the actual call to Asaas tokenization API here.
+        // For now, this is a placeholder.
+        try {
+            // Placeholder for the fetch call to Asaas tokenization
+            // const tokenizationResponse = await fetch('https://api-sandbox.asaas.com/v3/creditCard/tokenizeCreditCard', { ... });
+            // const tokenData = await tokenizationResponse.json();
+            // if (!tokenizationResponse.ok) throw new Error(tokenData.errors[0].description);
+            // const creditCardToken = tokenData.creditCardToken;
+            
+            // Now, send the token to our backend to create the subscription.
+            // const subscriptionResponse = await fetch('/api/subscribe', { body: JSON.stringify({ asaasCustomerId, creditCardToken, planName, isYearly }) });
+            
+            console.log("Card Data to be tokenized:", data);
+            console.log("Asaas Customer ID:", asaasCustomerId);
+            
+            // Simulating a delay for demonstration
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // On success (in a future step)
+            // router.push('/checkout/success');
+
+             toast({
+                variant: 'destructive',
+                title: 'Funcionalidade em Desenvolvimento',
+                description: 'A tokenização e criação da assinatura serão implementadas na próxima etapa.',
+            });
+
+
+        } catch (err: any) {
+             setError(err.message);
+             toast({ title: 'Erro no Pagamento', description: err.message, variant: 'destructive' });
+        } finally {
+             setIsLoading(false);
         }
     };
 
@@ -197,171 +173,55 @@ function CheckoutPageContent() {
             case 'data':
                 return (
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Confirme seus Dados</CardTitle>
-                            <CardDescription>Essas informações são necessárias para a cobrança.</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle>Confirme seus Dados</CardTitle><CardDescription>Essas informações são necessárias para a cobrança.</CardDescription></CardHeader>
                         <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
-                                    <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                </form>
-                            </Form>
+                            <Form {...customerForm}><form onSubmit={customerForm.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
+                                <FormField control={customerForm.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </form></Form>
                         </CardContent>
-                        <CardFooter>
-                            <Button form="customer-data-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Continuar'}</Button>
-                        </CardFooter>
-                    </Card>
-                );
-            case 'method':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Forma de Pagamento</CardTitle>
-                            <CardDescription>Escolha como deseja pagar.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <RadioGroup defaultValue={paymentMethod} onValueChange={(value: PaymentMethod) => setPaymentMethod(value)} className="space-y-3">
-                                <Label htmlFor="card" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'CREDIT_CARD' && 'ring-2 ring-primary border-primary')}>
-                                    <CreditCard className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">Cartão de Crédito</p><p className="text-sm text-muted-foreground">Pagamento seguro e recorrente.</p></div>
-                                    <RadioGroupItem value="CREDIT_CARD" id="card" className="ml-auto" />
-                                </Label>
-                                <Label htmlFor="pix" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'PIX' && 'ring-2 ring-primary border-primary')}>
-                                    <QrCode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">PIX</p><p className="text-sm text-muted-foreground">Pagamento único com confirmação rápida.</p></div>
-                                    <RadioGroupItem value="PIX" id="pix" className="ml-auto" />
-                                </Label>
-                                <Label htmlFor="boleto" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'BOLETO' && 'ring-2 ring-primary border-primary')}>
-                                    <Barcode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">Boleto Bancário</p><p className="text-sm text-muted-foreground">Vencimento em 3 dias.</p></div>
-                                    <RadioGroupItem value="BOLETO" id="boleto" className="ml-auto" />
-                                </Label>
-                            </RadioGroup>
-                        </CardContent>
-                        <CardFooter className="flex-col sm:flex-row gap-2">
-                             <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar</Button>
-                             <Button className="w-full" onClick={generatePayment} disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Finalizar Pagamento'}</Button>
-                        </CardFooter>
+                        <CardFooter><Button form="customer-data-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Continuar para Pagamento'}</Button></CardFooter>
                     </Card>
                 );
             case 'payment':
-                if (paymentMethod === 'CREDIT_CARD') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                <CardTitle>Finalize na Nova Aba</CardTitle>
-                                <CardDescription>Sua página de pagamento segura foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
-                            </CardHeader>
-                                <CardFooter className="flex-col gap-2">
-                                <p className="text-xs text-muted-foreground mb-2">Se a aba não abriu, clique no botão abaixo.</p>
-                                <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="secondary" className="w-full">
-                                    Abrir página de pagamento
-                                </Button>
-                                <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">Voltar para o Dashboard</Button>
-                            </CardFooter>
-                        </Card>
-                    );
-                }
-                if (paymentMethod === 'PIX') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                 <CardTitle className="flex items-center justify-center gap-2"><QrCode className="h-6 w-6" /> Pagamento com PIX</CardTitle>
-                                <CardDescription>Escaneie o QR Code ou copie o código abaixo para pagar.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-center gap-4">
-                                {paymentResult.encodedImage && (
-                                    <div className="p-4 bg-white rounded-lg border">
-                                        <img src={`data:image/png;base64,${paymentResult.encodedImage}`} alt="PIX QR Code" width={180} height={180} />
-                                    </div>
-                                )}
-                                <Button onClick={() => handleCopyCode(paymentResult.payload)} variant="outline" className='w-full'>
-                                    <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
-                                </Button>
-                            </CardContent>
-                            <CardFooter className="flex-col gap-2">
-                                <Button onClick={() => handleCheckPayment(paymentResult.chargeId)} disabled={isVerifying} className="w-full">
-                                    {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                                    Já paguei, verificar
-                                </Button>
-                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> Verificando automaticamente...</p>
-                            </CardFooter>
-                        </Card>
-                    );
-                }
-                 if (paymentMethod === 'BOLETO') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                 <CardTitle className="flex items-center justify-center gap-2"><Barcode className="h-6 w-6" /> Pagamento com Boleto</CardTitle>
-                                <CardDescription>Use a linha digitável ou o PDF para pagar.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-4">
-                                <div className="p-3 border rounded-lg bg-muted">
-                                    <p className="text-sm font-medium leading-none">Linha Digitável</p>
-                                    <p className="text-sm break-all mt-1">{paymentResult.identificationField}</p>
+                return (
+                     <Card>
+                        <CardHeader><CardTitle>Pagamento com Cartão</CardTitle><CardDescription>Insira os dados do seu cartão de crédito.</CardDescription></CardHeader>
+                        <CardContent>
+                            <Form {...cardForm}><form onSubmit={cardForm.handleSubmit(handlePaymentSubmit)} id="card-payment-form" className="space-y-4">
+                                <FormField control={cardForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={cardForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={cardForm.control} name="expiry" render={({ field }) => (<FormItem><FormLabel>Validade (MM/AA)</FormLabel><FormControl><Input placeholder="MM/AA" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={cardForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                <Button onClick={() => handleCopyCode(paymentResult.identificationField)} variant="outline" className='w-full'>
-                                    <Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável
-                                </Button>
-                                 <Button asChild variant="secondary" className="w-full">
-                                    <a href={paymentResult.bankSlipUrl} target="_blank" rel="noopener noreferrer">
-                                        <Barcode className="mr-2 h-4 w-4" /> Ver Boleto (PDF)
-                                    </a>
-                                </Button>
-                            </CardContent>
-                             <CardFooter className="flex-col gap-2">
-                                <Button onClick={() => handleCheckPayment(paymentResult.chargeId)} disabled={isVerifying} className="w-full">
-                                    {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                                    Já paguei, verificar
-                                </Button>
-                                <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> A confirmação pode levar até 2 dias úteis.</p>
-                            </CardFooter>
-                        </Card>
-                    );
-                }
+                            </form></Form>
+                        </CardContent>
+                        <CardFooter className="flex-col sm:flex-row gap-2">
+                             <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar</Button>
+                             <Button form="card-payment-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : `Pagar R$ ${totalAmount.toFixed(2)}`}</Button>
+                        </CardFooter>
+                    </Card>
+                );
         }
     }
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
             <div className="container mx-auto max-w-4xl py-12">
-                 <Button asChild variant="ghost" className="mb-8">
-                    <Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link>
-                 </Button>
-
+                 <Button asChild variant="ghost" className="mb-8"><Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link></Button>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    {/* Left: Order Summary */}
-                    <div className="md:sticky md:top-24">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Resumo do Pedido</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Plano</span>
-                                    <span className="font-semibold">{planDetails.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Ciclo</span>
-                                    <span className="font-semibold capitalize">{periodText}</span>
-                                </div>
-                                 <div className="border-t pt-4 flex justify-between font-bold text-lg">
-                                    <span>Total</span>
-                                    <span>R$ {totalAmount.toFixed(2)}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right: Checkout Steps */}
-                    <div>
-                        {renderStep()}
-                    </div>
+                    <div className="md:sticky md:top-24"><Card>
+                        <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Ciclo</span><span className="font-semibold capitalize">{periodText}</span></div>
+                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {totalAmount.toFixed(2)}</span></div>
+                        </CardContent>
+                    </Card></div>
+                    <div>{renderStep()}</div>
                 </div>
             </div>
         </AppLayout>

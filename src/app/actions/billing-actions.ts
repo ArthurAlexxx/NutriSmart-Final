@@ -97,7 +97,7 @@ export async function updateUserSubscriptionAction(
   try {
     const userRef = db.collection('users').doc(userId);
     
-    const updatePayload: Partial<UserProfile> = {
+    const updatePayload: Partial<UserProfile> & { [key: string]: any } = {
         subscriptionExpiresAt: expirationTimestamp,
     };
 
