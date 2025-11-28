@@ -37,7 +37,6 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 const subscriptionFormSchema = z.object({
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
     cycle: z.enum(['MONTHLY', 'YEARLY']),
-    creditCardToken: z.string().min(10, 'O token do cartão é obrigatório.'),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
@@ -61,7 +60,7 @@ export default function AsaasTestPage() {
 
     const subscriptionForm = useForm<SubscriptionFormValues>({
         resolver: zodResolver(subscriptionFormSchema),
-        defaultValues: { value: 1.00, cycle: 'MONTHLY', creditCardToken: '' },
+        defaultValues: { value: 1.00, cycle: 'MONTHLY' },
     });
     
     const handleCopy = (text: string) => {
@@ -256,12 +255,11 @@ export default function AsaasTestPage() {
                                 <Card>
                                      <CardHeader>
                                         <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>3</span> Criar Assinatura (Cartão)</CardTitle>
-                                        <CardDescription>Crie uma assinatura recorrente no cartão de crédito.</CardDescription>
+                                        <CardDescription>Crie uma assinatura recorrente no cartão de crédito (sem token, para fins de teste da API).</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <Form {...subscriptionForm}>
                                             <form onSubmit={subscriptionForm.handleSubmit(onSubscriptionSubmit)} className="space-y-6">
-                                                <FormField control={subscriptionForm.control} name="creditCardToken" render={({ field }) => (<FormItem><FormLabel>Token do Cartão de Crédito</FormLabel><FormControl><Input placeholder="cct_..." {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                 <div className='grid grid-cols-2 gap-4'>
                                                     <FormField control={subscriptionForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={subscriptionForm.control} name="cycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="MONTHLY">Mensal</SelectItem><SelectItem value="YEARLY">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>

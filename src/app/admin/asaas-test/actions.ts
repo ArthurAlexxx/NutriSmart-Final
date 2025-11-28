@@ -23,7 +23,6 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 const subscriptionFormSchema = z.object({
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
     cycle: z.enum(['MONTHLY', 'YEARLY']),
-    creditCardToken: z.string().min(10, 'O token do cartão é obrigatório.'),
     customerId: z.string(),
     userId: z.string(),
 });
@@ -154,13 +153,13 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
     try {
         const subscriptionPayload = {
             customer: data.customerId,
-            billingType: 'CREDIT_CARD',
-            nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], // Primeira cobrança amanhã
+            billingType: 'CREDIT_CARD', // Hardcoding as per flow, will be associated with a card later
+            nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], // First charge tomorrow
             value: data.value,
             cycle: data.cycle,
-            description: `Assinatura Teste - Cartão de Crédito - Ciclo ${data.cycle}`,
+            description: `Assinatura Teste (Cartão) - Ciclo ${data.cycle}`,
             externalReference: data.userId,
-            creditCardToken: data.creditCardToken,
+            // creditCardToken is intentionally omitted for this test step
         };
 
         const response = await fetch(`${asaasApiUrl}/subscriptions`, {
@@ -172,6 +171,9 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
 
         const responseData = await response.json();
         if (!response.ok) {
+            // Asaas might return an error if a card is required even for creation
+            // We log this to understand the behavior
+            console.error("Asaas Subscription API Response:", responseData);
             throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
         }
 
