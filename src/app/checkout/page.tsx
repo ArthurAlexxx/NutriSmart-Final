@@ -269,7 +269,7 @@ function CheckoutPageContent() {
         
         if (apiResponse.status !== 'success') {
              return (
-                 <Card className="shadow-sm">
+                 <Card className="shadow-lg rounded-2xl">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><XCircle/> Erro na Requisição</CardTitle></CardHeader>
                     <CardContent><ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4"><pre className="text-sm whitespace-pre-wrap">{JSON.stringify(apiResponse?.data, null, 2)}</pre></ScrollArea></CardContent>
                 </Card>
@@ -278,7 +278,7 @@ function CheckoutPageContent() {
 
         if (apiResponse.type === 'payment' || apiResponse.type === 'subscription_pending') {
              return (
-                <Card className="shadow-sm">
+                <Card className="shadow-lg rounded-2xl">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Cobrança Gerada</CardTitle></CardHeader>
                     <CardContent className='space-y-4'>
                         <div className='space-y-4'>
@@ -324,9 +324,9 @@ function CheckoutPageContent() {
     };
 
     const renderDataStep = () => (
-        <Card className='shadow-lg'>
+        <Card className='shadow-lg rounded-2xl'>
             <CardHeader>
-                <CardTitle className="flex items-center gap-3">
+                <CardTitle className="flex items-center gap-3 font-heading">
                     <span className='flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold'>1</span>
                     Confirme seus Dados
                 </CardTitle>
@@ -346,9 +346,9 @@ function CheckoutPageContent() {
     );
 
     const renderPaymentStep = () => (
-        <Card className='shadow-lg'>
+        <Card className='shadow-lg rounded-2xl'>
             <CardHeader>
-                <CardTitle className="flex items-center gap-3">
+                <CardTitle className="flex items-center gap-3 font-heading">
                      <span className='flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold'>2</span>
                     Escolha o Pagamento
                 </CardTitle>
@@ -425,13 +425,14 @@ function CheckoutPageContent() {
                  <div className="mb-8">
                     <Button asChild variant="ghost"><Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link></Button>
                  </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start">
-                    <div className="space-y-6 md:sticky md:top-28">
-                        <Card className='shadow-lg'>
-                            <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+                    <div className="lg:sticky lg:top-28 space-y-6">
+                        <Card className='shadow-lg rounded-2xl'>
+                            <CardHeader><CardTitle className='font-heading'>Resumo do Pedido</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
-                                <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>{periodText}</span></div>
+                                <div className="flex justify-between items-center"><span className="text-muted-foreground">Plano</span><span className="font-semibold text-lg">{planDetails.name}</span></div>
+                                <Separator />
+                                <div className="border-t pt-4 flex justify-between items-baseline font-bold text-lg"><span>Total</span><span className='text-right'>{periodText}</span></div>
                             </CardContent>
                         </Card>
                          <div className='animate-in fade-in-50 duration-500'>
