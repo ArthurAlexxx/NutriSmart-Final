@@ -77,7 +77,7 @@ function CheckoutPageContent() {
                     email: userProfile.email || '',
                     cpfCnpj: userProfile.taxId || '',
                 });
-                // Garante que o fluxo sempre comece na etapa de dados
+                // Sempre começa na etapa de dados
                 setStep('data');
             }
         }
@@ -155,20 +155,19 @@ function CheckoutPageContent() {
         if (!apiResponse) return null;
 
         const cardTitleClass = apiResponse.status === 'success' ? 'text-green-500' : 'text-destructive';
-        const TitleIcon = apiResponse.status === 'success' ? UserPlus : XCircle;
-
-        if (apiResponse.type === 'customer') {
+        
+        if (apiResponse.type === 'customer' && apiResponse.status === 'success') {
             return (
-                <Card>
-                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><TitleIcon/> Sucesso na Requisição</CardTitle></CardHeader>
-                    <CardContent><ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4"><pre className="text-sm whitespace-pre-wrap">{JSON.stringify(apiResponse?.data, null, 2)}</pre></ScrollArea></CardContent>
+                 <Card className="shadow-sm">
+                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><UserPlus/> Cliente Criado com Sucesso</CardTitle></CardHeader>
+                    <CardContent><p className='text-sm text-muted-foreground'>O cliente <span className='font-bold text-foreground'>{apiResponse.data.name}</span> foi criado. Prossiga para o pagamento.</p></CardContent>
                 </Card>
             );
         }
 
         if (apiResponse.type === 'payment' && apiResponse.status === 'success') {
              return (
-                <Card>
+                <Card className="shadow-sm">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Cobrança Gerada</CardTitle></CardHeader>
                     <CardContent>
                         <div className='space-y-4'>
@@ -197,7 +196,7 @@ function CheckoutPageContent() {
         
         // Error card
         return (
-             <Card>
+             <Card className="shadow-sm">
                 <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><XCircle/> Erro na Requisição</CardTitle></CardHeader>
                 <CardContent><ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4"><pre className="text-sm whitespace-pre-wrap">{JSON.stringify(apiResponse?.data, null, 2)}</pre></ScrollArea></CardContent>
             </Card>
@@ -205,8 +204,14 @@ function CheckoutPageContent() {
     };
 
     const renderDataStep = () => (
-        <Card>
-            <CardHeader><CardTitle>1. Confirme seus Dados</CardTitle><CardDescription>Informações necessárias para a emissão da cobrança.</CardDescription></CardHeader>
+        <Card className='shadow-lg'>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                    <span className='flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold'>1</span>
+                    Confirme seus Dados
+                </CardTitle>
+                <CardDescription>Informações necessárias para a emissão da cobrança.</CardDescription>
+            </CardHeader>
             <CardContent>
                 <Form {...customerForm}>
                     <form onSubmit={customerForm.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
@@ -221,8 +226,14 @@ function CheckoutPageContent() {
     );
 
     const renderPaymentStep = () => (
-        <Card>
-            <CardHeader><CardTitle>2. Escolha o Pagamento</CardTitle><CardDescription>Selecione a forma de pagamento de sua preferência.</CardDescription></CardHeader>
+        <Card className='shadow-lg'>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                     <span className='flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold'>2</span>
+                    Escolha o Pagamento
+                </CardTitle>
+                <CardDescription>Selecione a forma de pagamento de sua preferência.</CardDescription>
+            </CardHeader>
             <CardContent>
                  <Tabs defaultValue="pix-boleto" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -245,7 +256,7 @@ function CheckoutPageContent() {
                         </Form>
                     </TabsContent>
                     <TabsContent value="cartao">
-                        {/* O formulário do cartão virá aqui */}
+                         <p className="text-sm text-center text-muted-foreground p-8">O pagamento com cartão de crédito será habilitado em breve.</p>
                     </TabsContent>
                  </Tabs>
             </CardContent>
@@ -257,11 +268,13 @@ function CheckoutPageContent() {
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-            <div className="container mx-auto max-w-4xl py-12">
-                 <Button asChild variant="ghost" className="mb-8"><Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link></Button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    <div className="space-y-4 md:sticky md:top-24">
-                        <Card>
+            <div className="container mx-auto max-w-6xl py-12 px-4 sm:px-6 lg:px-8">
+                 <div className="mb-8">
+                    <Button asChild variant="ghost"><Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link></Button>
+                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start">
+                    <div className="space-y-6 md:sticky md:top-28">
+                        <Card className='shadow-lg'>
                             <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
