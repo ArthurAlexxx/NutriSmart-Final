@@ -1,7 +1,7 @@
 // src/app/checkout/page.tsx
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ import * as z from 'zod';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, ChevronLeft, ArrowRight, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase } from 'lucide-react';
+import { Loader2, ChevronLeft, ArrowRight, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase, RefreshCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Link from 'next/link';
@@ -54,6 +54,7 @@ function CheckoutPageContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [createdCustomer, setCreatedCustomer] = useState<any>(null);
+    const [isVerifying, setIsVerifying] = useState(false);
 
     const planName = searchParams.get('plan')?.toUpperCase() as keyof typeof plansConfig;
     const isYearly = searchParams.get('yearly') === 'true';
@@ -137,6 +138,27 @@ function CheckoutPageContent() {
         }
     }
     
+    const handleVerifyPayment = async () => {
+        if (!user || !apiResponse?.data?.chargeId) {
+            toast({ title: "Erro", description: "Não foi possível encontrar os dados da cobrança para verificação.", variant: 'destructive' });
+            return;
+        }
+        setIsVerifying(true);
+        try {
+            const result = await verifyAndFinalizeSubscription(user.uid, apiResponse.data.chargeId);
+            if (result.success) {
+                 localStorage.removeItem(`pendingChargeId_${user.uid}`);
+                 router.push('/checkout/success');
+            } else {
+                toast({ title: "Pagamento Pendente", description: result.message, variant: 'default' });
+            }
+        } catch (error: any) {
+            toast({ title: "Erro na Verificação", description: error.message, variant: 'destructive' });
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+    
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
         toast({ title: 'Copiado!' });
@@ -157,26 +179,20 @@ function CheckoutPageContent() {
         const cardTitleClass = apiResponse.status === 'success' ? 'text-green-500' : 'text-destructive';
         
         if (apiResponse.type === 'customer' && apiResponse.status === 'success') {
-            return (
-                 <Card className="shadow-sm">
-                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><UserPlus/> Cliente Criado com Sucesso</CardTitle></CardHeader>
-                    <CardContent><p className='text-sm text-muted-foreground'>O cliente <span className='font-bold text-foreground'>{apiResponse.data.name}</span> foi criado. Prossiga para o pagamento.</p></CardContent>
-                </Card>
-            );
+            return null; // Don't show customer success card, just proceed to payment step
         }
 
         if (apiResponse.type === 'payment' && apiResponse.status === 'success') {
              return (
                 <Card className="shadow-sm">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Cobrança Gerada</CardTitle></CardHeader>
-                    <CardContent>
+                    <CardContent className='space-y-4'>
                         <div className='space-y-4'>
                             {apiResponse.data.type === 'PIX' && apiResponse.data.encodedImage && (
                                 <div className='flex flex-col items-center gap-4'>
                                     <h3 className='font-semibold'>Escaneie para pagar com PIX</h3>
                                     <div className="p-2 bg-white rounded-lg border"><img src={`data:image/png;base64,${apiResponse.data.encodedImage}`} alt="PIX QR Code" width={150} height={150} /></div>
                                     <Button onClick={() => handleCopy(apiResponse.data.payload)} variant="outline" className='w-full'><Copy className="mr-2 h-4 w-4" /> Copiar Código</Button>
-                                    <p className="text-sm text-muted-foreground text-center">Após o pagamento, sua assinatura será ativada automaticamente.</p>
                                 </div>
                             )}
                              {apiResponse.data.type === 'BOLETO' && apiResponse.data.identificationField && (
@@ -185,10 +201,14 @@ function CheckoutPageContent() {
                                      <div className="p-3 border rounded-lg bg-muted text-sm break-all">{apiResponse.data.identificationField}</div>
                                     <Button onClick={() => handleCopy(apiResponse.data.identificationField)} variant="outline" className='w-full'><Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável</Button>
                                     <Button asChild variant="secondary" className="w-full"><a href={apiResponse.data.bankSlipUrl} target="_blank" rel="noopener noreferrer"><Barcode className="mr-2 h-4 w-4" /> Ver PDF</a></Button>
-                                    <p className="text-sm text-muted-foreground text-center">A confirmação pode levar até 2 dias úteis. Sua assinatura será ativada após a confirmação.</p>
                                 </div>
                             )}
                         </div>
+                        <p className="text-sm text-muted-foreground text-center pt-2">Após o pagamento, sua assinatura será ativada. Se preferir, clique no botão abaixo para verificar.</p>
+                         <Button onClick={handleVerifyPayment} disabled={isVerifying} className="w-full">
+                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCcw className="mr-2 h-4 w-4"/>}
+                            Verificar Pagamento
+                        </Button>
                     </CardContent>
                 </Card>
             );

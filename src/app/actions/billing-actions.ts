@@ -171,14 +171,17 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
             return { success: false, message: "Pagamento não confirmado ou ainda pendente." };
         }
         
-        if (data.externalReference !== userId) {
+        const metadata = data.metadata;
+        const planName = metadata?.plan;
+        const billingCycle = metadata?.billingCycle;
+        const externalRefUserId = data.externalReference;
+        
+        if (externalRefUserId !== userId) {
              return { success: false, message: "Dados de pagamento inválidos ou não correspondem ao usuário." };
         }
         
-        const { planName, billingCycle } = extractPlanInfoFromDescription(data.description);
-        
         if (!planName || !billingCycle) {
-            return { success: false, message: "Não foi possível determinar o plano a partir da descrição do pagamento." };
+            return { success: false, message: "Não foi possível determinar o plano a partir dos metadados do pagamento." };
         }
 
         const asaasSubscriptionId = data.subscription;

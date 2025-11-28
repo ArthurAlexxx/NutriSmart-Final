@@ -60,13 +60,14 @@ export default function DashboardPage() {
                         localStorage.removeItem(`pendingChargeId_${user.uid}`);
                         router.push('/checkout/success');
                     } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
-                        toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
-                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
+                        // Don't toast for pending payments, it's expected.
+                        // toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
+                        // localStorage.removeItem(`pendingChargeId_${user.uid}`);
                     }
                 } catch (err: any) {
                     console.error("Erro ao tentar finalizar assinatura:", err);
                     toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
-                    localStorage.removeItem(`pendingChargeId_${user.uid}`);
+                    // localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 }
             }
         }
