@@ -1,7 +1,8 @@
 // src/firebase/provider.tsx
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, onSnapshot, updateDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
@@ -56,12 +57,35 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   firestore,
   auth,
 }) => {
+  const router = useRouter();
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
     userProfile: null,
     isUserLoading: true, // Start loading and wait for Firebase to initialize.
     userError: null,
   });
+
+  const previousSubscriptionStatus = useRef<string | undefined>(undefined);
+
+  // Effect to handle redirection after a successful payment
+  useEffect(() => {
+    const newStatus = userAuthState.userProfile?.subscriptionStatus;
+    const oldStatus = previousSubscriptionStatus.current;
+    
+    // Check if the status has changed from 'free' to a paid plan
+    if (oldStatus === 'free' && (newStatus === 'premium' || newStatus === 'professional')) {
+        // A payment was likely just completed. Let's check for our session marker.
+        if (sessionStorage.getItem('payment_completed') === 'true') {
+            sessionStorage.removeItem('payment_completed');
+            router.push('/checkout/success');
+        }
+    }
+    
+    // Update the ref for the next render
+    previousSubscriptionStatus.current = newStatus;
+
+  }, [userAuthState.userProfile?.subscriptionStatus, router]);
+
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {

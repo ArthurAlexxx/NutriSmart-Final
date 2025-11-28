@@ -121,31 +121,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         router.replace('/dashboard');
     }
   }, [isProUser, pathname, router, user]);
-
-  useEffect(() => {
-    if (!user || !userProfile) return;
-
-    // This checks for pending payments on any page with AppLayout
-    const finalizePayment = async () => {
-      const pendingChargeId = localStorage.getItem(`pendingChargeId_${user.uid}`);
-      if (pendingChargeId) {
-        try {
-          const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
-          if (result.success) {
-            localStorage.removeItem(`pendingChargeId_${user.uid}`);
-            router.push('/checkout/success');
-          }
-        } catch (err: any) {
-          console.error("Erro ao tentar finalizar assinatura:", err);
-        }
-      }
-    };
-
-    const intervalId = setInterval(finalizePayment, 5000); // Check every 5 seconds
-    return () => clearInterval(intervalId);
-  }, [user, userProfile, router]);
-
-
+  
   const handleSignOut = async () => {
     if (!auth) return;
     try {

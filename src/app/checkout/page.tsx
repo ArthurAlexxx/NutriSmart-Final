@@ -118,28 +118,22 @@ function CheckoutPageContent() {
         }
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
     
-    useEffect(() => {
-        // Redirect to success page if the user is already subscribed and lands here
-        if (user && userProfile && (userProfile.subscriptionStatus === 'premium' || userProfile.subscriptionStatus === 'professional')) {
-            const planMatches = userProfile.subscriptionStatus.toUpperCase() === planName;
-            if(planMatches) {
-               // router.push('/checkout/success');
-            }
-        }
-    }, [user, userProfile, planName, router]);
-
-
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
         setApiResponse(null);
         try {
             if (!user) throw new Error("Usuário não autenticado.");
+            
+            // Set a session marker to indicate a payment process has started
+            sessionStorage.setItem('payment_completed', 'true');
+            
             const result = await createCustomer(user.uid, data);
             setApiResponse({ status: 'success', data: result, type: 'customer' });
             setCreatedCustomer(result);
             toast({ title: 'Dados validados!', description: 'Agora escolha o método de pagamento.' });
             setStep('payment');
         } catch (err: any) {
+            sessionStorage.removeItem('payment_completed'); // Clean up marker on failure
             setApiResponse({ status: 'error', data: { message: err.message }, type: 'customer' });
             toast({ title: "Erro ao validar dados", description: err.message, variant: "destructive" });
         } finally {
@@ -170,11 +164,9 @@ function CheckoutPageContent() {
                 userId: user.uid
             });
             setApiResponse({ status: 'success', data: result, type: 'payment' });
-            
-            localStorage.setItem(`pendingChargeId_${user.uid}`, result.chargeId);
-
             toast({ title: "Cobrança Criada!", description: `Sua cobrança de ${data.billingType} foi gerada. Efetue o pagamento para ativar a assinatura.` });
         } catch (error: any) {
+            sessionStorage.removeItem('payment_completed');
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'payment' });
             toast({ title: "Erro ao Criar Cobrança", description: error.message, variant: 'destructive' });
         } finally {
@@ -213,16 +205,11 @@ function CheckoutPageContent() {
                 creditCardToken: tokenResult.creditCardToken,
             });
 
-            // The subscription creation response contains the first payment info
-            const firstCharge = subscriptionResult.payments?.[0];
-            if (firstCharge?.id) {
-                localStorage.setItem(`pendingChargeId_${user.uid}`, firstCharge.id);
-            }
-            
             setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
             toast({ title: "Assinatura Criada!", description: "Aguardando confirmação do pagamento para ativar seu plano." });
 
         } catch (error: any) {
+            sessionStorage.removeItem('payment_completed');
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
             toast({ title: "Erro na Assinatura", description: error.message, variant: 'destructive' });
         } finally {
@@ -240,7 +227,6 @@ function CheckoutPageContent() {
         try {
             const result = await verifyAndFinalizeSubscription(user.uid, apiResponse.data.chargeId);
             if (result.success) {
-                 localStorage.removeItem(`pendingChargeId_${user.uid}`);
                  router.push('/checkout/success');
             } else {
                 toast({ title: "Pagamento Pendente", description: result.message, variant: 'default' });
