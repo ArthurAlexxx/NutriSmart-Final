@@ -159,7 +159,6 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
                 const errorJson = JSON.parse(errorText);
                 errorMessage = errorJson.errors?.[0]?.description || errorMessage;
             } catch {
-                // Not a JSON error, use the raw text if available
                 if (errorText) errorMessage += ` - ${errorText}`;
             }
             return { success: false, message: errorMessage };
@@ -196,6 +195,7 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
         return { success: false, message: error.message || "Erro desconhecido ao finalizar a assinatura." };
     }
 }
+
 
 /**
  * Cancels a user's subscription by setting their status to 'free' and cancelling on Asaas.

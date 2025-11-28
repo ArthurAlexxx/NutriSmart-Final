@@ -1,18 +1,18 @@
 // src/app/checkout/page.tsx
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, User, ChevronLeft, CreditCard, ArrowRight, QrCode, Barcode, Copy, RefreshCw, XCircle, CheckCircle } from 'lucide-react';
+import { Loader2, User, ChevronLeft, CreditCard, ArrowRight, QrCode, Barcode, Copy, RefreshCw, CheckCircle, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -26,11 +26,11 @@ const customerFormSchema = z.object({
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().min(10, 'O celular é obrigatório.'),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
-  postalCode: z.string().min(8, "CEP inválido."),
-  address: z.string().min(3, "Endereço inválido."),
-  addressNumber: z.string().min(1, "Número inválido."),
+  postalCode: z.string().min(8, "CEP inválido.").optional(),
+  address: z.string().min(3, "Endereço inválido.").optional(),
+  addressNumber: z.string().min(1, "Número inválido.").optional(),
   complement: z.string().optional(),
-  province: z.string().min(2, "Bairro inválido."),
+  province: z.string().min(2, "Bairro inválido.").optional(),
 });
 type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
@@ -92,6 +92,43 @@ function CheckoutPageContent() {
             }
         }
     }, [user, userProfile, isUserLoading, router, form]);
+    
+    const handleCopyCode = (code: string) => {
+        navigator.clipboard.writeText(code);
+        toast({ title: 'Copiado para a área de transferência!' });
+    };
+
+    const handleCheckPayment = useCallback(async (chargeId: string) => {
+        if (!chargeId || isVerifying || !user) return;
+        setIsVerifying(true);
+        try {
+            const result = await verifyAndFinalizeSubscription(user.uid, chargeId);
+
+            if (result.success) {
+                router.push('/checkout/success');
+            } else {
+                 toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente ou não foi confirmado.' });
+            }
+        } catch (e: any) {
+            toast({ title: 'Erro de Conexão', description: e.message, variant: 'destructive' });
+        } finally {
+            setIsVerifying(false);
+        }
+    }, [isVerifying, user, router, toast]);
+
+    // Effect for polling PIX/Boleto payments
+    useEffect(() => {
+        if (step !== 'payment' || paymentMethod === 'CREDIT_CARD' || !paymentResult?.chargeId) {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            handleCheckPayment(paymentResult.chargeId);
+        }, 5000); // Check every 5 seconds
+
+        return () => clearInterval(interval);
+    }, [step, paymentMethod, paymentResult, handleCheckPayment]);
+
 
     if (isUserLoading || !userProfile || !planName || !plansConfig[planName]) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -133,15 +170,15 @@ function CheckoutPageContent() {
                     planName: planName,
                     isYearly: isYearly,
                     customerData: form.getValues(),
-                    billingType: paymentMethod, // Sending the chosen method
+                    billingType: paymentMethod,
                 }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Falha ao gerar o checkout.');
             
             setPaymentResult(data);
-
-            if (data.url) {
+            
+            if (paymentMethod === 'CREDIT_CARD' && data.url) {
                 window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
@@ -153,30 +190,6 @@ function CheckoutPageContent() {
         } finally {
             setIsLoading(false);
         }
-    };
-    
-    const handleCheckPayment = async (chargeId: string) => {
-        if (!chargeId || isVerifying || !user) return;
-        setIsVerifying(true);
-        try {
-            const result = await verifyAndFinalizeSubscription(user.uid, chargeId);
-
-            if (result.success) {
-                localStorage.removeItem(`pendingChargeId_${user.uid}`);
-                router.push('/checkout/success');
-            } else {
-                 toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente ou não foi confirmado.' });
-            }
-        } catch (e: any) {
-            toast({ title: 'Erro de Conexão', description: e.message, variant: 'destructive' });
-        } finally {
-            setIsVerifying(false);
-        }
-    };
-
-    const handleCopyCode = (code: string) => {
-        navigator.clipboard.writeText(code);
-        toast({ title: 'Copiado para a área de transferência!' });
     };
 
     const renderStep = () => {
@@ -195,13 +208,6 @@ function CheckoutPageContent() {
                                     <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <FormField control={form.control} name="addressNumber" render={({ field }) => (<FormItem className="col-span-1"><FormLabel>Nº</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="complement" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>Complemento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                    <FormField control={form.control} name="province" render={({ field }) => (<FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </form>
                             </Form>
                         </CardContent>
@@ -243,21 +249,81 @@ function CheckoutPageContent() {
                     </Card>
                 );
             case 'payment':
-                 return (
-                    <Card>
-                        <CardHeader className="text-center">
-                            <CardTitle>Finalize na Nova Aba</CardTitle>
-                            <CardDescription>Sua página de pagamento segura foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
-                        </CardHeader>
+                if (paymentMethod === 'CREDIT_CARD') {
+                    return (
+                        <Card>
+                            <CardHeader className="text-center">
+                                <CardTitle>Finalize na Nova Aba</CardTitle>
+                                <CardDescription>Sua página de pagamento segura foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
+                            </CardHeader>
+                                <CardFooter className="flex-col gap-2">
+                                <p className="text-xs text-muted-foreground mb-2">Se a aba não abriu, clique no botão abaixo.</p>
+                                <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="secondary" className="w-full">
+                                    Abrir página de pagamento
+                                </Button>
+                                <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">Voltar para o Dashboard</Button>
+                            </CardFooter>
+                        </Card>
+                    );
+                }
+                if (paymentMethod === 'PIX') {
+                    return (
+                        <Card>
+                            <CardHeader className="text-center">
+                                 <CardTitle className="flex items-center justify-center gap-2"><QrCode className="h-6 w-6" /> Pagamento com PIX</CardTitle>
+                                <CardDescription>Escaneie o QR Code ou copie o código abaixo para pagar.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center gap-4">
+                                {paymentResult.encodedImage && (
+                                    <div className="p-4 bg-white rounded-lg border">
+                                        <img src={`data:image/png;base64,${paymentResult.encodedImage}`} alt="PIX QR Code" width={180} height={180} />
+                                    </div>
+                                )}
+                                <Button onClick={() => handleCopyCode(paymentResult.payload)} variant="outline" className='w-full'>
+                                    <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
+                                </Button>
+                            </CardContent>
                             <CardFooter className="flex-col gap-2">
-                            <p className="text-xs text-muted-foreground mb-2">Se a aba não abriu, clique no botão abaixo.</p>
-                            <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="secondary" className="w-full">
-                                Abrir página de pagamento
-                            </Button>
-                             <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">Voltar para o Dashboard</Button>
-                        </CardFooter>
-                    </Card>
-                )
+                                <Button onClick={() => handleCheckPayment(paymentResult.chargeId)} disabled={isVerifying} className="w-full">
+                                    {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                                    Já paguei, verificar
+                                </Button>
+                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> Verificando automaticamente...</p>
+                            </CardFooter>
+                        </Card>
+                    );
+                }
+                 if (paymentMethod === 'BOLETO') {
+                    return (
+                        <Card>
+                            <CardHeader className="text-center">
+                                 <CardTitle className="flex items-center justify-center gap-2"><Barcode className="h-6 w-6" /> Pagamento com Boleto</CardTitle>
+                                <CardDescription>Use a linha digitável ou o PDF para pagar.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-4">
+                                <div className="p-3 border rounded-lg bg-muted">
+                                    <p className="text-sm font-medium leading-none">Linha Digitável</p>
+                                    <p className="text-sm break-all mt-1">{paymentResult.identificationField}</p>
+                                </div>
+                                <Button onClick={() => handleCopyCode(paymentResult.identificationField)} variant="outline" className='w-full'>
+                                    <Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável
+                                </Button>
+                                 <Button asChild variant="secondary" className="w-full">
+                                    <a href={paymentResult.bankSlipUrl} target="_blank" rel="noopener noreferrer">
+                                        <Barcode className="mr-2 h-4 w-4" /> Ver Boleto (PDF)
+                                    </a>
+                                </Button>
+                            </CardContent>
+                             <CardFooter className="flex-col gap-2">
+                                <Button onClick={() => handleCheckPayment(paymentResult.chargeId)} disabled={isVerifying} className="w-full">
+                                    {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                                    Já paguei, verificar
+                                </Button>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" /> A confirmação pode levar até 2 dias úteis.</p>
+                            </CardFooter>
+                        </Card>
+                    );
+                }
         }
     }
 
@@ -283,10 +349,6 @@ function CheckoutPageContent() {
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Ciclo</span>
                                     <span className="font-semibold capitalize">{periodText}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Valor {isYearly ? 'anual' : 'mensal'}</span>
-                                    <span className="font-semibold">R$ {totalAmount.toFixed(2)}</span>
                                 </div>
                                  <div className="border-t pt-4 flex justify-between font-bold text-lg">
                                     <span>Total</span>
