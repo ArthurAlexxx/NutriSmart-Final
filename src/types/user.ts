@@ -21,6 +21,11 @@ export interface UserProfile {
     // Novos campos para pagamento
     phone?: string;
     taxId?: string;
+    address?: string;
+    addressNumber?: string;
+    complement?: string;
+    province?: string;
+    postalCode?: string;
 
     dashboardShareCode?: string;
     patientRoomId?: string;

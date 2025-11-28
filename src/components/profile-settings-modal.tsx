@@ -24,12 +24,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Separator } from './ui/separator';
 
 
 const profileFormSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   phone: z.string().min(10, 'O celular é obrigatório.').optional(),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.').optional(),
+  postalCode: z.string().min(8, "CEP inválido.").optional(),
+  address: z.string().min(3, "Endereço inválido.").optional(),
+  addressNumber: z.string().min(1, "Número inválido.").optional(),
+  complement: z.string().optional(),
+  province: z.string().min(2, "Bairro inválido.").optional(),
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
@@ -92,6 +98,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
         fullName: userProfile.fullName || '',
         phone: userProfile.phone || '',
         taxId: userProfile.taxId || '',
+        postalCode: userProfile.postalCode || '',
+        address: userProfile.address || '',
+        addressNumber: userProfile.addressNumber || '',
+        complement: userProfile.complement || '',
+        province: userProfile.province || '',
       });
     }
   }, [userProfile, profileForm, isOpen]);
@@ -131,6 +142,11 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
             if (profileForm.formState.dirtyFields.fullName) updatedProfile.fullName = data.fullName;
             if (profileForm.formState.dirtyFields.phone) updatedProfile.phone = data.phone;
             if (profileForm.formState.dirtyFields.taxId) updatedProfile.taxId = data.taxId;
+            if (profileForm.formState.dirtyFields.postalCode) updatedProfile.postalCode = data.postalCode;
+            if (profileForm.formState.dirtyFields.address) updatedProfile.address = data.address;
+            if (profileForm.formState.dirtyFields.addressNumber) updatedProfile.addressNumber = data.addressNumber;
+            if (profileForm.formState.dirtyFields.complement) updatedProfile.complement = data.complement;
+            if (profileForm.formState.dirtyFields.province) updatedProfile.province = data.province;
         }
 
         if (photoURL) {
@@ -290,11 +306,30 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                         )}/>
                                      </div>
                                 </div>
+                                <Separator className="my-4" />
+                                <p className="text-sm font-medium">Informações de Contato e Cobrança</p>
                                 <FormField control={profileForm.control} name="phone" render={({ field }) => (
                                     <FormItem><FormLabel>Celular</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={profileForm.control} name="taxId" render={({ field }) => (
                                     <FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Seu CPF ou CNPJ" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={profileForm.control} name="postalCode" render={({ field }) => (
+                                    <FormItem><FormLabel>CEP</FormLabel><FormControl><Input placeholder="00000-000" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={profileForm.control} name="address" render={({ field }) => (
+                                    <FormItem><FormLabel>Endereço</FormLabel><FormControl><Input placeholder="Rua, Av..." {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <FormField control={profileForm.control} name="addressNumber" render={({ field }) => (
+                                        <FormItem className="col-span-1"><FormLabel>Nº</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={profileForm.control} name="complement" render={({ field }) => (
+                                        <FormItem className="col-span-2"><FormLabel>Comp.</FormLabel><FormControl><Input placeholder="Apto, Bloco..." {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
+                                <FormField control={profileForm.control} name="province" render={({ field }) => (
+                                    <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input placeholder="Seu bairro" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                             </CardContent>
                             <CardFooter>

@@ -1,4 +1,3 @@
-
 // src/app/checkout/page.tsx
 'use client';
 
@@ -27,6 +26,11 @@ const customerFormSchema = z.object({
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   phone: z.string().min(10, 'O celular é obrigatório.'),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
+  postalCode: z.string().min(8, "CEP inválido."),
+  address: z.string().min(3, "Endereço inválido."),
+  addressNumber: z.string().min(1, "Número inválido."),
+  complement: z.string().optional(),
+  province: z.string().min(2, "Bairro inválido."),
 });
 type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
@@ -61,6 +65,11 @@ function CheckoutPageContent() {
             email: '',
             phone: '',
             taxId: '',
+            postalCode: '',
+            address: '',
+            addressNumber: '',
+            complement: '',
+            province: '',
         }
     });
     
@@ -74,6 +83,11 @@ function CheckoutPageContent() {
                     email: userProfile.email || '',
                     phone: userProfile.phone || '',
                     taxId: userProfile.taxId || '',
+                    postalCode: userProfile.postalCode || '',
+                    address: userProfile.address || '',
+                    addressNumber: userProfile.addressNumber || '',
+                    complement: userProfile.complement || '',
+                    province: userProfile.province || '',
                 });
             }
         }
@@ -181,6 +195,13 @@ function CheckoutPageContent() {
                                     <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <FormField control={form.control} name="addressNumber" render={({ field }) => (<FormItem className="col-span-1"><FormLabel>Nº</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="complement" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>Complemento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                    <FormField control={form.control} name="province" render={({ field }) => (<FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </form>
                             </Form>
                         </CardContent>

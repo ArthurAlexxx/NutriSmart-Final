@@ -12,6 +12,9 @@ const plansConfig = {
   PROFISSIONAL: { name: 'Profissional', price: 49.90, yearlyPrice: 39.90 },
 };
 
+// A minimal 1x1 transparent GIF encoded in Base64
+const PLACEHOLDER_IMAGE_BASE64 = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData, billingType } = await request.json();
   const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -47,16 +50,23 @@ export async function POST(request: Request) {
         minutesToExpire: 30,
         items: [
             {
-                name: description,
+                name: description.substring(0, 30),
+                description: description.substring(0, 150),
                 value: value,
-                quantity: isSubscription && isYearly ? 12 : 1,
+                quantity: 1, // Quantity is 1, total is calculated by subscription cycle if applicable
+                imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
         customerData: {
           name: customerData.fullName,
           email: customerData.email,
           cpfCnpj: customerData.taxId,
-          mobilePhone: customerData.phone,
+          phone: customerData.phone,
+          postalCode: customerData.postalCode,
+          address: customerData.address,
+          addressNumber: customerData.addressNumber,
+          complement: customerData.complement,
+          province: customerData.province,
         },
         callback: {
             autoRedirect: true,
