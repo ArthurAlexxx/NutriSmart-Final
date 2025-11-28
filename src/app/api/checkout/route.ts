@@ -1,7 +1,6 @@
 
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
-import { format, addDays } from 'date-fns';
 
 const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
@@ -34,17 +33,22 @@ export async function POST(request: Request) {
     }
 
     const isSubscription = billingType === 'CREDIT_CARD';
-    const value = isYearly ? planDetails.yearlyPrice * (isSubscription ? 1 : 12) : planDetails.monthly;
+    const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
 
     const checkoutPayload: any = {
-        name: description,
-        description: `Acesso ao plano ${planDetails.name} no Nutrinea.`,
         billingTypes: [billingType],
         chargeTypes: [isSubscription ? 'RECURRENT' : 'DETACHED'],
-        value: value,
         externalReference: userId,
-        customer: {
+        minutesToExpire: 30,
+        items: [
+            {
+                name: description,
+                value: value,
+                quantity: isSubscription ? 1 : (isYearly ? 12 : 1),
+            }
+        ],
+        customerData: {
           name: customerData.fullName,
           email: customerData.email,
           cpfCnpj: customerData.taxId,
@@ -60,9 +64,8 @@ export async function POST(request: Request) {
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
+            value: value, // Ensure value is also in the subscription object
         }
-    } else {
-       checkoutPayload.dueDateLimitDays = 3;
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
@@ -76,11 +79,10 @@ export async function POST(request: Request) {
         throw new Error(checkoutData.errors?.[0]?.description || 'Falha ao criar o checkout.');
     }
     
-    // The `url` field contains the link for the customer to complete the payment/subscription
     return NextResponse.json({
         type: billingType,
         url: checkoutData.url,
-        id: checkoutData.id, // The checkout ID can be used to poll its status
+        id: checkoutData.id,
     });
 
   } catch (error: any) {
