@@ -69,22 +69,27 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   // Effect to handle redirection after a successful payment
   useEffect(() => {
-    const newStatus = userAuthState.userProfile?.subscriptionStatus;
-    const oldStatus = previousSubscriptionStatus.current;
+    // This effect runs whenever the user's profile data changes.
+    const profile = userAuthState.userProfile;
+    if (!profile) return;
+
+    const storedStatus = profile.subscriptionStatus || 'free';
+    const expiresAt = profile.subscriptionExpiresAt 
+            ? (profile.subscriptionExpiresAt as Timestamp).toDate 
+              ? (profile.subscriptionExpiresAt as Timestamp).toDate() 
+              : profile.subscriptionExpiresAt as Date
+            : null;
+    const isExpired = expiresAt ? new Date() > expiresAt : true;
+
+    const hasActivePaidPlan = storedStatus !== 'free' && !isExpired;
     
-    // Check if the status has changed from 'free' to a paid plan
-    if (oldStatus === 'free' && (newStatus === 'premium' || newStatus === 'professional')) {
-        // A payment was likely just completed. Let's check for our session marker.
-        if (sessionStorage.getItem('payment_completed') === 'true') {
-            sessionStorage.removeItem('payment_completed');
-            router.push('/checkout/success');
-        }
+    // The key condition: was a payment just completed in this browser session?
+    if (sessionStorage.getItem('payment_completed') === 'true' && hasActivePaidPlan) {
+        sessionStorage.removeItem('payment_completed'); // Clear the flag
+        router.push('/checkout/success'); // Redirect to success page
     }
     
-    // Update the ref for the next render
-    previousSubscriptionStatus.current = newStatus;
-
-  }, [userAuthState.userProfile?.subscriptionStatus, router]);
+  }, [userAuthState.userProfile, router]);
 
 
   // Effect to subscribe to Firebase auth state changes

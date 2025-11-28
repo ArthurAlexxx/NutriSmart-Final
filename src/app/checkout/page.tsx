@@ -224,7 +224,7 @@ function CheckoutPageContent() {
             const result = await verifyAndFinalizeSubscription(user.uid, apiResponse.data.chargeId);
             if (result.success) {
                  sessionStorage.setItem('payment_completed', 'true');
-                 router.push('/checkout/success');
+                 // The provider will now handle the redirection
             } else {
                 toast({ title: "Pagamento Pendente", description: result.message, variant: 'default' });
             }

@@ -13,18 +13,23 @@ function CheckoutSuccessContent() {
     const router = useRouter();
 
     useEffect(() => {
-        confetti({
-            particleCount: 150,
-            spread: 80,
-            origin: { y: 0.6 },
-            zIndex: 1000,
-        });
-        // Redirect after a short delay to allow user to see the message
-        const timer = setTimeout(() => {
-            router.push('/dashboard');
-        }, 4000);
-        
-        return () => clearTimeout(timer);
+        // Ensure this logic only runs on the client
+        if (typeof window !== 'undefined') {
+            confetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.6 },
+                zIndex: 1000,
+            });
+
+            // Redirect after a short delay to allow user to see the message
+            const timer = setTimeout(() => {
+                router.push('/dashboard');
+            }, 4000);
+
+            // Clean up the timer when the component unmounts
+            return () => clearTimeout(timer);
+        }
     }, [router]);
 
 
