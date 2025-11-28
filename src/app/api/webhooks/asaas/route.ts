@@ -172,6 +172,13 @@ export async function POST(request: NextRequest) {
       }
   } else if (eventName.startsWith('SUBSCRIPTION_')) {
       await handleSubscription(event);
+  } else if (eventName.startsWith('CHECKOUT_')) {
+      if (eventName === 'CHECKOUT_PAID') {
+        // O payload de CHECKOUT_PAID contém o objeto 'payment', então podemos reutilizar o handler.
+        await handlePayment(event);
+      } else {
+        await saveWebhookLog(event, 'SUCCESS', `Evento de checkout '${eventName}' não processado.`);
+      }
   } else {
       await saveWebhookLog(event, 'SUCCESS', `Tipo de evento '${eventName}' desconhecido e não processado.`);
   }
