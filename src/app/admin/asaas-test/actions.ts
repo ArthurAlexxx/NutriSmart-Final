@@ -2,7 +2,6 @@
 'use server';
 
 import * as z from 'zod';
-import { headers } from 'next/headers';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -163,8 +162,6 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
 export async function createSubscriptionAction(data: SubscriptionFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
-    const forwarded = headers().get('x-forwarded-for');
-    const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
 
     if (!asaasApiKey) {
         throw new Error('ASAAS_API_KEY não está configurada no servidor.');
@@ -180,7 +177,7 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
             description: `Assinatura Teste (Cartão) - Ciclo ${data.cycle}`,
             externalReference: data.userId,
             creditCardToken: data.creditCardToken,
-            remoteIp: remoteIp,
+            remoteIp: '127.0.0.1', // Placeholder, as headers() is unreliable here
         };
 
         const response = await fetch(`${asaasApiUrl}/subscriptions`, {
@@ -207,8 +204,6 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
 export async function tokenizeCardAction(data: TokenizationFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
-    const forwarded = headers().get('x-forwarded-for');
-    const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
 
     if (!asaasApiKey) {
         throw new Error('ASAAS_API_KEY não está configurada no servidor.');
@@ -232,7 +227,7 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
                 addressNumber: data.customerAddressNumber,
                 phone: data.customerPhone.replace(/\D/g, ''),
             },
-            remoteIp,
+            remoteIp: '127.0.0.1', // Placeholder, as headers() is unreliable here
         };
         
         const response = await fetch(`${asaasApiUrl}/creditCard/tokenize`, {

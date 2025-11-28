@@ -1,6 +1,5 @@
 // src/app/actions/checkout-actions.ts
 'use server';
-import { headers } from 'next/headers';
 import { db } from '@/lib/firebase/admin';
 import type { UserProfile } from '@/types/user';
 import { updateUserSubscriptionAction } from './billing-actions';
@@ -63,7 +62,6 @@ interface TokenizeAndSubscribePayload {
     asaasCustomerId: string;
     card: {
         holderName: string;
-        email: string;
         number: string;
         expiryMonth: string;
         expiryYear: string;
@@ -89,8 +87,6 @@ interface TokenizeAndSubscribePayload {
 export async function tokenizeCardAndCreateSubscription(payload: TokenizeAndSubscribePayload): Promise<{ success: boolean; message: string; }> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
-    const forwarded = headers().get('x-forwarded-for');
-    const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
 
     if (!asaasApiKey) return { success: false, message: 'Gateway de pagamento não configurado.' };
 
@@ -113,7 +109,7 @@ export async function tokenizeCardAndCreateSubscription(payload: TokenizeAndSubs
                 addressNumber: payload.holderInfo.addressNumber,
                 phone: payload.holderInfo.phone.replace(/\D/g, ''),
             },
-            remoteIp,
+            remoteIp: '127.0.0.1', // Placeholder as headers() is unreliable
         };
         
         const tokenResponse = await fetch(`${asaasApiUrl}/creditCard/tokenize`, {
@@ -135,7 +131,7 @@ export async function tokenizeCardAndCreateSubscription(payload: TokenizeAndSubs
             description: payload.subscription.description,
             externalReference: payload.subscription.userId,
             creditCardToken: creditCardToken,
-            remoteIp: remoteIp,
+            remoteIp: '127.0.0.1', // Placeholder as headers() is unreliable
         };
 
         const subscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {

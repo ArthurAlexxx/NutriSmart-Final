@@ -152,11 +152,12 @@ function CheckoutPageContent() {
         try {
             if (!asaasCustomerId || !user) throw new Error('Dados do cliente ou usuário ausentes.');
             
-            const [expiryMonth, expiryYear] = data.expiry.split(' / ');
+            const [expiryMonth, expiryYearPartial] = data.expiry.split(' / ');
+            const expiryYear = `20${expiryYearPartial}`;
 
             const result = await tokenizeCardAndCreateSubscription({
                 asaasCustomerId,
-                card: { ...data, expiryMonth, expiryYear: `20${expiryYear}` },
+                card: { ...data, expiryMonth, expiryYear },
                 holderInfo: {
                     name: data.holderName,
                     email: data.email,
