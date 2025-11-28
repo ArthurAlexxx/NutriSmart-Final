@@ -11,14 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase, RefreshCcw } from 'lucide-react';
+import { Loader2, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase, RefreshCcw, Key } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { createCustomerAction, createPaymentAction, createSubscriptionAction } from './actions';
+import { createCustomerAction, createPaymentAction, createSubscriptionAction, tokenizeCardAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -39,6 +40,22 @@ const subscriptionFormSchema = z.object({
     cycle: z.enum(['MONTHLY', 'YEARLY']),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
+
+const tokenizationFormSchema = z.object({
+    holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
+    number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
+    expiryMonth: z.string().min(2, 'Mês inválido.').max(2, 'Mês inválido.'),
+    expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
+    ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
+    // Customer Info from createdCustomer state
+    customerName: z.string(),
+    customerEmail: z.string().email(),
+    customerCpfCnpj: z.string(),
+    customerPostalCode: z.string().min(8, 'CEP obrigatório.'),
+    customerAddressNumber: z.string().min(1, 'Número do endereço obrigatório.'),
+    customerPhone: z.string().min(10, 'Telefone obrigatório.'),
+});
+type TokenizationFormValues = z.infer<typeof tokenizationFormSchema>;
 
 
 export default function AsaasTestPage() {
@@ -61,6 +78,11 @@ export default function AsaasTestPage() {
     const subscriptionForm = useForm<SubscriptionFormValues>({
         resolver: zodResolver(subscriptionFormSchema),
         defaultValues: { value: 1.00, cycle: 'MONTHLY' },
+    });
+
+    const tokenizationForm = useForm<TokenizationFormValues>({
+        resolver: zodResolver(tokenizationFormSchema),
+        defaultValues: { holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: ''},
     });
     
     const handleCopy = (text: string) => {
@@ -133,6 +155,37 @@ export default function AsaasTestPage() {
             setIsLoading(false);
         }
     }
+
+    const onTokenizationSubmit = async (data: TokenizationFormValues) => {
+        if (!createdCustomer?.id) {
+            toast({ title: "Erro", description: "Cliente não identificado para tokenizar o cartão.", variant: 'destructive'});
+            return;
+        }
+        setIsLoading(true);
+        setApiResponse(null);
+
+        try {
+            const result = await tokenizeCardAction({
+                ...data,
+                customerId: createdCustomer.id,
+                // Populate holder info from the main user profile for the test
+                customerName: userProfile?.fullName || '',
+                customerEmail: userProfile?.email || '',
+                customerCpfCnpj: userProfile?.taxId || '',
+                customerPostalCode: userProfile?.postalCode || '99999-999',
+                customerAddressNumber: userProfile?.addressNumber || '123',
+                customerPhone: userProfile?.phone || '99999999999',
+            });
+             setApiResponse({ status: 'success', data: result, type: 'tokenization' });
+             toast({ title: "Cartão Tokenizado!", description: "O token foi gerado com sucesso." });
+
+        } catch (error: any) {
+            setApiResponse({ status: 'error', data: { message: error.message } });
+            toast({ title: "Erro ao Tokenizar", description: error.message, variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const renderResult = () => {
         if (!apiResponse) return null;
@@ -265,6 +318,30 @@ export default function AsaasTestPage() {
                                                     <FormField control={subscriptionForm.control} name="cycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="MONTHLY">Mensal</SelectItem><SelectItem value="YEARLY">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                                                 </div>
                                                 <Button type="submit" disabled={isLoading} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Criar Assinatura</Button>
+                                            </form>
+                                        </Form>
+                                    </CardContent>
+                                </Card>
+
+                                <Separator />
+
+                                 <Card>
+                                     <CardHeader>
+                                        <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>4</span> Tokenizar Cartão</CardTitle>
+                                        <CardDescription>Gere um token de cartão de crédito para usar na criação de assinaturas.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Form {...tokenizationForm}>
+                                            <form onSubmit={tokenizationForm.handleSubmit(onTokenizationSubmit)} className="space-y-6">
+                                                <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input placeholder="0000 0000 0000 0000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                <div className='grid grid-cols-3 gap-4'>
+                                                    <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input placeholder="AAAA" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground pt-2">O restante das informações do titular (nome, email, cpf, etc) será preenchido automaticamente com os dados do seu perfil de usuário logado para este teste.</p>
+                                                <Button type="submit" disabled={isLoading} className="w-full"><Key className="mr-2 h-4 w-4"/> Gerar Token</Button>
                                             </form>
                                         </Form>
                                     </CardContent>

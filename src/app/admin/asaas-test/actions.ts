@@ -2,6 +2,7 @@
 'use server';
 
 import * as z from 'zod';
+import { headers } from 'next/headers';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -27,6 +28,23 @@ const subscriptionFormSchema = z.object({
     userId: z.string(),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
+
+const tokenizationFormSchema = z.object({
+    customerId: z.string(),
+    holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
+    number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
+    expiryMonth: z.string().min(2, 'Mês inválido.').max(2, 'Mês inválido.'),
+    expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
+    ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
+    // Customer Info
+    customerName: z.string().min(3, 'Nome do cliente obrigatório.'),
+    customerEmail: z.string().email('Email do cliente obrigatório.'),
+    customerCpfCnpj: z.string().min(11, 'CPF/CNPJ do cliente obrigatório.'),
+    customerPostalCode: z.string().min(8, 'CEP do cliente obrigatório.'),
+    customerAddressNumber: z.string().min(1, 'Número do endereço obrigatório.'),
+    customerPhone: z.string().min(10, 'Telefone do cliente obrigatório.'),
+});
+type TokenizationFormValues = z.infer<typeof tokenizationFormSchema>;
 
 
 const getAsaasApiUrl = () => {
@@ -153,13 +171,12 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
     try {
         const subscriptionPayload = {
             customer: data.customerId,
-            billingType: 'CREDIT_CARD', // Hardcoding as per flow, will be associated with a card later
-            nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], // First charge tomorrow
+            billingType: 'CREDIT_CARD',
+            nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
             value: data.value,
             cycle: data.cycle,
             description: `Assinatura Teste (Cartão) - Ciclo ${data.cycle}`,
             externalReference: data.userId,
-            // creditCardToken is intentionally omitted for this test step
         };
 
         const response = await fetch(`${asaasApiUrl}/subscriptions`, {
@@ -171,8 +188,6 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
 
         const responseData = await response.json();
         if (!response.ok) {
-            // Asaas might return an error if a card is required even for creation
-            // We log this to understand the behavior
             console.error("Asaas Subscription API Response:", responseData);
             throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
         }
@@ -182,5 +197,57 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
     } catch (error: any) {
         console.error('Error in createSubscriptionAction:', error);
         throw new Error(error.message || 'Erro desconhecido ao criar a assinatura.');
+    }
+}
+
+export async function tokenizeCardAction(data: TokenizationFormValues): Promise<any> {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const asaasApiUrl = getAsaasApiUrl();
+     const forwarded = headers().get('x-forwarded-for');
+    const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
+
+    if (!asaasApiKey) {
+        throw new Error('ASAAS_API_KEY não está configurada no servidor.');
+    }
+
+    try {
+        const tokenizationPayload = {
+            customer: data.customerId,
+            creditCard: {
+                holderName: data.holderName,
+                number: data.number,
+                expiryMonth: data.expiryMonth,
+                expiryYear: data.expiryYear,
+                ccv: data.ccv,
+            },
+            creditCardHolderInfo: {
+                name: data.customerName,
+                email: data.customerEmail,
+                cpfCnpj: data.customerCpfCnpj,
+                postalCode: data.customerPostalCode,
+                addressNumber: data.customerAddressNumber,
+                phone: data.customerPhone,
+            },
+            remoteIp,
+        };
+        
+        const response = await fetch(`${asaasApiUrl}/creditCard/tokenize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify(tokenizationPayload),
+            cache: 'no-store',
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) {
+            console.error("Asaas Tokenization API Response:", responseData);
+            throw new Error(responseData.errors?.[0]?.description || 'Falha ao tokenizar o cartão.');
+        }
+
+        return { type: 'TOKENIZATION', ...responseData };
+
+    } catch (error: any) {
+        console.error('Error in tokenizeCardAction:', error);
+        throw new Error(error.message || 'Erro desconhecido ao tokenizar o cartão.');
     }
 }
