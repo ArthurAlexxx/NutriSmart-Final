@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase/admin';
 import * as z from 'zod';
 import { headers } from 'next/headers';
+import type { UserProfile } from '@/types/user';
 
 const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
@@ -34,6 +35,7 @@ const subscriptionFormSchema = z.object({
     customerId: z.string(),
     userId: z.string(),
     creditCardToken: z.string().min(1, 'Token do cartão é obrigatório.'),
+    userProfile: z.any(), // Pass user profile for subscription check
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
@@ -86,6 +88,9 @@ export async function createCustomer(userId: string, data: CustomerDataFormValue
         
         if (!createCustomerResponse.ok) {
             console.error("Asaas Create Customer Error:", customerData);
+            if (customerData?.errors?.[0]?.code === 'invalid_cpfCnpj') {
+                 throw new Error('O CPF/CNPJ fornecido é inválido. Verifique os dados e tente novamente.');
+            }
             throw new Error(customerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
         }
 
@@ -222,6 +227,7 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
 export async function createSubscriptionAction(data: SubscriptionFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
+    const userProfile = data.userProfile as UserProfile;
 
     if (!asaasApiKey) {
         throw new Error('ASAAS_API_KEY não está configurada no servidor.');
@@ -232,8 +238,11 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
         const cycleText = data.billingCycle === 'yearly' ? 'Anual' : 'Mensal';
         const description = `Assinatura Plano ${planText} - ${cycleText}`;
         const cycle = data.billingCycle === 'yearly' ? 'YEARLY' : 'MONTHLY';
+        
+        let endpoint = `${asaasApiUrl}/subscriptions`;
+        let method = 'POST';
 
-        const subscriptionPayload = {
+        const payload: any = {
             customer: data.customerId,
             billingType: 'CREDIT_CARD',
             nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
@@ -241,27 +250,54 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
             cycle: cycle,
             description: description,
             externalReference: data.userId,
-            creditCardToken: data.creditCardToken,
-            remoteIp: '127.0.0.1', 
         };
 
-        const response = await fetch(`${asaasApiUrl}/subscriptions`, {
-            method: 'POST',
+        // If user already has a subscription, UPDATE it. Otherwise, CREATE a new one.
+        if (userProfile && userProfile.asaasSubscriptionId) {
+            endpoint = `${asaasApiUrl}/subscriptions/${userProfile.asaasSubscriptionId}`;
+            method = 'PUT';
+            // For updates, we only send fields that can be changed.
+            delete payload.customer;
+            delete payload.billingType;
+            delete payload.externalReference;
+            // The token is only needed for creation
+        } else {
+            payload.creditCardToken = data.creditCardToken;
+            payload.remoteIp = '127.0.0.1';
+        }
+
+        const response = await fetch(endpoint, {
+            method: method,
             headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-            body: JSON.stringify(subscriptionPayload),
+            body: JSON.stringify(payload),
             cache: 'no-store',
         });
 
         const responseData = await response.json();
         if (!response.ok) {
             console.error("Asaas Subscription API Error:", responseData);
-            throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura recorrente.');
+            throw new Error(responseData.errors?.[0]?.description || `Falha ao ${method === 'POST' ? 'criar' : 'atualizar'} a assinatura.`);
+        }
+        
+        // If it's an update, the first payment might not be in the response, we need to fetch it.
+        if (method === 'PUT') {
+            const paymentsResponse = await fetch(`${endpoint}/payments`, {
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store',
+            });
+            const paymentsData = await paymentsResponse.json();
+            if (paymentsData.data && paymentsData.data.length > 0) {
+                 // Return the most recent payment as the one to be verified
+                 responseData.chargeId = paymentsData.data[0].id;
+            }
+        } else {
+             responseData.chargeId = responseData?.payments?.[0]?.id;
         }
 
         return { type: 'SUBSCRIPTION', ...responseData };
 
     } catch (error: any) {
         console.error('Error in createSubscriptionAction:', error);
-        throw new Error(error.message || 'Erro desconhecido ao criar a assinatura.');
+        throw new Error(error.message || 'Erro desconhecido ao processar a assinatura.');
     }
 }

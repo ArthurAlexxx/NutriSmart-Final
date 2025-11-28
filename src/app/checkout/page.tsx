@@ -9,7 +9,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Loader2, ChevronLeft, ArrowRight, XCircle, QrCode, Barcode, Copy, CreditCard, RefreshCcw, Key, AlertTriangle } from 'lucide-react';
@@ -171,7 +170,7 @@ function CheckoutPageContent() {
     }
     
      const handleSubscriptionSubmit = async (data: TokenizationFormValues) => {
-        if (!createdCustomer?.id || !user?.uid) {
+        if (!createdCustomer?.id || !user?.uid || !userProfile) {
             toast({ title: "Erro", description: "Primeiro, confirme seus dados para criar um cliente de cobrança.", variant: 'destructive' });
             return;
         }
@@ -185,9 +184,9 @@ function CheckoutPageContent() {
             if (!tokenResult?.creditCardToken) {
                 throw new Error("Falha ao obter o token do cartão de crédito.");
             }
-            toast({ title: "Cartão Validado", description: "Criando sua assinatura recorrente..." });
+            toast({ title: "Cartão Validado", description: "Criando ou atualizando sua assinatura..." });
 
-            // 2. Crie a assinatura com o token
+            // 2. Crie ou atualize a assinatura com o token
             const planDetails = plansConfig[planName];
             const subscriptionValue = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthlyPrice;
 
@@ -198,12 +197,13 @@ function CheckoutPageContent() {
                 customerId: createdCustomer.id,
                 userId: user.uid,
                 creditCardToken: tokenResult.creditCardToken,
+                userProfile: userProfile,
             });
             
-            const firstChargeId = subscriptionResult?.payments?.[0]?.id;
+            const firstChargeId = subscriptionResult?.chargeId;
 
             setApiResponse({ status: 'success', data: { ...subscriptionResult, chargeId: firstChargeId }, type: 'subscription_pending' });
-            toast({ title: "Assinatura Criada!", description: "Clique em Verificar Pagamento para ativar seu plano." });
+            toast({ title: "Assinatura Criada/Atualizada!", description: "Clique em Verificar Pagamento para ativar seu plano." });
 
         } catch (error: any) {
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
@@ -298,8 +298,8 @@ function CheckoutPageContent() {
                             )}
                             {apiResponse.type === 'subscription_pending' && (
                                 <div className='text-center space-y-2'>
-                                    <h3 className='font-semibold'>Assinatura Criada com Sucesso!</h3>
-                                    <p className='text-sm text-muted-foreground'>A primeira cobrança foi gerada no seu cartão. Clique no botão abaixo para confirmar o pagamento e ativar seu plano.</p>
+                                    <h3 className='font-semibold'>Assinatura Criada/Atualizada!</h3>
+                                    <p className='text-sm text-muted-foreground'>Clique no botão abaixo para confirmar o pagamento e ativar seu plano.</p>
                                 </div>
                             )}
                         </div>
@@ -420,8 +420,8 @@ function CheckoutPageContent() {
     );
 
     return (
-        <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-            <div className="container mx-auto max-w-6xl py-12 px-4 sm:px-6 lg:px-8">
+        <div className="bg-muted/30">
+            <div className="container mx-auto max-w-6xl min-h-screen py-12 px-4 sm:px-6 lg:px-8">
                  <div className="mb-8">
                     <Button asChild variant="ghost"><Link href="/pricing"><ChevronLeft className="mr-2 h-4 w-4"/> Voltar para os planos</Link></Button>
                  </div>
@@ -444,7 +444,7 @@ function CheckoutPageContent() {
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </div>
     );
 }
 

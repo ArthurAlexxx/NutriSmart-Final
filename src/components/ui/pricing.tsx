@@ -52,7 +52,7 @@ const plans = [
             'Acompanhamento de Tendências de Peso',
         ],
         description: 'A experiência completa com todo o poder da IA para acelerar seus resultados.',
-        buttonText: 'Adquirir Acesso',
+        buttonText: 'Fazer Upgrade',
         isPopular: true,
     },
     {
@@ -92,6 +92,8 @@ function Pricing() {
     }
 
     if (plan.name === 'GRATUITO') {
+        // Logged in user clicking on Free plan is a no-op, maybe they want to downgrade later.
+        // For now, we just redirect to their dashboard.
         router.push('/dashboard');
         return;
     }
