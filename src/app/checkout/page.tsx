@@ -128,8 +128,7 @@ function CheckoutPageContent() {
             setPaymentResult(data);
 
             if (data.type === 'CREDIT_CARD' && data.url) {
-                window.open(data.url, '_blank', 'noopener,noreferrer');
-                toast({ title: "Continuar Pagamento", description: "Sua tela de pagamento foi aberta em uma nova aba." });
+                window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
             if (data.id) {
@@ -152,6 +151,7 @@ function CheckoutPageContent() {
             const result = await verifyAndFinalizeSubscription(user.uid, chargeId);
 
             if (result.success) {
+                localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 router.push('/checkout/success');
             } else {
                  toast({ title: 'Aguardando Pagamento', description: 'O pagamento ainda está pendente ou não foi confirmado.' });

@@ -1,7 +1,17 @@
 
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
+
+const getAsaasApiUrl = () => {
+    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
+    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+const plansConfig = {
+  PREMIUM: { name: 'Premium', monthly: 29.90, yearlyPrice: 23.90 },
+  PROFISSIONAL: { name: 'Profissional', monthly: 49.90, yearlyPrice: 39.90 },
+};
 
 // Mapeamento de planos para os links de pagamento fixos do Asaas
 const paymentLinks = {
@@ -13,16 +23,6 @@ const paymentLinks = {
     monthly: 'https://sandbox.asaas.com/c/x700urqc5ppdovkf',
     yearly: 'https://sandbox.asaas.com/c/waiict1wxx3kigqg',
   }
-};
-
-const getAsaasApiUrl = () => {
-    const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
-    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
-};
-
-const plansConfig = {
-  PREMIUM: { name: 'Premium', monthly: 29.90, yearly: 23.90 },
-  PROFISSIONAL: { name: 'Profissional', monthly: 49.90, yearly: 39.90 },
 };
 
 export async function POST(request: Request) {
@@ -79,11 +79,13 @@ export async function POST(request: Request) {
     
     // --- Lógica de bifurcação para tipo de pagamento ---
     if (billingType === 'CREDIT_CARD') {
-        const planLinks = paymentLinks[planName as keyof typeof paymentLinks];
-        if (!planLinks) {
+        const planKey = planName as keyof typeof paymentLinks;
+        const cycleKey = isYearly ? 'yearly' : 'monthly';
+        
+        const paymentUrl = paymentLinks[planKey]?.[cycleKey];
+        if (!paymentUrl) {
             return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
         }
-        const paymentUrl = isYearly ? planLinks.yearly : planLinks.monthly;
         
         return NextResponse.json({
             type: 'CREDIT_CARD',

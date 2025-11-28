@@ -1,3 +1,4 @@
+
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -59,15 +60,16 @@ export default function DashboardPage() {
                     if (result.success) {
                         // The userProfile will update via the onSnapshot listener in useUser
                         // Redirect to success page
+                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
                         router.push('/checkout/success');
                     } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
                         // Only show error if it's not a pending payment, to avoid annoying the user.
                         toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
+                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
                     }
                 } catch (err: any) {
                     console.error("Erro ao tentar finalizar assinatura:", err);
                     toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
-                } finally {
                     localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 }
             }

@@ -1,3 +1,4 @@
+
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -49,23 +50,27 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
 }
 
 async function getUserIdFromAsaas(payload: any): Promise<string | null> {
-    let userId = payload?.payment?.externalReference || payload?.subscription?.externalReference;
-    if (userId) return userId;
+    const directReference = payload?.payment?.externalReference || payload?.subscription?.externalReference;
+    if (directReference) {
+        return directReference;
+    }
 
     const customerId = payload?.payment?.customer || payload?.subscription?.customer;
-    if (!customerId) return null;
+    if (!customerId) {
+        return null;
+    }
 
     try {
         const asaasApiKey = process.env.ASAAS_API_KEY;
         const asaasApiUrl = getAsaasApiUrl();
-        const customerResponse = await fetch(`${asaasApiUrl}/customers/${customerId}`, {
+        const response = await fetch(`${asaasApiUrl}/customers/${customerId}`, {
             headers: { 'access_token': asaasApiKey },
             cache: 'no-store'
         });
-        if (!customerResponse.ok) {
-             throw new Error(`Asaas API returned ${customerResponse.status} for customer ${customerId}`);
+        if (!response.ok) {
+             throw new Error(`Asaas API returned ${response.status} for customer ${customerId}`);
         }
-        const customerData = await customerResponse.json();
+        const customerData = await response.json();
         return customerData.externalReference || null;
     } catch (fetchError: any) {
         console.error(`Error fetching customer from Asaas: ${fetchError.message}`);
@@ -77,21 +82,20 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
 async function handlePayment(event: any) {
     const paymentData = event.payment;
     if (!paymentData) {
-        const message = `Evento de pagamento ignorado: payload não contém o objeto 'payment'.`;
-        await saveWebhookLog(event, 'SUCCESS', message);
+        await saveWebhookLog(event, 'SUCCESS', `Evento de pagamento ignorado: payload não contém o objeto 'payment'.`);
         return;
     }
     
     const userId = await getUserIdFromAsaas(event);
     if (!userId) {
-        await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento para customer ${paymentData.customer} sem externalReference.`);
+        await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento recebido, mas não foi possível encontrar o userId para o customer ${paymentData.customer}.`);
         return;
     }
 
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
-    const asaasSubscriptionId = paymentData?.subscription; // Extract subscription ID
+    const asaasSubscriptionId = paymentData?.subscription;
     
-    if (userId && planName && billingCycle) {
+    if (planName && billingCycle) {
         try {
             const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, asaasSubscriptionId);
             if (updateResult.success) {
@@ -100,25 +104,23 @@ async function handlePayment(event: any) {
                 await saveWebhookLog(event, 'FAILURE', updateResult.message);
             }
         } catch (dbError: any) {
-            await saveWebhookLog(event, 'FAILURE', `Falha ao atualizar usuário ${userId}: ${dbError.message}`);
+            await saveWebhookLog(event, 'FAILURE', `Falha crítica ao atualizar usuário ${userId}: ${dbError.message}`);
         }
     } else {
-        const message = `Webhook de pagamento recebido, mas dados cruciais não foram extraídos. UserID: ${userId}, Descrição: ${paymentData?.description}.`;
-        await saveWebhookLog(event, 'SUCCESS', message);
+        await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`);
     }
 }
 
 async function handleSubscription(event: any) {
     const subscriptionData = event.subscription;
     if (!subscriptionData) {
-        const message = `Evento de assinatura ignorado: payload não contém o objeto 'subscription'.`;
-        await saveWebhookLog(event, 'SUCCESS', message);
+        await saveWebhookLog(event, 'SUCCESS', `Evento de assinatura ignorado: payload não contém o objeto 'subscription'.`);
         return;
     }
     
     const userId = await getUserIdFromAsaas(event);
     if (!userId) {
-        await saveWebhookLog(event, 'FAILURE', `Webhook de assinatura para customer ${subscriptionData.customer} sem externalReference.`);
+        await saveWebhookLog(event, 'FAILURE', `Webhook de assinatura recebido, mas não foi possível encontrar o userId para o customer ${subscriptionData.customer}.`);
         return;
     }
 
