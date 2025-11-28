@@ -16,9 +16,18 @@ const paymentFormSchema = z.object({
     planName: z.enum(['PREMIUM', 'PROFISSIONAL']),
     billingCycle: z.enum(['monthly', 'yearly']),
     customerId: z.string(),
-    userId: z.string(), // Adicionado para vincular ao nosso usuário
+    userId: z.string(),
 });
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
+const subscriptionFormSchema = z.object({
+    value: z.coerce.number().positive('O valor deve ser maior que zero.'),
+    cycle: z.enum(['MONTHLY', 'YEARLY']),
+    creditCardToken: z.string().min(10, 'O token do cartão é obrigatório.'),
+    customerId: z.string(),
+    userId: z.string(),
+});
+type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 
 const getAsaasApiUrl = () => {
@@ -80,14 +89,13 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
         const cycleText = data.billingCycle === 'yearly' ? 'Anual' : 'Mensal';
         const description = `Assinatura Plano ${planText} - ${cycleText}`;
 
-        // Passo 1: Criar a cobrança (Payment)
         const paymentPayload = {
             customer: data.customerId,
             billingType: data.billingType,
             value: data.value,
-            dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0], // Vence em 3 dias
+            dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
             description: description,
-            externalReference: data.userId, // VINCULANDO O PAGAMENTO AO NOSSO USER ID
+            externalReference: data.userId,
         };
 
         const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
@@ -104,7 +112,6 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
 
         const chargeId = paymentData.id;
 
-        // Passo 2: Buscar os dados específicos (QR Code ou Linha Digitável)
         if (data.billingType === 'PIX') {
             const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${chargeId}/pixQrCode`, {
                 headers: { 'access_token': asaasApiKey },
@@ -126,12 +133,52 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
             return { 
                 type: 'BOLETO', 
                 identificationField: identificationFieldData.identificationField,
-                bankSlipUrl: paymentData.bankSlipUrl // URL para o PDF do boleto
+                bankSlipUrl: paymentData.bankSlipUrl
             };
         }
 
     } catch (error: any) {
         console.error('Error in createPaymentAction:', error);
         throw new Error(error.message || 'Erro desconhecido ao criar a cobrança.');
+    }
+}
+
+export async function createSubscriptionAction(data: SubscriptionFormValues): Promise<any> {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const asaasApiUrl = getAsaasApiUrl();
+
+    if (!asaasApiKey) {
+        throw new Error('ASAAS_API_KEY não está configurada no servidor.');
+    }
+
+    try {
+        const subscriptionPayload = {
+            customer: data.customerId,
+            billingType: 'CREDIT_CARD',
+            nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], // Primeira cobrança amanhã
+            value: data.value,
+            cycle: data.cycle,
+            description: `Assinatura Teste - Cartão de Crédito - Ciclo ${data.cycle}`,
+            externalReference: data.userId,
+            creditCardToken: data.creditCardToken,
+        };
+
+        const response = await fetch(`${asaasApiUrl}/subscriptions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify(subscriptionPayload),
+            cache: 'no-store',
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) {
+            throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+        }
+
+        return { type: 'SUBSCRIPTION', ...responseData };
+
+    } catch (error: any) {
+        console.error('Error in createSubscriptionAction:', error);
+        throw new Error(error.message || 'Erro desconhecido ao criar a assinatura.');
     }
 }
