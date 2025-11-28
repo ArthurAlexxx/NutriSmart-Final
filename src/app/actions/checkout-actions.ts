@@ -10,7 +10,7 @@ const getAsaasApiUrl = () => {
 
 interface CreateCustomerPayload {
     userId: string;
-    customerData: Partial<UserProfile>;
+    customerData: Partial<Pick<UserProfile, 'fullName' | 'email' | 'taxId'>>;
 }
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<{ success: boolean; asaasCustomerId?: string; message: string; }> {
@@ -21,6 +21,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
     if (!asaasApiKey) return { success: false, message: 'Gateway de pagamento não configurado.' };
     if (!customerData.taxId) return { success: false, message: 'CPF/CNPJ é obrigatório.' };
     if (!customerData.email) return { success: false, message: 'Email é obrigatório.' };
+    if (!customerData.fullName) return { success: false, message: 'Nome é obrigatório.' };
 
     try {
         const searchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId.replace(/\D/g, '')}`, {
@@ -36,14 +37,8 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
             const createPayload = {
                 name: customerData.fullName,
                 email: customerData.email,
-                mobilePhone: customerData.phone?.replace(/\D/g, ''),
                 cpfCnpj: customerData.taxId.replace(/\D/g, ''),
                 externalReference: userId,
-                address: customerData.address,
-                addressNumber: customerData.addressNumber,
-                complement: customerData.complement,
-                province: customerData.province,
-                postalCode: customerData.postalCode?.replace(/\D/g, ''),
             };
             const createResponse = await fetch(`${asaasApiUrl}/customers`, {
                 method: 'POST',

@@ -25,15 +25,9 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   email: z.string().email('E-mail inválido.'),
-  phone: z.string().min(10, 'O celular é obrigatório.'),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
   confirmPassword: z.string(),
-  postalCode: z.string().min(8, "CEP inválido.").optional(),
-  address: z.string().min(3, "Endereço inválido.").optional(),
-  addressNumber: z.string().min(1, "Número inválido.").optional(),
-  complement: z.string().optional(),
-  province: z.string().min(2, "Bairro inválido.").optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem.',
   path: ['confirmPassword'],
@@ -67,15 +61,9 @@ export default function RegisterPage() {
     defaultValues: {
       fullName: '',
       email: '',
-      phone: '',
       taxId: '',
       password: '',
       confirmPassword: '',
-      postalCode: '',
-      address: '',
-      addressNumber: '',
-      complement: '',
-      province: '',
     },
   });
 
@@ -109,13 +97,7 @@ export default function RegisterPage() {
       const newUserProfile: Omit<UserProfile, 'id'> = {
         fullName: data.fullName,
         email: data.email,
-        phone: data.phone,
         taxId: data.taxId,
-        postalCode: data.postalCode,
-        address: data.address,
-        addressNumber: data.addressNumber,
-        complement: data.complement,
-        province: data.province,
         createdAt: serverTimestamp(),
         dashboardShareCode: shareCode,
         subscriptionStatus: 'free',
@@ -216,17 +198,6 @@ export default function RegisterPage() {
                 </FormItem>
               )}/>
 
-               <Separator />
-                <p className="text-sm font-medium">Informações para Cobrança</p>
-
-              <FormField control={registerForm.control} name="phone" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Celular *</FormLabel>
-                  <FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-
               <FormField control={registerForm.control} name="taxId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>CPF/CNPJ *</FormLabel>
@@ -234,39 +205,6 @@ export default function RegisterPage() {
                   <FormMessage />
                 </FormItem>
               )}/>
-
-              <FormField control={registerForm.control} name="postalCode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CEP</FormLabel>
-                  <FormControl><Input placeholder="00000-000" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-               <FormField control={registerForm.control} name="address" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço</FormLabel>
-                  <FormControl><Input placeholder="Rua, Av..." {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-              <div className="grid grid-cols-3 gap-4">
-                <FormField control={registerForm.control} name="addressNumber" render={({ field }) => (
-                    <FormItem className="col-span-1"><FormLabel>Nº</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={registerForm.control} name="complement" render={({ field }) => (
-                    <FormItem className="col-span-2"><FormLabel>Comp.</FormLabel><FormControl><Input placeholder="Apto, Bloco..." {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-              </div>
-              <FormField control={registerForm.control} name="province" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bairro</FormLabel>
-                  <FormControl><Input placeholder="Seu bairro" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-
-              <Separator />
-                <p className="text-sm font-medium">Informações de Acesso</p>
 
               <FormField control={registerForm.control} name="password" render={({ field }) => (
                 <FormItem>

@@ -23,13 +23,7 @@ import { Separator } from '@/components/ui/separator';
 const customerFormSchema = z.object({
   fullName: z.string().min(3, 'O nome completo é obrigatório.'),
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
-  phone: z.string().min(10, 'O celular é obrigatório.'),
   taxId: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
-  postalCode: z.string().min(8, "CEP inválido.").optional(),
-  address: z.string().min(3, "Endereço inválido.").optional(),
-  addressNumber: z.string().min(1, "Número inválido.").optional(),
-  complement: z.string().optional(),
-  province: z.string().min(2, "Bairro inválido.").optional(),
 });
 type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
@@ -57,8 +51,7 @@ function CheckoutPageContent() {
     const customerForm = useForm<CustomerDataFormValues>({
         resolver: zodResolver(customerFormSchema),
         defaultValues: {
-            fullName: '', email: '', phone: '', taxId: '', postalCode: '',
-            address: '', addressNumber: '', complement: '', province: '',
+            fullName: '', email: '', taxId: ''
         }
     });
     
@@ -67,11 +60,9 @@ function CheckoutPageContent() {
             if (!user) { router.push('/login'); }
             else if (userProfile) {
                 customerForm.reset({
-                    fullName: userProfile.fullName || '', email: userProfile.email || '',
-                    phone: userProfile.phone || '', taxId: userProfile.taxId || '',
-                    postalCode: userProfile.postalCode || '', address: userProfile.address || '',
-                    addressNumber: userProfile.addressNumber || '', complement: userProfile.complement || '',
-                    province: userProfile.province || '',
+                    fullName: userProfile.fullName || '', 
+                    email: userProfile.email || '',
+                    taxId: userProfile.taxId || '',
                 });
                 if (userProfile.asaasCustomerId) { setAsaasCustomerId(userProfile.asaasCustomerId); }
             }
@@ -111,9 +102,7 @@ function CheckoutPageContent() {
             
             setAsaasCustomerId(result.asaasCustomerId);
             setStep('payment');
-            toast({ title: 'Cliente criado com sucesso!', description: 'Agora escolha o método de pagamento.'});
-            console.log("Customer created/found, new Asaas ID:", result.asaasCustomerId);
-
+            toast({ title: 'Tudo certo!', description: 'Agora escolha o método de pagamento.'});
 
         } catch (err: any) {
             toast({ title: "Erro ao verificar dados", description: err.message, variant: "destructive" });
@@ -126,30 +115,14 @@ function CheckoutPageContent() {
         <Card>
             <CardHeader>
               <CardTitle>Confirme seus Dados</CardTitle>
-              <CardDescription>Estas informações são necessárias para a cobrança e emissão de notas fiscais.</CardDescription>
+              <CardDescription>Estas informações são necessárias para a cobrança.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...customerForm}>
                     <form onSubmit={customerForm.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
                         <FormField control={customerForm.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                        <Separator />
-                        <p className="text-sm font-medium">Informações de Cobrança</p>
-                        <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} placeholder="(XX) XXXXX-XXXX" /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={customerForm.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} placeholder="000.000.000-00" /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={customerForm.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} placeholder="00000-000" /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={customerForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} placeholder="Rua, Avenida, etc."/></FormControl><FormMessage /></FormItem>)} />
-                         <div className="grid grid-cols-3 gap-4">
-                            <FormField control={customerForm.control} name="addressNumber" render={({ field }) => (
-                                <FormItem className='col-span-1'><FormLabel>Número</FormLabel><FormControl><Input {...field} placeholder="123" /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={customerForm.control} name="complement" render={({ field }) => (
-                                <FormItem className='col-span-2'><FormLabel>Complemento</FormLabel><FormControl><Input {...field} placeholder="Apto, Bloco, etc." /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                        </div>
-                        <FormField control={customerForm.control} name="province" render={({ field }) => (
-                            <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} placeholder="Seu bairro" /></FormControl><FormMessage /></FormItem>
-                        )}/>
                     </form>
                 </Form>
             </CardContent>
