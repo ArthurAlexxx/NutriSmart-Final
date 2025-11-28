@@ -63,6 +63,7 @@ interface TokenizeAndSubscribePayload {
     asaasCustomerId: string;
     card: {
         holderName: string;
+        email: string;
         number: string;
         expiryMonth: string;
         expiryYear: string;

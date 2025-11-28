@@ -33,6 +33,7 @@ type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
 const cardFormSchema = z.object({
     holderName: z.string().min(3, 'O nome no cartão é obrigatório.'),
+    email: z.string().email('O e-mail do titular é obrigatório.'),
     number: z.string().min(16, 'O número do cartão é inválido.').max(19, 'O número do cartão é inválido.'),
     expiry: z.string().regex(/^(0[1-9]|1[0-2])\s?\/?\s?(\d{2})$/, 'Data de validade inválida (MM/AA).'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
@@ -83,7 +84,7 @@ function CheckoutPageContent() {
 
     const cardForm = useForm<CardFormValues>({
         resolver: zodResolver(cardFormSchema),
-        defaultValues: { holderName: '', number: '', expiry: '', ccv: '' },
+        defaultValues: { holderName: '', email: '', number: '', expiry: '', ccv: '' },
     });
     
     useEffect(() => {
@@ -97,12 +98,16 @@ function CheckoutPageContent() {
                     addressNumber: userProfile.addressNumber || '', complement: userProfile.complement || '',
                     province: userProfile.province || '',
                 });
+                cardForm.reset({
+                    ...cardForm.getValues(),
+                    email: userProfile.email || '',
+                });
                 if (userProfile.asaasCustomerId) {
                     setAsaasCustomerId(userProfile.asaasCustomerId);
                 }
             }
         }
-    }, [user, userProfile, isUserLoading, router, customerForm]);
+    }, [user, userProfile, isUserLoading, router, customerForm, cardForm]);
 
     if (isUserLoading || !userProfile || !planName || !plansConfig[planName]) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -111,9 +116,10 @@ function CheckoutPageContent() {
     const planDetails = plansConfig[planName];
     const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.monthlyPrice;
     const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
-    const periodText = isYearly ? 'Anual' : 'Mensal';
     const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
     const finalPrice = isYearly ? totalAmount / 12 : monthlyPrice;
+    const periodText = isYearly ? `R$ ${totalAmount.toFixed(2)} cobrado anualmente` : '/mês';
+
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -152,8 +158,8 @@ function CheckoutPageContent() {
                 asaasCustomerId,
                 card: { ...data, expiryMonth, expiryYear: `20${expiryYear}` },
                 holderInfo: {
-                    name: customerForm.getValues('fullName'),
-                    email: customerForm.getValues('email'),
+                    name: data.holderName,
+                    email: data.email,
                     cpfCnpj: customerForm.getValues('taxId'),
                     postalCode: customerForm.getValues('postalCode') || '',
                     addressNumber: customerForm.getValues('addressNumber') || '',
@@ -162,7 +168,7 @@ function CheckoutPageContent() {
                 subscription: {
                     value: finalPrice,
                     cycle: cycle,
-                    description: `Assinatura Plano ${planDetails.name} - ${periodText}`,
+                    description: `Assinatura Plano ${planDetails.name} - ${isYearly ? 'Anual' : 'Mensal'}`,
                     userId: user.uid,
                     planName,
                 }
@@ -209,6 +215,7 @@ function CheckoutPageContent() {
                         <CardContent>
                             <Form {...cardForm}><form onSubmit={cardForm.handleSubmit(handlePaymentSubmit)} id="card-payment-form" className="space-y-4">
                                 <FormField control={cardForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={cardForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email do Titular</FormLabel><FormControl><Input type="email" placeholder="email@dominio.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={cardForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
                                     type="tel"
                                     placeholder="0000 0000 0000 0000" 
@@ -234,7 +241,7 @@ function CheckoutPageContent() {
                         </CardContent>
                         <CardFooter className="flex-col sm:flex-row gap-2">
                              <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar</Button>
-                             <Button form="card-payment-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : `Pagar R$ ${finalPrice.toFixed(2)}`}</Button>
+                             <Button form="card-payment-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : `Assinar por R$ ${finalPrice.toFixed(2)}`}</Button>
                         </CardFooter>
                     </Card>
                 );
@@ -250,8 +257,8 @@ function CheckoutPageContent() {
                         <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
-                            <div className="flex justify-between"><span className="text-muted-foreground">Ciclo</span><span className="font-semibold capitalize">{periodText}</span></div>
-                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {finalPrice.toFixed(2)} / mês</span></div>
+                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {finalPrice.toFixed(2)}</span></div>
+                             <p className="text-sm text-muted-foreground">{periodText}</p>
                         </CardContent>
                     </Card></div>
                     <div>{renderStep()}</div>
