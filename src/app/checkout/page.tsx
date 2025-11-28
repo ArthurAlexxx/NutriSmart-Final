@@ -12,7 +12,7 @@ import * as z from 'zod';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, ChevronLeft, CreditCard, QrCode, Barcode, CheckCircle, ArrowRight } from 'lucide-react';
+import { Loader2, ChevronLeft, CreditCard, QrCode, Barcode, CheckCircle, ArrowRight, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Link from 'next/link';
@@ -21,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createPaymentAction } from '@/app/admin/asaas-test/actions'; // Reusing test action for PIX/Boleto
 import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
+
 
 // Schemas
 const customerFormSchema = z.object({
@@ -233,17 +235,34 @@ function CheckoutPageContent() {
 
     const renderDataStep = () => (
         <Card>
-            <CardHeader><CardTitle>Confirme seus Dados</CardTitle><CardDescription>Estas informações são necessárias para a cobrança.</CardDescription></CardHeader>
+            <CardHeader>
+              <CardTitle>Confirme seus Dados</CardTitle>
+              <CardDescription>Estas informações são necessárias para a cobrança e emissão de notas fiscais.</CardDescription>
+            </CardHeader>
             <CardContent>
-                <Form {...customerForm}><form onSubmit={customerForm.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
-                    <FormField control={customerForm.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={customerForm.control} name="addressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </form></Form>
+                <Form {...customerForm}>
+                    <form onSubmit={customerForm.handleSubmit(handleDataSubmit)} id="customer-data-form" className="space-y-4">
+                        <FormField control={customerForm.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                        <Separator />
+                        <p className="text-sm font-medium">Informações de Cobrança</p>
+                        <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} placeholder="(XX) XXXXX-XXXX" /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={customerForm.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} placeholder="000.000.000-00" /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={customerForm.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} placeholder="00000-000" /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={customerForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} placeholder="Rua, Avenida, etc."/></FormControl><FormMessage /></FormItem>)} />
+                         <div className="grid grid-cols-3 gap-4">
+                            <FormField control={customerForm.control} name="addressNumber" render={({ field }) => (
+                                <FormItem className='col-span-1'><FormLabel>Número</FormLabel><FormControl><Input {...field} placeholder="123" /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={customerForm.control} name="complement" render={({ field }) => (
+                                <FormItem className='col-span-2'><FormLabel>Complemento</FormLabel><FormControl><Input {...field} placeholder="Apto, Bloco, etc." /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <FormField control={customerForm.control} name="province" render={({ field }) => (
+                            <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} placeholder="Seu bairro" /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                    </form>
+                </Form>
             </CardContent>
             <CardFooter><Button form="customer-data-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Continuar para Pagamento'}<ArrowRight className="ml-2 h-4 w-4" /></Button></CardFooter>
         </Card>
