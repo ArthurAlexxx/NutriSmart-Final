@@ -128,9 +128,10 @@ function CheckoutPageContent() {
                 window.open(data.url, '_blank');
                  toast({ title: "Continuar Pagamento", description: "Sua tela de pagamento foi aberta em uma nova aba." });
                 setIsLoading(false);
+                // Não mude de passo, o usuário deve ser instruído a verificar o pagamento mais tarde
                 return;
             }
-
+            
             if (data.id) {
                 localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
