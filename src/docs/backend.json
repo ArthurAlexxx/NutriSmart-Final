@@ -18,6 +18,7 @@
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
         "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },
+        "asaasSubscriptionId": { "type": "string", "description": "The subscription ID from the Asaas payment gateway." },
         "patientRoomId": { "type": "string", "description": "ID of the room if the user is a patient being monitored." },
         "professionalRoomIds": { "type": "array", "items": { "type": "string" }, "description": "List of room IDs if the user is a professional." },
         "weight": { "type": "number" },

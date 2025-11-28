@@ -49,11 +49,9 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
 }
 
 async function getUserIdFromAsaas(payload: any): Promise<string | null> {
-    // 1. Prioritize externalReference on the payment/subscription object itself.
     let userId = payload?.payment?.externalReference || payload?.subscription?.externalReference;
     if (userId) return userId;
 
-    // 2. If not found, get the customer ID and fetch the customer data.
     const customerId = payload?.payment?.customer || payload?.subscription?.customer;
     if (!customerId) return null;
 
@@ -91,10 +89,11 @@ async function handlePayment(event: any) {
     }
 
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
+    const asaasSubscriptionId = paymentData?.subscription; // Extract subscription ID
     
     if (userId && planName && billingCycle) {
         try {
-            const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
+            const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, asaasSubscriptionId);
             if (updateResult.success) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
             } else {
@@ -123,7 +122,6 @@ async function handleSubscription(event: any) {
         return;
     }
 
-    // Handle subscription cancellation/inactivation
     if (event.event === 'SUBSCRIPTION_INACTIVATED' || event.event === 'SUBSCRIPTION_DELETED' || (event.event === 'SUBSCRIPTION_UPDATED' && subscriptionData.status === 'INACTIVE')) {
         try {
             const result = await cancelSubscriptionAction(userId);

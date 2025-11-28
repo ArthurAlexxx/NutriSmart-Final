@@ -45,6 +45,7 @@ export interface UserProfile {
 
     subscriptionStatus?: 'premium' | 'free' | 'professional';
     subscriptionExpiresAt?: Timestamp | Date;
+    asaasSubscriptionId?: string; // ID da assinatura no Asaas
     photoAnalysisCount?: number;
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
     

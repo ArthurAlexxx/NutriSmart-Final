@@ -5,31 +5,42 @@ import type { UserProfile } from '@/types/user';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { addMonths, addYears } from 'date-fns';
 
+const getAsaasApiUrl = () => {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const isSandbox = asaasApiKey?.includes('sandbox') || asaasApiKey?.includes('hmlg');
+    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+
 /**
- * Extracts plan information from a payment description string.
- * @param description - The payment description (e.g., "Assinatura PREMIUM Anual - Nutrinea").
- * @returns An object with the planName and billingCycle.
+ * Cancels a subscription in the Asaas payment gateway.
+ * @param subscriptionId The Asaas subscription ID to cancel.
+ * @returns An object indicating success or failure.
  */
-function extractPlanInfoFromDescription(description: string): { planName: 'PREMIUM' | 'PROFISSIONAL' | null, billingCycle: 'monthly' | 'yearly' | null } {
-    if (!description) return { planName: null, billingCycle: null };
-    
-    const lowerCaseDesc = description.toLowerCase();
-    
-    let planName: 'PREMIUM' | 'PROFISSIONAL' | null = null;
-    if (lowerCaseDesc.includes('premium')) {
-        planName = 'PREMIUM';
-    } else if (lowerCaseDesc.includes('profissional')) {
-        planName = 'PROFISSIONAL';
+async function cancelAsaasSubscription(subscriptionId: string): Promise<{ success: boolean; message: string }> {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    if (!asaasApiKey) {
+        return { success: false, message: 'Gateway de pagamento não configurado no servidor.' };
     }
 
-    let billingCycle: 'monthly' | 'yearly' | null = null;
-    if (lowerCaseDesc.includes('anual')) {
-        billingCycle = 'yearly';
-    } else if (lowerCaseDesc.includes('mensal')) {
-        billingCycle = 'monthly';
-    }
+    try {
+        const response = await fetch(`${getAsaasApiUrl()}/subscriptions/${subscriptionId}`, {
+            method: 'DELETE',
+            headers: { 'access_token': asaasApiKey },
+            cache: 'no-store'
+        });
 
-    return { planName, billingCycle };
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.errors?.[0]?.description || `Falha ao cancelar assinatura no Asaas: ${response.statusText}`);
+        }
+        
+        return { success: true, message: 'Assinatura cancelada com sucesso no Asaas.' };
+
+    } catch (error: any) {
+        console.error('Erro ao cancelar assinatura no Asaas:', error);
+        return { success: false, message: error.message };
+    }
 }
 
 
@@ -39,12 +50,14 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
  * @param userId - The ID of the user to update.
  * @param planName - The name of the plan to assign ('PREMIUM' or 'PROFISSIONAL').
  * @param billingCycle - The billing cycle ('monthly' or 'yearly').
+ * @param asaasSubscriptionId - The subscription ID from Asaas.
  * @returns An object indicating success or failure.
  */
 export async function updateUserSubscriptionAction(
     userId: string, 
     planName: 'PREMIUM' | 'PROFISSIONAL',
-    billingCycle: 'monthly' | 'yearly'
+    billingCycle: 'monthly' | 'yearly',
+    asaasSubscriptionId?: string
 ): Promise<{ success: boolean; message: string }> {
   if (!userId || !planName || !billingCycle) {
     return { success: false, message: 'User ID, nome do plano ou ciclo de cobrança inválido.' };
@@ -67,6 +80,10 @@ export async function updateUserSubscriptionAction(
         updatePayload.subscriptionStatus = 'professional';
     } else {
         return { success: false, message: 'Nome do plano desconhecido.'};
+    }
+    
+    if (asaasSubscriptionId) {
+        updatePayload.asaasSubscriptionId = asaasSubscriptionId;
     }
 
     await userRef.update(updatePayload);
@@ -95,8 +112,6 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
     }
 
     const asaasApiKey = process.env.ASAAS_API_KEY;
-    const isSandbox = asaasApiKey?.includes('sandbox') || asaasApiKey?.includes('hmlg');
-    const asaasApiUrl = isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
 
     if (!asaasApiKey) {
         console.error("ASAAS_API_KEY is not configured on the server.");
@@ -104,8 +119,7 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
     }
 
     try {
-        // 1. Verify payment with Asaas
-        const response = await fetch(`${asaasApiUrl}/payments/${chargeId}`, {
+        const response = await fetch(`${getAsaasApiUrl()}/payments/${chargeId}`, {
             method: 'GET',
             headers: { 'access_token': asaasApiKey },
             cache: 'no-store',
@@ -118,7 +132,6 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
             return { success: false, message: "Pagamento não confirmado ou ainda pendente." };
         }
         
-        // Asaas sends our user ID in the externalReference field
         if (data.externalReference !== userId) {
              return { success: false, message: "Dados de pagamento inválidos ou não correspondem ao usuário." };
         }
@@ -129,7 +142,6 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
             return { success: false, message: "Não foi possível determinar o plano a partir da descrição do pagamento." };
         }
 
-        // 2. Update user document in Firestore
         const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
 
         if (updateResult.success) {
@@ -145,7 +157,7 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
 }
 
 /**
- * Cancels a user's subscription by setting their status to 'free'.
+ * Cancels a user's subscription by setting their status to 'free' and cancelling on Asaas.
  * @param userId The ID of the user whose subscription is to be cancelled.
  * @returns An object indicating success or failure.
  */
@@ -156,11 +168,27 @@ export async function cancelSubscriptionAction(userId: string): Promise<{ succes
 
   try {
     const userRef = db.collection('users').doc(userId);
-    // Setting status to 'free' and expiresAt to now effectively cancels the subscription benefits.
-    // A more complex setup might keep benefits until the end of the billing cycle.
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+        return { success: false, message: 'Usuário não encontrado.' };
+    }
+
+    const userData = userDoc.data() as UserProfile;
+    const asaasSubscriptionId = userData.asaasSubscriptionId;
+
+    if (asaasSubscriptionId) {
+        const asaasResult = await cancelAsaasSubscription(asaasSubscriptionId);
+        if (!asaasResult.success) {
+            // Log the error but continue to cancel locally
+            console.error(`Falha ao cancelar assinatura no Asaas para ${userId}: ${asaasResult.message}`);
+        }
+    }
+    
     await userRef.update({
       subscriptionStatus: 'free',
       subscriptionExpiresAt: Timestamp.now(),
+      asaasSubscriptionId: FieldValue.delete(), // Remove o ID da assinatura do Asaas
     });
 
     return { success: true, message: 'Assinatura cancelada com sucesso.' };
