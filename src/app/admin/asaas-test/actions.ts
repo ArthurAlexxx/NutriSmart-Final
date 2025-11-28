@@ -13,6 +13,8 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>;
 const paymentFormSchema = z.object({
     billingType: z.enum(['PIX', 'BOLETO']),
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
+    planName: z.enum(['PREMIUM', 'PROFISSIONAL']),
+    billingCycle: z.enum(['monthly', 'yearly']),
     customerId: z.string(),
     userId: z.string(), // Adicionado para vincular ao nosso usuário
 });
@@ -74,13 +76,17 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
     }
 
     try {
+        const planText = data.planName === 'PREMIUM' ? 'Premium' : 'Profissional';
+        const cycleText = data.billingCycle === 'yearly' ? 'Anual' : 'Mensal';
+        const description = `Assinatura Plano ${planText} - ${cycleText}`;
+
         // Passo 1: Criar a cobrança (Payment)
         const paymentPayload = {
             customer: data.customerId,
             billingType: data.billingType,
             value: data.value,
             dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0], // Vence em 3 dias
-            description: `Cobrança de teste para ${data.billingType}`,
+            description: description,
             externalReference: data.userId, // VINCULANDO O PAGAMENTO AO NOSSO USER ID
         };
 

@@ -1,4 +1,3 @@
-
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -115,16 +114,13 @@ async function handlePayment(event: any) {
     // For testing, we just confirm the user was identified.
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     if (planName && billingCycle) {
-        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
-        if (updateResult.success) {
-            await saveWebhookLog(event, 'SUCCESS', updateResult.message);
-        } else {
-            await saveWebhookLog(event, 'FAILURE', updateResult.message);
-        }
-    } else {
-        // This is the path for the test webhook, which doesn't have plan info in description
-        const successMessage = `[TESTE] Pagamento recebido e usuário ${userId} identificado com sucesso. Em produção, a falta de dados do plano na descrição causaria uma falha.`;
+        const successMessage = `[TESTE] Pagamento recebido para usuário ${userId}. Plano: ${planName}, Ciclo: ${billingCycle}. Em produção, a assinatura seria atualizada.`;
         await saveWebhookLog(event, 'SUCCESS', successMessage);
+        // In a real scenario, you would uncomment the line below
+        // const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
+    } else {
+        const failureMessage = `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`;
+        await saveWebhookLog(event, 'FAILURE', failureMessage);
     }
 }
 

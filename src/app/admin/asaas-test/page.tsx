@@ -11,14 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard } from 'lucide-react';
+import { Loader2, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { createCustomerAction, createPaymentAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -29,6 +29,8 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>;
 const paymentFormSchema = z.object({
     billingType: z.enum(['PIX', 'BOLETO'], { required_error: 'Selecione a forma de pagamento.'}),
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
+    planName: z.enum(['PREMIUM', 'PROFISSIONAL'], { required_error: 'Selecione um plano.' }),
+    billingCycle: z.enum(['monthly', 'yearly'], { required_error: 'Selecione um ciclo.' }),
 });
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
@@ -47,7 +49,7 @@ export default function AsaasTestPage() {
 
     const paymentForm = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentFormSchema),
-        defaultValues: { billingType: 'PIX', value: 1.00 },
+        defaultValues: { billingType: 'PIX', value: 1.00, planName: 'PREMIUM', billingCycle: 'monthly' },
     });
     
     const handleCopy = (text: string) => {
@@ -209,6 +211,14 @@ export default function AsaasTestPage() {
                                                     </RadioGroup>
                                                 </FormControl><FormMessage /></FormItem>
                                             )}/>
+                                            <div className='grid grid-cols-2 gap-4'>
+                                                <FormField control={paymentForm.control} name="planName" render={({ field }) => (
+                                                    <FormItem><FormLabel>Plano</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="PREMIUM"><div className='flex items-center gap-2'><Crown /> Premium</div></SelectItem><SelectItem value="PROFISSIONAL"><div className='flex items-center gap-2'><Briefcase /> Profissional</div></SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                                )}/>
+                                                 <FormField control={paymentForm.control} name="billingCycle" render={({ field }) => (
+                                                    <FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="monthly">Mensal</SelectItem><SelectItem value="yearly">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                                )}/>
+                                            </div>
                                             <FormField control={paymentForm.control} name="value" render={({ field }) => (
                                                 <FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                                             )}/>
