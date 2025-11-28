@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
@@ -50,8 +51,9 @@ export async function POST(request: Request) {
 
     if (searchResult.totalCount > 0) {
         customerId = searchResult.data[0].id;
+        // Ensure externalReference is set on existing customer
         await fetch(`${asaasApiUrl}/customers/${customerId}`, {
-            method: 'POST',
+            method: 'POST', // POST to update
             headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
             body: JSON.stringify({ externalReference: userId }),
         });
@@ -85,25 +87,25 @@ export async function POST(request: Request) {
         
         return NextResponse.json({
             type: 'CREDIT_CARD',
-            id: 'fixed_link',
+            id: 'fixed_link', // Use a placeholder ID for fixed links
             url: paymentUrl,
         });
 
-    } else { // Para PIX e BOLETO
+    } else { // Para PIX e BOLETO, criar cobrança dinâmica
         
         const planDetails = plansConfig[planName as keyof typeof plansConfig];
         if (!planDetails) {
             return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
         }
-
-        const value = isYearly ? planDetails.yearly * 12 : planDetails.monthly;
+        
+        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         const description = `Assinatura ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
 
         const paymentPayload = {
             customer: customerId,
             billingType: billingType,
             value: value,
-            dueDate: format(new Date(), 'yyyy-MM-dd'),
+            dueDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
             description: description,
             externalReference: userId,
         };

@@ -1,3 +1,4 @@
+
 // src/app/checkout/page.tsx
 'use client';
 
@@ -124,19 +125,17 @@ function CheckoutPageContent() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Falha ao gerar a cobrança.');
             
+            setPaymentResult(data);
+
             if (data.type === 'CREDIT_CARD' && data.url) {
-                window.open(data.url, '_blank');
-                 toast({ title: "Continuar Pagamento", description: "Sua tela de pagamento foi aberta em uma nova aba." });
-                setIsLoading(false);
-                // Não mude de passo, o usuário deve ser instruído a verificar o pagamento mais tarde
-                return;
+                window.open(data.url, '_blank', 'noopener,noreferrer');
+                toast({ title: "Continuar Pagamento", description: "Sua tela de pagamento foi aberta em uma nova aba." });
             }
             
             if (data.id) {
                 localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
 
-            setPaymentResult(data);
             setStep('payment');
         } catch (err: any) {
             setError(err.message);
@@ -146,11 +145,11 @@ function CheckoutPageContent() {
         }
     };
     
-    const handleCheckPayment = async () => {
-        if (!paymentResult?.id || isVerifying || !user) return;
+    const handleCheckPayment = async (chargeId: string) => {
+        if (!chargeId || isVerifying || !user) return;
         setIsVerifying(true);
         try {
-            const result = await verifyAndFinalizeSubscription(user.uid, paymentResult.id);
+            const result = await verifyAndFinalizeSubscription(user.uid, chargeId);
 
             if (result.success) {
                 router.push('/checkout/success');
@@ -240,7 +239,7 @@ function CheckoutPageContent() {
                                 <Button onClick={() => handleCopyCode(paymentResult.payload)} variant="outline" className="w-full"><Copy className="mr-2 h-4 w-4" /> Copiar Código PIX</Button>
                             </CardContent>
                              <CardFooter>
-                                <Button onClick={handleCheckPayment} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
+                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
                             </CardFooter>
                         </Card>
                     )
@@ -265,6 +264,23 @@ function CheckoutPageContent() {
                         </Card>
                     )
                  }
+                if (paymentResult?.type === 'CREDIT_CARD') {
+                    return (
+                        <Card>
+                            <CardHeader className="text-center">
+                                <CardTitle>Verificação Pendente</CardTitle>
+                                <CardDescription>Aguardando a confirmação do pagamento realizado na outra aba. Você pode verificar manualmente.</CardDescription>
+                            </CardHeader>
+                             <CardFooter className="flex-col gap-2">
+                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">
+                                    {isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                    Verificar Pagamento Agora
+                                </Button>
+                                <Button variant="ghost" className="w-full" onClick={() => setStep('method')}>Escolher Outro Método</Button>
+                            </CardFooter>
+                        </Card>
+                    )
+                }
                 return <p>Método de pagamento inválido.</p>
         }
     }
