@@ -146,6 +146,7 @@ export async function POST(request: Request) {
         const basePrice = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
         let finalPrice = basePrice;
         
+        // Sobretaxa de 10% para PIX
         if (billingType === 'PIX') {
             finalPrice = Math.round(finalPrice * 1.10 * 100) / 100;
         }
