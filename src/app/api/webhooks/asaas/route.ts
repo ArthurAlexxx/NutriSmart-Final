@@ -1,7 +1,7 @@
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
-import { updateUserSubscriptionAction } from '@/app/actions/billing-actions';
+import { updateUserSubscriptionAction, cancelSubscriptionAction } from '@/app/actions/billing-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,56 +48,46 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
     return { planName, billingCycle };
 }
 
+async function getUserIdFromAsaas(payload: any): Promise<string | null> {
+    // 1. Prioritize externalReference on the payment/subscription object itself.
+    let userId = payload?.payment?.externalReference || payload?.subscription?.externalReference;
+    if (userId) return userId;
+
+    // 2. If not found, get the customer ID and fetch the customer data.
+    const customerId = payload?.payment?.customer || payload?.subscription?.customer;
+    if (!customerId) return null;
+
+    try {
+        const asaasApiKey = process.env.ASAAS_API_KEY;
+        const asaasApiUrl = getAsaasApiUrl();
+        const customerResponse = await fetch(`${asaasApiUrl}/customers/${customerId}`, {
+            headers: { 'access_token': asaasApiKey },
+            cache: 'no-store'
+        });
+        if (!customerResponse.ok) {
+             throw new Error(`Asaas API returned ${customerResponse.status} for customer ${customerId}`);
+        }
+        const customerData = await customerResponse.json();
+        return customerData.externalReference || null;
+    } catch (fetchError: any) {
+        console.error(`Error fetching customer from Asaas: ${fetchError.message}`);
+        return null;
+    }
+}
+
 
 async function handlePayment(event: any) {
-    const eventName = event?.event;
-    if (!eventName) {
-        const message = 'Evento ignorado: campo "event" ausente no payload.';
-        await saveWebhookLog(event, 'SUCCESS', message);
-        console.log(message);
-        return;
-    }
-
-    const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
-    if (!successfulPaymentEvents.includes(eventName)) {
-        const message = `Evento não processado: ${eventName}`;
-        await saveWebhookLog(event, 'SUCCESS', message); // Log as success because we correctly ignored it
-        console.log(message);
-        return;
-    }
-
     const paymentData = event.payment;
     if (!paymentData) {
-        const message = `Evento ${eventName} ignorado: payload não contém o objeto 'payment'.`;
+        const message = `Evento de pagamento ignorado: payload não contém o objeto 'payment'.`;
         await saveWebhookLog(event, 'SUCCESS', message);
-        console.log(message);
         return;
     }
     
-    let userId = paymentData?.externalReference;
-    
-    // Fallback: If externalReference is not on the payment, fetch it from the customer.
-    if (!userId && paymentData.customer) {
-        try {
-            const asaasApiKey = process.env.ASAAS_API_KEY;
-            const asaasApiUrl = getAsaasApiUrl();
-            const customerResponse = await fetch(`${asaasApiUrl}/customers/${paymentData.customer}`, {
-                headers: { 'access_token': asaasApiKey },
-                cache: 'no-store'
-            });
-            if (!customerResponse.ok) {
-                 throw new Error(`Asaas API returned ${customerResponse.status} for customer ${paymentData.customer}`);
-            }
-            const customerData = await customerResponse.json();
-            userId = customerData.externalReference;
-            if (!userId) {
-                 await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento para customer ${paymentData.customer} sem externalReference.`);
-                 return;
-            }
-        } catch (fetchError: any) {
-            await saveWebhookLog(event, 'FAILURE', `Erro ao buscar cliente no Asaas: ${fetchError.message}`);
-            return;
-        }
+    const userId = await getUserIdFromAsaas(event);
+    if (!userId) {
+        await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento para customer ${paymentData.customer} sem externalReference.`);
+        return;
     }
 
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
@@ -109,20 +99,48 @@ async function handlePayment(event: any) {
                 await saveWebhookLog(event, 'SUCCESS', updateResult.message);
             } else {
                 await saveWebhookLog(event, 'FAILURE', updateResult.message);
-                console.error(`Falha na lógica de negócio ao processar webhook: ${updateResult.message}`);
             }
         } catch (dbError: any) {
-            const errorMessage = `Falha ao atualizar usuário ${userId} via Server Action: ${dbError.message}`;
-            console.error(errorMessage);
-            await saveWebhookLog(event, 'FAILURE', errorMessage);
+            await saveWebhookLog(event, 'FAILURE', `Falha ao atualizar usuário ${userId}: ${dbError.message}`);
         }
     } else {
-        // Log a warning if essential data is missing, but still treat as a "handled" case.
-        const message = `Webhook de pagamento recebido, mas dados cruciais não puderam ser extraídos. externalReference: ${userId}, description: ${paymentData?.description}.`;
-        console.warn(message, { payload: event });
+        const message = `Webhook de pagamento recebido, mas dados cruciais não foram extraídos. UserID: ${userId}, Descrição: ${paymentData?.description}.`;
         await saveWebhookLog(event, 'SUCCESS', message);
     }
 }
+
+async function handleSubscription(event: any) {
+    const subscriptionData = event.subscription;
+    if (!subscriptionData) {
+        const message = `Evento de assinatura ignorado: payload não contém o objeto 'subscription'.`;
+        await saveWebhookLog(event, 'SUCCESS', message);
+        return;
+    }
+    
+    const userId = await getUserIdFromAsaas(event);
+    if (!userId) {
+        await saveWebhookLog(event, 'FAILURE', `Webhook de assinatura para customer ${subscriptionData.customer} sem externalReference.`);
+        return;
+    }
+
+    // Handle subscription cancellation/inactivation
+    if (event.event === 'SUBSCRIPTION_INACTIVATED' || event.event === 'SUBSCRIPTION_DELETED' || (event.event === 'SUBSCRIPTION_UPDATED' && subscriptionData.status === 'INACTIVE')) {
+        try {
+            const result = await cancelSubscriptionAction(userId);
+            if (result.success) {
+                 await saveWebhookLog(event, 'SUCCESS', `Assinatura cancelada para usuário ${userId} devido ao evento ${event.event}.`);
+            } else {
+                 await saveWebhookLog(event, 'FAILURE', `Falha ao cancelar assinatura para ${userId}: ${result.message}`);
+            }
+        } catch(error: any) {
+             await saveWebhookLog(event, 'FAILURE', `Erro crítico ao processar cancelamento para ${userId}: ${error.message}`);
+        }
+    } else {
+         const message = `Evento de assinatura '${event.event}' recebido e ignorado por não ser uma ação de cancelamento.`;
+         await saveWebhookLog(event, 'SUCCESS', message);
+    }
+}
+
 
 export async function POST(request: NextRequest) {
   let event;
@@ -130,15 +148,29 @@ export async function POST(request: NextRequest) {
     event = await request.json();
   } catch (error: any) {
       const errorMessage = `Erro fatal ao fazer parse do corpo do webhook: ${error.message}`;
-      console.error(errorMessage);
       await saveWebhookLog({body: "Invalid JSON"}, 'FAILURE', errorMessage);
       return new NextResponse('Payload malformado.', { status: 400 });
   }
+
+  const eventName = event?.event;
+  if (!eventName) {
+    await saveWebhookLog(event, 'FAILURE', 'Evento ignorado: campo "event" ausente no payload.');
+    return NextResponse.json({ message: "Webhook recebido (sem evento)." }, { status: 200 });
+  }
     
-  // Process the payment logic without signature verification for now
-  await handlePayment(event);
+  if (eventName.startsWith('PAYMENT_')) {
+      const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
+      if (successfulPaymentEvents.includes(eventName)) {
+        await handlePayment(event);
+      } else {
+        await saveWebhookLog(event, 'SUCCESS', `Evento de pagamento '${eventName}' não processado.`);
+      }
+  } else if (eventName.startsWith('SUBSCRIPTION_')) {
+      await handleSubscription(event);
+  } else {
+      await saveWebhookLog(event, 'SUCCESS', `Tipo de evento '${eventName}' desconhecido e não processado.`);
+  }
       
-  // Always return a success response to Asaas to prevent retries.
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
 }
 
