@@ -12,7 +12,6 @@ import { collection, query, onSnapshot, deleteDoc, updateDoc, setDoc, Unsubscrib
 import { useRouter } from 'next/navigation';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useUser, useFirestore } from '@/firebase';
-import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 import AppLayout from '@/components/app-layout';
 import EditMealModal from '@/components/edit-meal-modal';
@@ -47,35 +46,6 @@ export default function DashboardPage() {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
-
-  useEffect(() => {
-    // Client-side check to finalize payment from localStorage
-    const finalizePayment = async () => {
-        if (user && userProfile?.subscriptionStatus === 'free') {
-            const pendingChargeId = localStorage.getItem(`pendingChargeId_${user.uid}`);
-            if (pendingChargeId) {
-                try {
-                    const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
-                    if (result.success) {
-                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
-                        router.push('/checkout/success');
-                    } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
-                        // Don't toast for pending payments, it's expected.
-                        // toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
-                        // localStorage.removeItem(`pendingChargeId_${user.uid}`);
-                    }
-                } catch (err: any) {
-                    console.error("Erro ao tentar finalizar assinatura:", err);
-                    toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
-                    // localStorage.removeItem(`pendingChargeId_${user.uid}`);
-                }
-            }
-        }
-    };
-    const intervalId = setInterval(finalizePayment, 5000); // Check every 5 seconds
-
-    return () => clearInterval(intervalId);
-  }, [user, userProfile, toast, router]);
 
   useEffect(() => {
     if (!user || !db) return;

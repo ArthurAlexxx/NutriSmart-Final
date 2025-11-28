@@ -20,6 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import ProfileSettingsModal from './profile-settings-modal';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useToast } from '@/hooks/use-toast';
+import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 interface AppLayoutProps {
   user: User | null;
@@ -107,6 +109,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
@@ -118,6 +121,30 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         router.replace('/dashboard');
     }
   }, [isProUser, pathname, router, user]);
+
+  useEffect(() => {
+    if (!user || !userProfile) return;
+
+    // This checks for pending payments on any page with AppLayout
+    const finalizePayment = async () => {
+      const pendingChargeId = localStorage.getItem(`pendingChargeId_${user.uid}`);
+      if (pendingChargeId) {
+        try {
+          const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
+          if (result.success) {
+            localStorage.removeItem(`pendingChargeId_${user.uid}`);
+            router.push('/checkout/success');
+          }
+        } catch (err: any) {
+          console.error("Erro ao tentar finalizar assinatura:", err);
+        }
+      }
+    };
+
+    const intervalId = setInterval(finalizePayment, 5000); // Check every 5 seconds
+    return () => clearInterval(intervalId);
+  }, [user, userProfile, router]);
+
 
   const handleSignOut = async () => {
     if (!auth) return;

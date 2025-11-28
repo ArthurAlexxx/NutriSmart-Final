@@ -61,7 +61,7 @@ const plansConfig = {
 };
 
 function CheckoutPageContent() {
-    const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+    const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -118,8 +118,7 @@ function CheckoutPageContent() {
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
     
     useEffect(() => {
-        // This useEffect is now only for pre-filling the form.
-        // It does NOT advance the step automatically.
+        // This effect pre-fills the form but does NOT advance the step.
         if (userProfile) {
             customerForm.reset({
                 name: userProfile.fullName || '',
