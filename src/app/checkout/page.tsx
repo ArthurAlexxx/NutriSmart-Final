@@ -55,11 +55,20 @@ const formatCardNumber = (value: string) => {
 
 const formatExpiry = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 3) {
+    if (cleaned.length > 2) {
         return `${cleaned.slice(0, 2)} / ${cleaned.slice(2, 4)}`;
     }
     return cleaned;
 }
+
+const formatExpiryYear = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length === 2 && !cleaned.startsWith('20')) {
+        return `20${cleaned}`;
+    }
+    return cleaned;
+};
+
 
 function CheckoutPageContent() {
     const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
