@@ -19,8 +19,10 @@ export async function someAction(username: string) {
         }
 
         // Now we can safely check data
-        if (data && data.message && (data.message.includes("Couldn't find user") || data.message.includes("User not found"))) {
-            throw new Error("Usuário não encontrado. Verifique o nome de usuário e tente novamente.");
+        if (data && data.message) {
+            if(data.message.includes("Couldn't find user") || data.message.includes("User not found")) {
+                throw new Error("Usuário não encontrado. Verifique o nome de usuário e tente novamente.");
+            }
         }
         if (errorText.toLowerCase().includes("service unavailable")) {
             throw new Error(`O serviço da API está indisponível. Tente mais tarde.`);
@@ -38,6 +40,6 @@ export async function someAction(username: string) {
   } catch (error: any) {
     console.error("Error in someAction:", error);
     // Re-throw the specific error message for the client to handle
-    throw new Error(error.message || 'Ocorreu um erro desconhecido.');
+    throw new Error(error.message || 'Ocorreu um erro desconhecido ao se comunicar com a API.');
   }
 }

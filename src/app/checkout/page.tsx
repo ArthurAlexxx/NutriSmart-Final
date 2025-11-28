@@ -117,6 +117,16 @@ function CheckoutPageContent() {
             });
         }
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
+
+    // This effect detects when a subscription is confirmed in the background
+    // (via webhook) and redirects to the success page.
+    useEffect(() => {
+      const isPaidUser = effectiveSubscriptionStatus === 'premium' || effectiveSubscriptionStatus === 'professional';
+      if (isPaidUser && localStorage.getItem('pendingChargeId')) {
+        localStorage.removeItem('pendingChargeId');
+        router.push('/checkout/success');
+      }
+    }, [effectiveSubscriptionStatus, router]);
     
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -124,16 +134,11 @@ function CheckoutPageContent() {
         try {
             if (!user) throw new Error("Usuário não autenticado.");
             
-            // Set a session marker to indicate a payment process has started
-            sessionStorage.setItem('payment_completed', 'true');
-            
             const result = await createCustomer(user.uid, data);
-            setApiResponse({ status: 'success', data: result, type: 'customer' });
             setCreatedCustomer(result);
             toast({ title: 'Dados validados!', description: 'Agora escolha o método de pagamento.' });
             setStep('payment');
         } catch (err: any) {
-            sessionStorage.removeItem('payment_completed'); // Clean up marker on failure
             setApiResponse({ status: 'error', data: { message: err.message }, type: 'customer' });
             toast({ title: "Erro ao validar dados", description: err.message, variant: "destructive" });
         } finally {
@@ -143,7 +148,7 @@ function CheckoutPageContent() {
     
     const handlePaymentSubmit = async (data: PaymentFormValues) => {
         if (!createdCustomer?.id || !user?.uid) {
-            toast({ title: "Erro", description: "Cliente ou usuário não identificado para criar a cobrança.", variant: 'destructive'});
+            toast({ title: "Erro", description: "Primeiro, confirme seus dados para criar um cliente de cobrança.", variant: 'destructive'});
             return;
         }
 
@@ -166,7 +171,6 @@ function CheckoutPageContent() {
             setApiResponse({ status: 'success', data: result, type: 'payment' });
             toast({ title: "Cobrança Criada!", description: `Sua cobrança de ${data.billingType} foi gerada. Efetue o pagamento para ativar a assinatura.` });
         } catch (error: any) {
-            sessionStorage.removeItem('payment_completed');
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'payment' });
             toast({ title: "Erro ao Criar Cobrança", description: error.message, variant: 'destructive' });
         } finally {
@@ -176,7 +180,7 @@ function CheckoutPageContent() {
     
      const handleSubscriptionSubmit = async (data: TokenizationFormValues) => {
         if (!createdCustomer?.id || !user?.uid) {
-            toast({ title: "Erro", description: "Cliente ou usuário não identificado para criar a assinatura.", variant: 'destructive' });
+            toast({ title: "Erro", description: "Primeiro, confirme seus dados para criar um cliente de cobrança.", variant: 'destructive' });
             return;
         }
         setIsSubscribing(true);
@@ -194,10 +198,11 @@ function CheckoutPageContent() {
             // 2. Crie a assinatura com o token
             const planDetails = plansConfig[planName];
             const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.monthlyPrice;
-            const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
+            // No modo de assinatura, o valor deve ser o valor mensal/anual, não o total
+            const subscriptionValue = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthlyPrice;
 
             const subscriptionResult = await createSubscriptionAction({
-                value: totalAmount,
+                value: subscriptionValue,
                 planName: planName,
                 billingCycle: isYearly ? 'yearly' : 'monthly',
                 customerId: createdCustomer.id,
@@ -205,11 +210,17 @@ function CheckoutPageContent() {
                 creditCardToken: tokenResult.creditCardToken,
             });
 
+            // The webhook will handle the redirect to the success page.
+            // We'll show a waiting message here.
             setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
             toast({ title: "Assinatura Criada!", description: "Aguardando confirmação do pagamento para ativar seu plano." });
+            
+            // Store the first charge ID to poll for status
+            if (subscriptionResult?.payments?.[0]?.id) {
+              localStorage.setItem('pendingChargeId', subscriptionResult.payments[0].id);
+            }
 
         } catch (error: any) {
-            sessionStorage.removeItem('payment_completed');
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
             toast({ title: "Erro na Assinatura", description: error.message, variant: 'destructive' });
         } finally {
@@ -292,12 +303,11 @@ function CheckoutPageContent() {
                                     <Button onClick={() => handleCopy(apiResponse.data.payload)} variant="outline" className='w-full'><Copy className="mr-2 h-4 w-4" /> Copiar Código</Button>
                                 </div>
                             )}
-                             {apiResponse.data.type === 'BOLETO' && apiResponse.data.identificationField && (
+                             {apiResponse.data.type === 'BOLETO' && (
                                 <div className='space-y-3'>
-                                    <h3 className='font-semibold'>Boleto</h3>
-                                     <div className="p-3 border rounded-lg bg-muted text-sm break-all">{apiResponse.data.identificationField}</div>
-                                    <Button onClick={() => handleCopy(apiResponse.data.identificationField)} variant="outline" className='w-full'><Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável</Button>
-                                    <Button asChild variant="secondary" className="w-full"><a href={apiResponse.data.bankSlipUrl} target="_blank" rel="noopener noreferrer"><Barcode className="mr-2 h-4 w-4" /> Ver PDF</a></Button>
+                                    <h3 className='font-semibold'>Boleto Gerado</h3>
+                                     <p className='text-sm text-muted-foreground'>Clique no botão abaixo para abrir e imprimir seu boleto.</p>
+                                    <Button asChild variant="secondary" className="w-full"><a href={apiResponse.data.bankSlipUrl} target="_blank" rel="noopener noreferrer"><Barcode className="mr-2 h-4 w-4" /> Ver PDF do Boleto</a></Button>
                                 </div>
                             )}
                         </div>

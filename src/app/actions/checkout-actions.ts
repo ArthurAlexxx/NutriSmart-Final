@@ -15,7 +15,7 @@ const customerFormSchema = z.object({
   email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
 });
-type CustomerFormValues = z.infer<typeof customerFormSchema>;
+type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 
 const paymentFormSchema = z.object({
     billingType: z.enum(['PIX', 'BOLETO']),
@@ -54,7 +54,7 @@ const tokenizationFormSchema = z.object({
 type TokenizationFormValues = z.infer<typeof tokenizationFormSchema>;
 
 
-export async function createCustomer(userId: string, data: CustomerFormValues): Promise<any> {
+export async function createCustomer(userId: string, data: CustomerDataFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
 
@@ -85,7 +85,8 @@ export async function createCustomer(userId: string, data: CustomerFormValues): 
         const customerData = await createCustomerResponse.json();
         
         if (!createCustomerResponse.ok) {
-            throw new Error(customerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
+            console.error("Asaas Create Customer Error:", customerData);
+            throw new Error(customerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
         }
 
         const asaasCustomerId = customerData.id;
@@ -96,7 +97,7 @@ export async function createCustomer(userId: string, data: CustomerFormValues): 
 
     } catch (error: any) {
         console.error('Error in createCustomer:', error);
-        throw new Error(error.message || 'Erro desconhecido ao processar a requisição no Asaas.');
+        throw new Error(error.message || 'Erro desconhecido ao criar o cliente de cobrança.');
     }
 }
 
@@ -137,7 +138,8 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
 
         const paymentData = await paymentResponse.json();
         if (!paymentResponse.ok) {
-            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
+            console.error("Asaas Create Payment Error:", paymentData);
+            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança no gateway de pagamento.');
         }
 
         const chargeId = paymentData.id;
@@ -148,22 +150,14 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
                 cache: 'no-store',
             });
             const qrCodeData = await qrCodeResponse.json();
-            if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
+            if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
             return { type: 'PIX', chargeId: chargeId, ...qrCodeData };
         }
 
         if (data.billingType === 'BOLETO') {
-            const identificationFieldResponse = await fetch(`${asaasApiUrl}/payments/${chargeId}/identificationField`, {
-                headers: { 'access_token': asaasApiKey },
-                cache: 'no-store',
-            });
-            const identificationFieldData = await identificationFieldResponse.json();
-            if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
-            
             return { 
                 type: 'BOLETO', 
                 chargeId: chargeId,
-                identificationField: identificationFieldData.identificationField,
                 bankSlipUrl: paymentData.bankSlipUrl
             };
         }
@@ -212,15 +206,15 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
 
         const responseData = await response.json();
         if (!response.ok) {
-            console.error("Asaas Tokenization API Response:", responseData);
-            throw new Error(responseData.errors?.[0]?.description || 'Falha ao tokenizar o cartão.');
+            console.error("Asaas Tokenization API Error:", responseData);
+            throw new Error(responseData.errors?.[0]?.description || 'Falha ao validar os dados do cartão.');
         }
 
         return { type: 'TOKENIZATION', ...responseData };
 
     } catch (error: any) {
         console.error('Error in tokenizeCardAction:', error);
-        throw new Error(error.message || 'Erro desconhecido ao tokenizar o cartão.');
+        throw new Error(error.message || 'Erro desconhecido ao validar o cartão.');
     }
 }
 
@@ -260,8 +254,8 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
 
         const responseData = await response.json();
         if (!response.ok) {
-            console.error("Asaas Subscription API Response:", responseData);
-            throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+            console.error("Asaas Subscription API Error:", responseData);
+            throw new Error(responseData.errors?.[0]?.description || 'Falha ao criar a assinatura recorrente.');
         }
 
         return { type: 'SUBSCRIPTION', ...responseData };

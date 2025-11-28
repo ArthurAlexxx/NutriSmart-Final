@@ -32,6 +32,9 @@ NÃO ESCREVA TEXTO ANTES OU DEPOIS.
  * @returns Um objeto de receita validado.
  */
 export async function generateRecipeAction(userInput: string): Promise<Recipe> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('O serviço de IA não está configurado no servidor.');
+  }
   const prompt = `
     INSTRUÇÕES MESTRE:
     Você é um Chef de Cozinha especialista e está criando uma receita para um livro digital. Sua resposta deve ser extremamente detalhada, clara e útil.
@@ -86,22 +89,22 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
     AGORA, GERE SOMENTE O OBJETO JSON FINAL.
   `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-        { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
-        { role: "user", content: prompt }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
-
-  const resultText = response.choices[0].message.content;
-  if (!resultText) {
-    throw new Error('A IA não conseguiu gerar uma resposta. Tente novamente.');
-  }
-
   try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+          { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+          { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não conseguiu gerar uma resposta. Tente novamente.');
+    }
+
     const recipeJson = JSON.parse(resultText);
     
     if (recipeJson.error) {
@@ -111,20 +114,19 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
     const validationResult = RecipeSchema.safeParse(recipeJson);
     if (validationResult.success) {
       return validationResult.data;
+    } else {
+        console.error("Zod validation failed for recipe object:", validationResult.error.errors);
+        console.error("Received JSON from OpenAI:", resultText);
+        throw new Error('A resposta da IA não corresponde ao formato de receita esperado. Tente ser mais específico sobre os ingredientes.');
     }
-    
-    console.error("Zod validation failed for recipe object.");
-    console.error("Received JSON:", resultText);
-    throw new Error('A resposta da IA não corresponde ao formato de receita esperado.');
 
-  } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error("Zod validation error in generateRecipeAction:", error.errors);
-      } else {
-        console.error("Error parsing or validating recipe JSON:", error);
+  } catch (error: any) {
+      console.error("Error in generateRecipeAction:", error);
+      let friendlyMessage = "Houve um problema ao se comunicar com o Chef Virtual. Por favor, tente novamente.";
+      if (error.message.includes('A solicitação não parece ser sobre comida.')) {
+          friendlyMessage = error.message;
       }
-      console.error("Original JSON string from OpenAI:", resultText);
-      throw new Error("A resposta da IA não estava no formato de receita esperado. Tente ser mais específico sobre os ingredientes.");
+      throw new Error(friendlyMessage);
   }
 }
 
@@ -134,6 +136,9 @@ export async function generateRecipeAction(userInput: string): Promise<Recipe> {
  * @returns Um objeto de plano alimentar validado.
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('O serviço de IA não está configurado no servidor.');
+    }
     const prompt = `
     VOCÊ É UM NUTRICIONISTA ESPECIALISTA em software e sua única função é gerar um plano alimentar diário em formato JSON.
 
@@ -179,44 +184,36 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
 
     AGORA, GERE SOMENTE O OBJETO JSON FINAL.
   `;
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-        { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
-        { role: "user", content: prompt }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.4,
-  });
-
-  const resultText = response.choices[0].message.content;
-  if (!resultText) {
-    throw new Error('A IA não conseguiu gerar um plano alimentar. Verifique suas metas e tente novamente.');
-  }
-  
   try {
-    const planJson = JSON.parse(resultText);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+          { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+          { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.4,
+    });
 
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não conseguiu gerar um plano alimentar. Verifique suas metas e tente novamente.');
+    }
+  
+    const planJson = JSON.parse(resultText);
     const validationResult = GeneratedPlan.safeParse(planJson);
+
     if (validationResult.success) {
         return validationResult.data;
+    } else {
+        console.error("Zod validation failed:", validationResult.error);
+        console.error("Received JSON:", resultText);
+        throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
     }
 
-    console.error("Zod validation failed:", validationResult.error);
-    console.error("Received JSON:", resultText);
-    throw new Error('A resposta da IA não corresponde ao formato de plano esperado.');
-
   } catch (error: any) {
-     if (error instanceof z.ZodError) {
-        console.error("Zod validation error in generateMealPlanAction:", error.errors);
-     } else if (error.message.includes('formato de plano')) {
-        throw error;
-     } else {
-        console.error("Error parsing or validating plan JSON:", error);
-     }
-     console.error("Original JSON string from OpenAI:", resultText);
-     throw new Error("A resposta da IA não estava no formato de plano esperado.");
+     console.error("Error in generateMealPlanAction:", error);
+     throw new Error(error.message || "Houve um problema ao se comunicar com a IA para gerar o plano.");
   }
 }
 
@@ -226,6 +223,9 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
  * @returns A validated meal analysis object.
  */
 export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promise<AnalyzeMealOutput> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('O serviço de IA não está configurado no servidor.');
+  }
   const prompt = `
     INSTRUÇÕES:
     1.  Identifique os alimentos na imagem e estime as quantidades em gramas ou unidades.
@@ -240,40 +240,39 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
     AGORA, ANALISE A IMAGEM E GERE SOMENTE O OBJETO JSON FINAL.
   `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT_JSON_ONLY,
-      },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          {
-            type: "image_url",
-            image_url: {
-              url: input.photoDataUri,
-              detail: "low",
-            },
-          },
-        ],
-      },
-    ],
-    response_format: { type: "json_object" },
-    max_tokens: 400,
-    temperature: 0.3,
-  });
-
-  const resultText = response.choices[0].message.content;
-  if (!resultText) {
-    throw new Error('A IA não conseguiu analisar a imagem. Tente uma foto mais nítida.');
-  }
-
   try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT_JSON_ONLY,
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: input.photoDataUri,
+                detail: "low",
+              },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 400,
+      temperature: 0.3,
+    });
+
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não conseguiu analisar a imagem. Tente uma foto mais nítida.');
+    }
+
     const analysisJson = JSON.parse(resultText);
-    
     const validationResult = AnalyzeMealOutputSchema.safeParse(analysisJson);
 
     if (validationResult.success) {
@@ -283,15 +282,9 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
         console.error("Received JSON:", resultText);
         throw new Error("A resposta da IA não estava no formato de análise esperado.");
     }
-
-  } catch(error) {
-     if (error instanceof z.ZodError) {
-        console.error("Zod validation error during parse:", error.errors);
-     } else {
-        console.error("Erro ao fazer parse do JSON da análise ou validar com Zod:", error);
-     }
-     console.error("JSON recebido da OpenAI:", resultText);
-     throw new Error("A resposta da IA não estava no formato de análise esperado.");
+  } catch(error: any) {
+     console.error("Error in analyzeMealFromPhotoAction:", error);
+     throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar a foto.");
   }
 }
 
@@ -301,6 +294,9 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
  * @returns A validated array of insights.
  */
 export async function generateAnalysisInsightsAction(input: AnalysisInsightsInput): Promise<AnalysisInsightsOutput> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('O serviço de IA não está configurado no servidor.');
+  }
   const prompt = `
     Você é um nutricionista assistente de IA, especialista em analisar dados de consumo alimentar e fornecer insights práticos e motivacionais.
 
@@ -338,22 +334,22 @@ export async function generateAnalysisInsightsAction(input: AnalysisInsightsInpu
     AGORA, GERE SOMENTE O OBJETO JSON FINAL COM OS INSIGHTS.
   `;
   
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
-      { role: "user", content: prompt }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.5,
-  });
-
-  const resultText = response.choices[0].message.content;
-  if (!resultText) {
-    throw new Error('A IA não conseguiu gerar os insights. Tente novamente mais tarde.');
-  }
-
   try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.5,
+    });
+
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não conseguiu gerar os insights. Tente novamente mais tarde.');
+    }
+
     const insightsJson = JSON.parse(resultText);
     const validationResult = AnalysisInsightsOutputSchema.safeParse(insightsJson);
     if (validationResult.success) {
@@ -364,9 +360,8 @@ export async function generateAnalysisInsightsAction(input: AnalysisInsightsInpu
       throw new Error('A resposta da IA não corresponde ao formato de insights esperado.');
     }
   } catch (error: any) {
-    console.error("Error parsing or validating insights JSON:", error);
-    console.error("Original JSON string from OpenAI:", resultText);
-    throw new Error("A resposta da IA não estava no formato de insights esperado.");
+    console.error("Error in generateAnalysisInsightsAction:", error);
+    throw new Error(error.message || "Houve um problema ao se comunicar com a IA para gerar os insights.");
   }
 }
     
