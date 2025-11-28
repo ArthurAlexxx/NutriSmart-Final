@@ -74,11 +74,19 @@ export default function AsaasTestPage() {
     };
     
     const onPaymentSubmit = async (data: PaymentFormValues) => {
-        if (!createdCustomer?.id) return;
+        if (!createdCustomer?.id || !user?.uid) {
+            toast({ title: "Erro", description: "Cliente ou usuário não identificado para criar a cobrança.", variant: 'destructive'});
+            return;
+        }
+
         setIsLoading(true);
         setApiResponse(null);
         try {
-            const result = await createPaymentAction({ ...data, customerId: createdCustomer.id });
+            const result = await createPaymentAction({ 
+                ...data, 
+                customerId: createdCustomer.id,
+                userId: user.uid // Passando o ID do nosso usuário
+            });
             setApiResponse({ status: 'success', data: result, type: 'payment' });
             toast({ title: "Cobrança Criada!", description: `Cobrança de ${data.billingType} gerada com sucesso.` });
         } catch (error: any) {

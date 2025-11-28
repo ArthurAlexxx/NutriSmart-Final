@@ -14,6 +14,7 @@ const paymentFormSchema = z.object({
     billingType: z.enum(['PIX', 'BOLETO']),
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
     customerId: z.string(),
+    userId: z.string(), // Adicionado para vincular ao nosso usuário
 });
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
@@ -80,6 +81,7 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
             value: data.value,
             dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0], // Vence em 3 dias
             description: `Cobrança de teste para ${data.billingType}`,
+            externalReference: data.userId, // VINCULANDO O PAGAMENTO AO NOSSO USER ID
         };
 
         const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
