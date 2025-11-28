@@ -89,7 +89,7 @@ function AdminLogsPage() {
                                           {log.status}
                                       </Badge>
                                   </TableCell>
-                                  <TableCell className="max-w-sm truncate">{log.details}</TableCell>
+                                  <TableCell>{log.details}</TableCell>
                                   <TableCell>
                                       <AccordionTrigger className='p-2 hover:no-underline'>
                                           <span className='sr-only'>Ver payload</span>
