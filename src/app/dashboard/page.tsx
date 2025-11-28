@@ -71,7 +71,9 @@ export default function DashboardPage() {
             }
         }
     };
-    finalizePayment();
+    const intervalId = setInterval(finalizePayment, 5000); // Check every 5 seconds
+
+    return () => clearInterval(intervalId);
   }, [user, userProfile, toast, router]);
 
   useEffect(() => {

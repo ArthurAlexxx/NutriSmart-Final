@@ -22,6 +22,7 @@ import { createCustomer, createPaymentAction } from '@/app/actions/checkout-acti
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome completo é obrigatório.'),
@@ -77,7 +78,6 @@ function CheckoutPageContent() {
                     email: userProfile.email || '',
                     cpfCnpj: userProfile.taxId || '',
                 });
-                // Sempre começa na etapa de dados
                 setStep('data');
             }
         }
