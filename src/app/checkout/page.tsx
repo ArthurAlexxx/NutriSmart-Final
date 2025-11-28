@@ -12,17 +12,18 @@ import * as z from 'zod';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, ChevronLeft, ArrowRight, UserPlus, XCircle, QrCode, Barcode, Copy, CreditCard, Crown, Briefcase, RefreshCcw } from 'lucide-react';
+import { Loader2, ChevronLeft, ArrowRight, XCircle, QrCode, Barcode, Copy, CreditCard, RefreshCcw, Key } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { createCustomer, createPaymentAction } from '@/app/actions/checkout-actions';
+import { createCustomer, createPaymentAction, tokenizeCardAction, createSubscriptionAction } from '@/app/actions/checkout-actions';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
+import { Separator } from '@/components/ui/separator';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome completo é obrigatório.'),
@@ -35,6 +36,21 @@ const paymentFormSchema = z.object({
     billingType: z.enum(['PIX', 'BOLETO'], { required_error: 'Selecione a forma de pagamento.'}),
 });
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
+const tokenizationFormSchema = z.object({
+    holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
+    number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
+    expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
+    expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
+    ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
+    customerName: z.string().min(3, 'Nome do cliente obrigatório.'),
+    customerEmail: z.string().email('Email do cliente obrigatório.'),
+    customerCpfCnpj: z.string().min(11, 'CPF/CNPJ do cliente obrigatório.'),
+    customerPostalCode: z.string().min(8, 'CEP do cliente obrigatório.'),
+    customerAddressNumber: z.string().min(1, 'Número do endereço obrigatório.'),
+    customerPhone: z.string().min(10, 'Telefone do cliente obrigatório.'),
+});
+type TokenizationFormValues = z.infer<typeof tokenizationFormSchema>;
 
 
 type CheckoutStep = 'data' | 'payment';
@@ -55,6 +71,7 @@ function CheckoutPageContent() {
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [createdCustomer, setCreatedCustomer] = useState<any>(null);
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isSubscribing, setIsSubscribing] = useState(false);
 
     const planName = searchParams.get('plan')?.toUpperCase() as keyof typeof plansConfig;
     const isYearly = searchParams.get('yearly') === 'true';
@@ -68,21 +85,37 @@ function CheckoutPageContent() {
         resolver: zodResolver(paymentFormSchema),
         defaultValues: { billingType: 'PIX' },
     });
+    
+     const tokenizationForm = useForm<TokenizationFormValues>({
+        resolver: zodResolver(tokenizationFormSchema),
+        defaultValues: { 
+            holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '',
+            customerName: '', customerEmail: '', customerCpfCnpj: '',
+            customerPostalCode: '', customerAddressNumber: '', customerPhone: ''
+        },
+    });
 
     useEffect(() => {
-        if (!isUserLoading) {
-            if (!user) {
-                router.push('/login');
-            } else if (userProfile) {
-                customerForm.reset({
-                    name: userProfile.fullName || '',
-                    email: userProfile.email || '',
-                    cpfCnpj: userProfile.taxId || '',
-                });
-                setStep('data');
-            }
+        if (!isUserLoading && !user) {
+            router.push('/login');
         }
-    }, [user, userProfile, isUserLoading, router, customerForm]);
+        if (userProfile) {
+             customerForm.reset({
+                name: userProfile.fullName || '',
+                email: userProfile.email || '',
+                cpfCnpj: userProfile.taxId || '',
+            });
+            tokenizationForm.reset({
+                ...tokenizationForm.getValues(),
+                customerName: userProfile.fullName || '',
+                customerEmail: userProfile.email || '',
+                customerCpfCnpj: userProfile.taxId || '',
+                customerPostalCode: userProfile.postalCode || '',
+                customerAddressNumber: userProfile.addressNumber || '',
+                customerPhone: userProfile.phone || '',
+            });
+        }
+    }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -126,7 +159,6 @@ function CheckoutPageContent() {
             });
             setApiResponse({ status: 'success', data: result, type: 'payment' });
             
-            // Store pending charge ID in localStorage for client-side polling/verification
             localStorage.setItem(`pendingChargeId_${user.uid}`, result.chargeId);
 
             toast({ title: "Cobrança Criada!", description: `Sua cobrança de ${data.billingType} foi gerada. Efetue o pagamento para ativar a assinatura.` });
@@ -138,6 +170,54 @@ function CheckoutPageContent() {
         }
     }
     
+     const handleSubscriptionSubmit = async (data: TokenizationFormValues) => {
+        if (!createdCustomer?.id || !user?.uid) {
+            toast({ title: "Erro", description: "Cliente ou usuário não identificado para criar a assinatura.", variant: 'destructive' });
+            return;
+        }
+        setIsSubscribing(true);
+        setApiResponse(null);
+
+        try {
+            // 1. Tokenize o cartão
+            const tokenResult = await tokenizeCardAction({ ...data, customerId: createdCustomer.id });
+            
+            if (!tokenResult?.creditCardToken) {
+                throw new Error("Falha ao obter o token do cartão de crédito.");
+            }
+            toast({ title: "Cartão Validado", description: "Criando sua assinatura recorrente..." });
+
+            // 2. Crie a assinatura com o token
+            const planDetails = plansConfig[planName];
+            const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.monthlyPrice;
+            const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
+
+            const subscriptionResult = await createSubscriptionAction({
+                value: totalAmount,
+                planName: planName,
+                billingCycle: isYearly ? 'yearly' : 'monthly',
+                customerId: createdCustomer.id,
+                userId: user.uid,
+                creditCardToken: tokenResult.creditCardToken,
+            });
+
+            setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
+            
+            // For credit card, the first charge happens automatically with the subscription.
+            // So we can finalize immediately after getting the webhook (or a short delay).
+            toast({ title: "Assinatura Criada!", description: "Seu plano será ativado em instantes." });
+
+            setTimeout(() => router.push('/checkout/success'), 2000);
+
+        } catch (error: any) {
+            setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
+            toast({ title: "Erro na Assinatura", description: error.message, variant: 'destructive' });
+        } finally {
+            setIsSubscribing(false);
+        }
+    };
+
+
     const handleVerifyPayment = async () => {
         if (!user || !apiResponse?.data?.chargeId) {
             toast({ title: "Erro", description: "Não foi possível encontrar os dados da cobrança para verificação.", variant: 'destructive' });
@@ -163,6 +243,19 @@ function CheckoutPageContent() {
         navigator.clipboard.writeText(text);
         toast({ title: 'Copiado!' });
     }
+    
+    const formatCardNumber = (value: string) => {
+        return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+    };
+
+    const formatExpiryYear = (value: string) => {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length === 2 && !cleaned.startsWith('20')) {
+            return `20${cleaned}`;
+        }
+        return cleaned;
+    };
+
 
     if (isUserLoading || !userProfile || !planName || !plansConfig[planName]) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -178,11 +271,16 @@ function CheckoutPageContent() {
 
         const cardTitleClass = apiResponse.status === 'success' ? 'text-green-500' : 'text-destructive';
         
-        if (apiResponse.type === 'customer' && apiResponse.status === 'success') {
-            return null; // Don't show customer success card, just proceed to payment step
+        if (apiResponse.status !== 'success') {
+             return (
+                 <Card className="shadow-sm">
+                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><XCircle/> Erro na Requisição</CardTitle></CardHeader>
+                    <CardContent><ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4"><pre className="text-sm whitespace-pre-wrap">{JSON.stringify(apiResponse?.data, null, 2)}</pre></ScrollArea></CardContent>
+                </Card>
+             );
         }
 
-        if (apiResponse.type === 'payment' && apiResponse.status === 'success') {
+        if (apiResponse.type === 'payment') {
              return (
                 <Card className="shadow-sm">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Cobrança Gerada</CardTitle></CardHeader>
@@ -214,13 +312,7 @@ function CheckoutPageContent() {
             );
         }
         
-        // Error card
-        return (
-             <Card className="shadow-sm">
-                <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}><XCircle/> Erro na Requisição</CardTitle></CardHeader>
-                <CardContent><ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4"><pre className="text-sm whitespace-pre-wrap">{JSON.stringify(apiResponse?.data, null, 2)}</pre></ScrollArea></CardContent>
-            </Card>
-        );
+        return null; // For customer success or other types handled differently
     };
 
     const renderDataStep = () => (
@@ -258,7 +350,7 @@ function CheckoutPageContent() {
                  <Tabs defaultValue="pix-boleto" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="pix-boleto">PIX / Boleto</TabsTrigger>
-                        <TabsTrigger value="cartao" disabled>Cartão de Crédito</TabsTrigger>
+                        <TabsTrigger value="cartao">Cartão de Crédito</TabsTrigger>
                     </TabsList>
                     <TabsContent value="pix-boleto" className="pt-6">
                         <Form {...paymentForm}>
@@ -275,8 +367,37 @@ function CheckoutPageContent() {
                              </form>
                         </Form>
                     </TabsContent>
-                    <TabsContent value="cartao">
-                         <p className="text-sm text-center text-muted-foreground p-8">O pagamento com cartão de crédito será habilitado em breve.</p>
+                    <TabsContent value="cartao" className="pt-6">
+                        <Form {...tokenizationForm}>
+                             <form onSubmit={tokenizationForm.handleSubmit(handleSubscriptionSubmit)} className="space-y-6">
+                                <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
+                                    type="tel" placeholder="0000 0000 0000 0000" {...field}
+                                    onChange={(e) => { field.onChange(formatCardNumber(e.target.value)); }}
+                                    maxLength={19}
+                                /></FormControl><FormMessage /></FormItem>)}/>
+                                <div className='grid grid-cols-3 gap-4'>
+                                    <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} maxLength={2} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input 
+                                        placeholder="AAAA" {...field} 
+                                        onChange={(e) => { field.onChange(formatExpiryYear(e.target.value)); }}
+                                        maxLength={4} 
+                                    /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
+                                </div>
+                                <Separator />
+                                <h4 className="font-semibold">Informações do Titular (para validação)</h4>
+                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <FormField control={tokenizationForm.control} name="customerName" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="customerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="customerCpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="customerPostalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="customerAddressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={tokenizationForm.control} name="customerPhone" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                </div>
+                                <Button type="submit" disabled={isSubscribing} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Assinar com Cartão</Button>
+                            </form>
+                        </Form>
                     </TabsContent>
                  </Tabs>
             </CardContent>

@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCustomer } from '@/app/actions/checkout-actions';
 
-// This API route is now simplified to only handle customer creation/retrieval.
 export async function POST(request: NextRequest) {
   try {
     const { userId, customerData } = await request.json();
