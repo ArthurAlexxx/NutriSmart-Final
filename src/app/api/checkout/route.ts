@@ -12,9 +12,6 @@ const plansConfig = {
   PROFISSIONAL: { name: 'Profissional', price: 49.90, yearlyPrice: 39.90 },
 };
 
-// A minimal 1x1 transparent JPEG encoded in Base64 with data URI prefix
-const PLACEHOLDER_IMAGE_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAEAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//9k=';
-
 async function getOrCreateAsaasCustomer(
   customerData: { taxId: string, fullName: string, email: string, phone?: string },
   asaasApiKey: string,
