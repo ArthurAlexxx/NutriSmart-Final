@@ -23,7 +23,8 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 const subscriptionFormSchema = z.object({
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
-    cycle: z.enum(['MONTHLY', 'YEARLY']),
+    planName: z.enum(['PREMIUM', 'PROFISSIONAL']),
+    billingCycle: z.enum(['monthly', 'yearly']),
     customerId: z.string(),
     userId: z.string(),
     creditCardToken: z.string().min(1, 'Token do cartão é obrigatório.'),
@@ -170,13 +171,18 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
     }
 
     try {
+        const planText = data.planName === 'PREMIUM' ? 'Premium' : 'Profissional';
+        const cycleText = data.billingCycle === 'yearly' ? 'Anual' : 'Mensal';
+        const description = `Assinatura Plano ${planText} - ${cycleText}`;
+        const cycle = data.billingCycle === 'yearly' ? 'YEARLY' : 'MONTHLY';
+
         const subscriptionPayload = {
             customer: data.customerId,
             billingType: 'CREDIT_CARD',
             nextDueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
             value: data.value,
-            cycle: data.cycle,
-            description: `Assinatura Teste (Cartão) - Ciclo ${data.cycle}`,
+            cycle: cycle,
+            description: description,
             externalReference: data.userId,
             creditCardToken: data.creditCardToken,
             remoteIp: '127.0.0.1', // Placeholder, as headers() is unreliable here

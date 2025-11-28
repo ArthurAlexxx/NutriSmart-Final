@@ -38,7 +38,8 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 const subscriptionFormSchema = z.object({
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
-    cycle: z.enum(['MONTHLY', 'YEARLY']),
+    planName: z.enum(['PREMIUM', 'PROFISSIONAL'], { required_error: 'Selecione um plano.' }),
+    billingCycle: z.enum(['monthly', 'yearly'], { required_error: 'Selecione um ciclo.' }),
     creditCardToken: z.string().min(1, 'O token do cartão é obrigatório para criar a assinatura.'),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
@@ -79,7 +80,7 @@ export default function AsaasTestPage() {
 
     const subscriptionForm = useForm<SubscriptionFormValues>({
         resolver: zodResolver(subscriptionFormSchema),
-        defaultValues: { value: 1.00, cycle: 'MONTHLY', creditCardToken: '' },
+        defaultValues: { value: 1.00, planName: 'PREMIUM', billingCycle: 'monthly', creditCardToken: '' },
     });
 
     const tokenizationForm = useForm<TokenizationFormValues>({
@@ -109,7 +110,7 @@ export default function AsaasTestPage() {
             tokenizationForm.reset({ 
                 ...tokenizationForm.getValues(),
                 customerName: result.name,
-                customerEmail: result.email || '',
+                customerEmail: result.email,
                 customerCpfCnpj: result.cpfCnpj,
             });
             toast({ title: "Cliente Criado!", description: `Agora você pode criar uma cobrança ou tokenizar um cartão para ${result.name}.` });
@@ -157,8 +158,7 @@ export default function AsaasTestPage() {
             const result = await createSubscriptionAction({ 
                 ...data, 
                 customerId: createdCustomer.id,
-                userId: user.uid,
-                creditCardToken: createdToken.creditCardToken,
+                userId: user.uid
             });
             setApiResponse({ status: 'success', data: result, type: 'subscription' });
             toast({ title: "Assinatura Criada!", description: `Assinatura no cartão de crédito criada com sucesso.` });
@@ -401,9 +401,11 @@ export default function AsaasTestPage() {
                                                         )}
                                                         />
                                                     <div className='grid grid-cols-2 gap-4'>
-                                                        <FormField control={subscriptionForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                        <FormField control={subscriptionForm.control} name="cycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="MONTHLY">Mensal</SelectItem><SelectItem value="YEARLY">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                                                        <FormField control={subscriptionForm.control} name="planName" render={({ field }) => (<FormItem><FormLabel>Plano</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="PREMIUM"><div className='flex items-center gap-2'><Crown /> Premium</div></SelectItem><SelectItem value="PROFISSIONAL"><div className='flex items-center gap-2'><Briefcase /> Profissional</div></SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                                                        <FormField control={subscriptionForm.control} name="billingCycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="monthly">Mensal</SelectItem><SelectItem value="yearly">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                                                     </div>
+                                                    <FormField control={subscriptionForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    
                                                     <Button type="submit" disabled={isLoading} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Criar Assinatura</Button>
                                                 </form>
                                             </Form>
