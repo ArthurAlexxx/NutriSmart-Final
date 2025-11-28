@@ -4,6 +4,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { updateUserSubscriptionAction, cancelSubscriptionAction } from '@/app/actions/billing-actions';
 import type { UserProfile } from '@/types/user';
+import { query, where } from 'firebase/firestore';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,7 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
 
     // If we couldn't find the externalReference directly, query the customer from our DB
     const usersRef = db.collection('users');
-    const q = query(usersRef, where('asaasCustomerId', '==', customerId));
+    const q = usersRef.where('asaasCustomerId', '==', customerId);
     const querySnapshot = await q.get();
 
     if (!querySnapshot.empty) {
