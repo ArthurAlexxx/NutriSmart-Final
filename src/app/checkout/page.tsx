@@ -61,7 +61,7 @@ const plansConfig = {
 };
 
 function CheckoutPageContent() {
-    const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
+    const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -159,6 +159,7 @@ function CheckoutPageContent() {
                 customerId: createdCustomer.id,
                 userId: user.uid
             });
+            sessionStorage.setItem('payment_initiated', 'true');
             setApiResponse({ status: 'success', data: result, type: 'payment' });
             toast({ title: "Cobrança Criada!", description: `Sua cobrança de ${data.billingType} foi gerada. Efetue o pagamento para ativar a assinatura.` });
         } catch (error: any) {
@@ -203,6 +204,7 @@ function CheckoutPageContent() {
             const firstChargeId = subscriptionResult?.chargeId;
 
             setApiResponse({ status: 'success', data: { ...subscriptionResult, chargeId: firstChargeId }, type: 'subscription_pending' });
+            sessionStorage.setItem('payment_initiated', 'true');
             toast({ title: "Assinatura Criada/Atualizada!", description: "Clique em Verificar Pagamento para ativar seu plano." });
 
         } catch (error: any) {
@@ -223,8 +225,9 @@ function CheckoutPageContent() {
         try {
             const result = await verifyAndFinalizeSubscription(user.uid, apiResponse.data.chargeId);
             if (result.success) {
-                 sessionStorage.setItem('payment_completed', 'true');
-                 // The provider will now handle the redirection
+                 // The provider will handle the redirection. We don't need to explicitly do it here.
+                 // The 'payment_initiated' flag in session storage ensures the provider knows a payment flow was active.
+                 toast({ title: "Pagamento Confirmado!", description: "Seu plano foi ativado com sucesso." });
             } else {
                 toast({ title: "Pagamento Pendente", description: result.message, variant: 'default' });
             }

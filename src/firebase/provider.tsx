@@ -65,13 +65,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
-  const previousSubscriptionStatus = useRef<string | undefined>(undefined);
-
   // Effect to handle redirection after a successful payment
   useEffect(() => {
     // This effect runs whenever the user's profile data changes.
     const profile = userAuthState.userProfile;
-    if (!profile) return;
+    if (!profile || userAuthState.isUserLoading) return;
 
     const storedStatus = profile.subscriptionStatus || 'free';
     const expiresAt = profile.subscriptionExpiresAt 
@@ -84,12 +82,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const hasActivePaidPlan = storedStatus !== 'free' && !isExpired;
     
     // The key condition: was a payment just completed in this browser session?
-    if (sessionStorage.getItem('payment_completed') === 'true' && hasActivePaidPlan) {
-        sessionStorage.removeItem('payment_completed'); // Clear the flag
+    if (sessionStorage.getItem('payment_initiated') === 'true' && hasActivePaidPlan) {
+        sessionStorage.removeItem('payment_initiated'); // Clear the flag
         router.push('/checkout/success'); // Redirect to success page
     }
     
-  }, [userAuthState.userProfile, router]);
+  }, [userAuthState.userProfile, userAuthState.isUserLoading, router]);
 
 
   // Effect to subscribe to Firebase auth state changes
