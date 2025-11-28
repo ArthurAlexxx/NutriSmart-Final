@@ -394,7 +394,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">
-                                        Ao cancelar, seu plano permanecerá ativo até a data de expiração, mas não será renovado. Você pode reativá-lo a qualquer momento.
+                                        Ao cancelar, seu plano permanecerá ativo até a data de expiração, mas não será renovado. Você pode assinar novamente a qualquer momento.
                                     </p>
                                 </CardContent>
                                 <CardFooter>
