@@ -98,11 +98,10 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
 }
 
 
-async function handlePayment(event: any) {
+async function handlePaymentReceived(event: any) {
     const paymentData = event.payment;
     if (!paymentData) {
-        await saveWebhookLog(event, 'SUCCESS', `Evento de pagamento ignorado: payload não contém o objeto 'payment'.`);
-        return;
+        return; // Should have been logged before calling this
     }
     
     const userId = await getUserIdFromAsaas(event);
@@ -111,46 +110,41 @@ async function handlePayment(event: any) {
         return;
     }
 
-    // For testing, we just confirm the user was identified.
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     if (planName && billingCycle) {
-        const successMessage = `[TESTE] Pagamento recebido para usuário ${userId}. Plano: ${planName}, Ciclo: ${billingCycle}. Em produção, a assinatura seria atualizada.`;
-        await saveWebhookLog(event, 'SUCCESS', successMessage);
-        // In a real scenario, you would uncomment the line below
-        // const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
+        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
+         if (updateResult.success) {
+            await saveWebhookLog(event, 'SUCCESS', `Assinatura atualizada para ${userId} via pagamento.`);
+        } else {
+            await saveWebhookLog(event, 'FAILURE', `Falha ao atualizar assinatura para ${userId} via pagamento: ${updateResult.message}`);
+        }
     } else {
         const failureMessage = `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`;
         await saveWebhookLog(event, 'FAILURE', failureMessage);
     }
 }
 
-async function handleSubscription(event: any) {
+async function handleSubscriptionInactivated(event: any) {
     const subscriptionData = event.subscription;
     if (!subscriptionData) {
-        await saveWebhookLog(event, 'SUCCESS', `Evento de assinatura ignorado: payload não contém o objeto 'subscription'.`);
         return;
     }
     
     const userId = await getUserIdFromAsaas(event);
     if (!userId) {
-        await saveWebhookLog(event, 'FAILURE', `Webhook de assinatura recebido, mas não foi possível encontrar o userId para o customer ${subscriptionData.customer}.`);
+        await saveWebhookLog(event, 'FAILURE', `Webhook de assinatura inativada recebido, mas não foi possível encontrar o userId para o customer ${subscriptionData.customer}.`);
         return;
     }
 
-    if (event.event === 'SUBSCRIPTION_INACTIVATED' || event.event === 'SUBSCRIPTION_DELETED' || (event.event === 'SUBSCRIPTION_UPDATED' && subscriptionData.status === 'INACTIVE')) {
-        try {
-            const result = await cancelSubscriptionAction(userId);
-            if (result.success) {
-                 await saveWebhookLog(event, 'SUCCESS', `Assinatura cancelada para usuário ${userId} devido ao evento ${event.event}.`);
-            } else {
-                 await saveWebhookLog(event, 'FAILURE', `Falha ao cancelar assinatura para ${userId}: ${result.message}`);
-            }
-        } catch(error: any) {
-             await saveWebhookLog(event, 'FAILURE', `Erro crítico ao processar cancelamento para ${userId}: ${error.message}`);
+    try {
+        const result = await cancelSubscriptionAction(userId);
+        if (result.success) {
+             await saveWebhookLog(event, 'SUCCESS', `Assinatura cancelada para usuário ${userId} devido ao evento ${event.event}.`);
+        } else {
+             await saveWebhookLog(event, 'FAILURE', `Falha ao cancelar assinatura para ${userId}: ${result.message}`);
         }
-    } else {
-         const message = `Evento de assinatura '${event.event}' recebido e ignorado por não ser uma ação de cancelamento.`;
-         await saveWebhookLog(event, 'SUCCESS', message);
+    } catch(error: any) {
+         await saveWebhookLog(event, 'FAILURE', `Erro crítico ao processar cancelamento para ${userId}: ${error.message}`);
     }
 }
 
@@ -170,25 +164,15 @@ export async function POST(request: NextRequest) {
     await saveWebhookLog(event, 'FAILURE', 'Evento ignorado: campo "event" ausente no payload.');
     return NextResponse.json({ message: "Webhook recebido (sem evento)." }, { status: 200 });
   }
+
+  // Log every event first
+  await saveWebhookLog(event, 'SUCCESS', `Evento '${eventName}' recebido e logado.`);
     
-  if (eventName.startsWith('PAYMENT_')) {
-      const successfulPaymentEvents = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'];
-      if (successfulPaymentEvents.includes(eventName)) {
-        await handlePayment(event);
-      } else {
-        await saveWebhookLog(event, 'SUCCESS', `Evento de pagamento '${eventName}' não processado.`);
-      }
-  } else if (eventName.startsWith('SUBSCRIPTION_')) {
-      await handleSubscription(event);
-  } else if (eventName.startsWith('CHECKOUT_')) {
-      if (eventName === 'CHECKOUT_PAID') {
-        // O payload de CHECKOUT_PAID contém o objeto 'payment', então podemos reutilizar o handler.
-        await handlePayment(event);
-      } else {
-        await saveWebhookLog(event, 'SUCCESS', `Evento de checkout '${eventName}' não processado.`);
-      }
-  } else {
-      await saveWebhookLog(event, 'SUCCESS', `Tipo de evento '${eventName}' desconhecido e não processado.`);
+  // Then, process specific events
+  if (eventName === 'PAYMENT_RECEIVED' || eventName === 'PAYMENT_CONFIRMED' || eventName === 'CHECKOUT_PAID') {
+      await handlePaymentReceived(event);
+  } else if (eventName === 'SUBSCRIPTION_INACTIVATED' || eventName === 'SUBSCRIPTION_DELETED' || (eventName === 'SUBSCRIPTION_UPDATED' && event.subscription?.status === 'INACTIVE')) {
+      await handleSubscriptionInactivated(event);
   }
       
   return NextResponse.json({ message: "Webhook recebido com sucesso." }, { status: 200 });
