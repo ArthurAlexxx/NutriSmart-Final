@@ -339,7 +339,6 @@ export default function AsaasTestPage() {
                                                 <FormField control={tokenizationForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                 <FormField control={tokenizationForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
                                                     type="tel"
-                                                    pattern="\\d{4} \\d{4} \\d{4} \\d{4}"
                                                     placeholder="0000 0000 0000 0000" 
                                                     {...field}
                                                     onChange={(e) => {
