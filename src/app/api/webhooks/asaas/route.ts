@@ -6,6 +6,13 @@ import { updateUserSubscriptionAction } from '@/app/actions/billing-actions';
 
 export const dynamic = 'force-dynamic';
 
+const getAsaasApiUrl = () => {
+    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const isSandbox = asaasApiKey?.includes('sandbox') || asaasApiKey?.includes('hmlg');
+    return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
+};
+
+
 async function saveWebhookLog(payload: any, status: 'SUCCESS' | 'FAILURE', details: string) {
     try {
         const logData = {
@@ -68,8 +75,29 @@ async function handlePayment(event: any) {
         return;
     }
     
-    // For single payments, externalReference is on payment. For subscriptions, it's on subscription.
-    const userId = paymentData?.externalReference || paymentData?.subscription?.externalReference;
+    let userId = paymentData?.externalReference;
+    
+    // Fallback: If externalReference is not on the payment, fetch it from the customer.
+    if (!userId && paymentData.customer) {
+        try {
+            const asaasApiKey = process.env.ASAAS_API_KEY;
+            const asaasApiUrl = getAsaasApiUrl();
+            const customerResponse = await fetch(`${asaasApiUrl}/customers/${paymentData.customer}`, {
+                headers: { 'access_token': asaasApiKey },
+                cache: 'no-store'
+            });
+            const customerData = await customerResponse.json();
+            userId = customerData.externalReference;
+            if (!userId) {
+                 await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento para customer ${paymentData.customer} sem externalReference.`);
+                 return;
+            }
+        } catch (fetchError: any) {
+            await saveWebhookLog(event, 'FAILURE', `Erro ao buscar cliente no Asaas: ${fetchError.message}`);
+            return;
+        }
+    }
+
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
     
     if (userId && planName && billingCycle) {

@@ -1,3 +1,4 @@
+
 // src/app/checkout/page.tsx
 'use client';
 
@@ -128,8 +129,10 @@ function CheckoutPageContent() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Falha ao gerar a cobrança.');
             
-            if (data.type === 'CREDIT_CARD') {
-                window.location.href = data.url;
+            if (data.type === 'CREDIT_CARD' && data.url) {
+                window.open(data.url, '_blank');
+                 toast({ title: "Continuar Pagamento", description: "Abra a nova aba para concluir o pagamento com cartão de crédito." });
+                setIsLoading(false);
                 return;
             }
 
@@ -218,7 +221,7 @@ function CheckoutPageContent() {
                         </CardContent>
                         <CardFooter className="flex-col sm:flex-row gap-2">
                              <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar</Button>
-                             <Button className="w-full" onClick={generatePayment} disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Gerar Cobrança'}</Button>
+                             <Button className="w-full" onClick={generatePayment} disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Finalizar Pagamento'}</Button>
                         </CardFooter>
                     </Card>
                 );
