@@ -12,8 +12,9 @@ const plansConfig = {
   PROFISSIONAL: { name: 'Profissional', price: 49.90, yearlyPrice: 39.90 },
 };
 
-// A minimal 1x1 transparent GIF encoded in Base64
-const PLACEHOLDER_IMAGE_BASE64 = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+// A minimal 1x1 transparent JPEG encoded in Base64 with data URI prefix
+const PLACEHOLDER_IMAGE_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAEAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//9k=';
+
 
 export async function POST(request: Request) {
   const { userId, planName, isYearly, customerData, billingType } = await request.json();
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = description.replace(/ /g, '_').substring(0, 30);
+    const itemName = description.replace(/[ /]/g, '_').substring(0, 30);
 
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
                 name: itemName,
                 description: description.substring(0, 150),
                 value: value,
-                quantity: isSubscription ? 1 : (isYearly ? 12 : 1),
+                quantity: 1, // Quantity is always 1 for subscriptions or per-item
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
@@ -82,8 +83,12 @@ export async function POST(request: Request) {
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
-            value: value,
+            value: value, // The value here is the recurring monthly/yearly amount
         }
+        // For yearly subscription, we don't set quantity to 12. We set the cycle to YEARLY
+        // and the value to the discounted monthly price. Asaas will handle the yearly billing.
+        // However, if it's a one-time yearly payment (DETACHED), we'd do value * 12.
+        // The current model is RECURRENT, so Asaas handles the cycle.
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
