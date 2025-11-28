@@ -24,6 +24,7 @@ const plans = [
     {
         name: 'GRATUITO',
         priceId: null,
+        yearlyPriceId: null,
         price: '0',
         yearlyPrice: '0',
         period: 'Acesso para sempre',
@@ -76,24 +77,19 @@ const plans = [
     },
 ];
 
-function Pricing() {
+export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
-  const { user, effectiveSubscriptionStatus } = useUser();
+  const { user, userProfile, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
 
   const handleCtaClick = (plan: typeof plans[0]) => {
-    const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
-    if (isCurrentPlan) return;
-
+    // A lógica para verificar o plano atual foi movida para a renderização do botão
     if (!user) {
-        // Not logged in, default behavior
         router.push(plan.href || '/register');
         return;
     }
 
     if (plan.name === 'GRATUITO') {
-        // Logged in user clicking on Free plan is a no-op, maybe they want to downgrade later.
-        // For now, we just redirect to their dashboard.
         router.push('/dashboard');
         return;
     }
@@ -134,12 +130,15 @@ function Pricing() {
             {plans.map((plan) => {
               
               const isCurrentPlan = effectiveSubscriptionStatus.toLowerCase() === plan.name.toLowerCase();
-              const ctaText = user ? (isCurrentPlan ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
+              const isCurrentBillingCycleYearly = userProfile?.asaasSubscriptionId ? userProfile.asaasSubscriptionId.includes('yearly') : false; // Placeholder logic
+              const isButtonDisabled = isCurrentPlan && isYearly === isCurrentBillingCycleYearly;
+
+              const ctaText = user ? (isButtonDisabled ? 'Plano Atual' : plan.buttonText) : 'Começar Agora';
               const displayPrice = isYearly ? plan.yearlyPrice : plan.price;
               const displayPeriod = isYearly && plan.name !== 'GRATUITO' ? '/mês (cobrado anualmente)' : '/mês';
 
               return (
-                <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl", plan.isPopular && "shadow-2xl border-primary")}>
+                <Card key={plan.name} className={cn("w-full rounded-2xl flex flex-col transition-all duration-300 hover:scale-105", plan.isPopular ? "shadow-2xl border-primary" : "hover:shadow-xl")}>
                     <CardHeader>
                         <CardTitle>
                         <span className="flex flex-row justify-between items-center font-normal">
@@ -177,7 +176,7 @@ function Pricing() {
                             className="w-full gap-4" 
                             variant={plan.isPopular ? "default" : "outline"}
                             onClick={() => handleCtaClick(plan)}
-                            disabled={isCurrentPlan}
+                            disabled={isButtonDisabled}
                          >
                             {ctaText} <MoveRight className="w-4 h-4" />
                         </Button>
@@ -190,5 +189,3 @@ function Pricing() {
     </div>
   );
 }
-
-export { Pricing };
