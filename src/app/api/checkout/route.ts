@@ -36,7 +36,9 @@ export async function POST(request: Request) {
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
 
-    const successUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br'}/checkout/success`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
+    const successUrl = `${baseUrl}/checkout/success`;
+    const cancelUrl = `${baseUrl}/pricing`;
 
     const checkoutPayload: any = {
         billingTypes: [billingType],
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
             {
                 name: description,
                 value: value,
-                quantity: 1,
+                quantity: isSubscription && isYearly ? 12 : 1,
             }
         ],
         customerData: {
@@ -59,11 +61,12 @@ export async function POST(request: Request) {
         callback: {
             autoRedirect: true,
             successUrl: successUrl,
+            cancelUrl: cancelUrl,
+            expiredUrl: cancelUrl,
         }
     };
     
     if (isSubscription) {
-        checkoutPayload.items[0].quantity = isYearly ? 12 : 1;
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
