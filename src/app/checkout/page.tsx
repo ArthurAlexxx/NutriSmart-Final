@@ -131,7 +131,7 @@ function CheckoutPageContent() {
                 window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
-            if (data.id) {
+            if (data.id && data.type !== 'CREDIT_CARD') { // Do not store for fixed links
                 localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
 
@@ -268,15 +268,13 @@ function CheckoutPageContent() {
                     return (
                         <Card>
                             <CardHeader className="text-center">
-                                <CardTitle>Verificação Pendente</CardTitle>
-                                <CardDescription>Aguardando a confirmação do pagamento realizado na outra aba. Você pode verificar manualmente.</CardDescription>
+                                <CardTitle>Pagamento em Processo</CardTitle>
+                                <CardDescription>Sua assinatura será ativada automaticamente assim que o pagamento for confirmado na outra aba. Você pode fechar esta tela.</CardDescription>
                             </CardHeader>
                              <CardFooter className="flex-col gap-2">
-                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">
-                                    {isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                    Verificar Pagamento Agora
+                                <Button onClick={() => router.push('/dashboard')} className="w-full">
+                                    Voltar para o Dashboard
                                 </Button>
-                                <Button variant="ghost" className="w-full" onClick={() => setStep('method')}>Escolher Outro Método</Button>
                             </CardFooter>
                         </Card>
                     )

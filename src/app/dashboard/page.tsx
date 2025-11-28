@@ -55,22 +55,22 @@ export default function DashboardPage() {
         if (user && userProfile?.subscriptionStatus === 'free') {
             const pendingChargeId = localStorage.getItem(`pendingChargeId_${user.uid}`);
             if (pendingChargeId) {
-                try {
-                    const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
-                    if (result.success) {
-                        // The userProfile will update via the onSnapshot listener in useUser
-                        // Redirect to success page
-                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
-                        router.push('/checkout/success');
-                    } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
-                        // Only show error if it's not a pending payment, to avoid annoying the user.
-                        toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
+                // For now, only finalize non-credit card payments this way
+                if (pendingChargeId !== 'fixed_link') {
+                    try {
+                        const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
+                        if (result.success) {
+                            localStorage.removeItem(`pendingChargeId_${user.uid}`);
+                            router.push('/checkout/success');
+                        } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
+                            toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
+                            localStorage.removeItem(`pendingChargeId_${user.uid}`);
+                        }
+                    } catch (err: any) {
+                        console.error("Erro ao tentar finalizar assinatura:", err);
+                        toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
                         localStorage.removeItem(`pendingChargeId_${user.uid}`);
                     }
-                } catch (err: any) {
-                    console.error("Erro ao tentar finalizar assinatura:", err);
-                    toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
-                    localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 }
             }
         }

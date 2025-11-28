@@ -50,10 +50,11 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
 }
 
 async function getUserIdFromAsaas(payload: any): Promise<string | null> {
-    const directReference = payload?.payment?.externalReference || payload?.subscription?.externalReference;
-    if (directReference) {
-        return directReference;
-    }
+    const directPaymentReference = payload?.payment?.externalReference;
+    if (directPaymentReference) return directPaymentReference;
+    
+    const directSubscriptionReference = payload?.subscription?.externalReference;
+    if (directSubscriptionReference) return directSubscriptionReference;
 
     const customerId = payload?.payment?.customer || payload?.subscription?.customer;
     if (!customerId) {
@@ -67,9 +68,13 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
             headers: { 'access_token': asaasApiKey },
             cache: 'no-store'
         });
+
         if (!response.ok) {
-             throw new Error(`Asaas API returned ${response.status} for customer ${customerId}`);
+             const errorText = await response.text();
+             console.error(`Asaas API Error fetching customer ${customerId}: ${errorText}`);
+             return null;
         }
+
         const customerData = await response.json();
         return customerData.externalReference || null;
     } catch (fetchError: any) {
