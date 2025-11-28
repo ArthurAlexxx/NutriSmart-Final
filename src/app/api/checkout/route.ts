@@ -1,4 +1,3 @@
-
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = planDetails.name;
+    const itemName = 'plano'; // Using a simple, safe name to avoid API validation issues.
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
                 name: itemName,
                 description: description,
                 value: value,
-                quantity: 1, // The subscription object handles the recurrence
+                quantity: 1,
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
