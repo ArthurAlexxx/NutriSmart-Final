@@ -31,47 +31,36 @@ export async function createCustomer(userId: string, data: CustomerFormValues): 
     try {
         const validatedData = customerFormSchema.parse(data);
 
-        // Check if a customer with this CPF/CNPJ already exists in Asaas
-        const searchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${validatedData.cpfCnpj.replace(/\D/g, '')}`, {
-            headers: { 'access_token': asaasApiKey }, cache: 'no-store',
+        const createCustomerPayload = {
+            name: validatedData.name,
+            email: validatedData.email,
+            cpfCnpj: validatedData.cpfCnpj.replace(/\D/g, ''),
+            externalReference: userId,
+        };
+
+        const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify(createCustomerPayload),
+            cache: 'no-store',
         });
-        const searchResult = await searchResponse.json();
-
-        let asaasCustomerId: string;
-        let customerData: any;
-
-        if (searchResult.totalCount > 0) {
-            customerData = searchResult.data[0];
-            asaasCustomerId = customerData.id;
-        } else {
-            const createCustomerPayload = {
-                name: validatedData.name,
-                email: validatedData.email,
-                cpfCnpj: validatedData.cpfCnpj.replace(/\D/g, ''),
-                externalReference: userId,
-            };
-
-            const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-                body: JSON.stringify(createCustomerPayload),
-                cache: 'no-store',
-            });
-            
-            customerData = await createCustomerResponse.json();
-            
-            if (!createCustomerResponse.ok) {
-                throw new Error(customerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
-            }
-            asaasCustomerId = customerData.id;
-        }
         
+        const customerData = await createCustomerResponse.json();
+        
+        if (!createCustomerResponse.ok) {
+            throw new Error(customerData.errors?.[0]?.description || 'Falha ao criar cliente no Asaas.');
+        }
+
+        const asaasCustomerId = customerData.id;
+        
+        // Update user profile in Firestore with the new customer ID and taxId
         await db.collection('users').doc(userId).update({ asaasCustomerId, taxId: validatedData.cpfCnpj });
 
         return customerData;
 
     } catch (error: any) {
         console.error('Error in createCustomer:', error);
+        // Ensure a meaningful error message is thrown to the client
         throw new Error(error.message || 'Erro desconhecido ao processar a requisição no Asaas.');
     }
 }
