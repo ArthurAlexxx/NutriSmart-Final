@@ -92,7 +92,9 @@ function CheckoutPageContent() {
         defaultValues: { 
             holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '',
             customerName: '', customerEmail: '', customerCpfCnpj: '',
-            customerPostalCode: '', customerAddressNumber: '', customerPhone: ''
+            customerPostalCode: userProfile?.postalCode || '', 
+            customerAddressNumber: userProfile?.addressNumber || '', 
+            customerPhone: userProfile?.phone || ''
         },
     });
 
@@ -117,16 +119,6 @@ function CheckoutPageContent() {
             });
         }
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
-
-    // This effect detects when a subscription is confirmed in the background
-    // (via webhook) and redirects to the success page.
-    useEffect(() => {
-      const isPaidUser = effectiveSubscriptionStatus === 'premium' || effectiveSubscriptionStatus === 'professional';
-      if (isPaidUser && localStorage.getItem('pendingChargeId')) {
-        localStorage.removeItem('pendingChargeId');
-        router.push('/checkout/success');
-      }
-    }, [effectiveSubscriptionStatus, router]);
     
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -197,8 +189,6 @@ function CheckoutPageContent() {
 
             // 2. Crie a assinatura com o token
             const planDetails = plansConfig[planName];
-            const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.monthlyPrice;
-            // No modo de assinatura, o valor deve ser o valor mensal/anual, não o total
             const subscriptionValue = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthlyPrice;
 
             const subscriptionResult = await createSubscriptionAction({
@@ -209,16 +199,11 @@ function CheckoutPageContent() {
                 userId: user.uid,
                 creditCardToken: tokenResult.creditCardToken,
             });
-
-            // The webhook will handle the redirect to the success page.
-            // We'll show a waiting message here.
-            setApiResponse({ status: 'success', data: subscriptionResult, type: 'subscription' });
-            toast({ title: "Assinatura Criada!", description: "Aguardando confirmação do pagamento para ativar seu plano." });
             
-            // Store the first charge ID to poll for status
-            if (subscriptionResult?.payments?.[0]?.id) {
-              localStorage.setItem('pendingChargeId', subscriptionResult.payments[0].id);
-            }
+            const firstChargeId = subscriptionResult?.payments?.[0]?.id;
+
+            setApiResponse({ status: 'success', data: { ...subscriptionResult, chargeId: firstChargeId }, type: 'subscription_pending' });
+            toast({ title: "Assinatura Criada!", description: "Clique em Verificar Pagamento para ativar seu plano." });
 
         } catch (error: any) {
             setApiResponse({ status: 'error', data: { message: error.message }, type: 'subscription' });
@@ -238,6 +223,7 @@ function CheckoutPageContent() {
         try {
             const result = await verifyAndFinalizeSubscription(user.uid, apiResponse.data.chargeId);
             if (result.success) {
+                 sessionStorage.setItem('payment_completed', 'true');
                  router.push('/checkout/success');
             } else {
                 toast({ title: "Pagamento Pendente", description: result.message, variant: 'default' });
@@ -290,7 +276,7 @@ function CheckoutPageContent() {
              );
         }
 
-        if (apiResponse.type === 'payment') {
+        if (apiResponse.type === 'payment' || apiResponse.type === 'subscription_pending') {
              return (
                 <Card className="shadow-sm">
                     <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Cobrança Gerada</CardTitle></CardHeader>
@@ -310,6 +296,12 @@ function CheckoutPageContent() {
                                     <Button asChild variant="secondary" className="w-full"><a href={apiResponse.data.bankSlipUrl} target="_blank" rel="noopener noreferrer"><Barcode className="mr-2 h-4 w-4" /> Ver PDF do Boleto</a></Button>
                                 </div>
                             )}
+                            {apiResponse.type === 'subscription_pending' && (
+                                <div className='text-center space-y-2'>
+                                    <h3 className='font-semibold'>Assinatura Criada com Sucesso!</h3>
+                                    <p className='text-sm text-muted-foreground'>A primeira cobrança foi gerada no seu cartão. Clique no botão abaixo para confirmar o pagamento e ativar seu plano.</p>
+                                </div>
+                            )}
                         </div>
                         <Alert variant="destructive" className="mt-4">
                             <AlertTriangle className="h-4 w-4" />
@@ -318,24 +310,11 @@ function CheckoutPageContent() {
                                 Este código é único para esta transação. Se você recarregar a página, precisará gerar uma nova cobrança.
                             </AlertDescription>
                         </Alert>
-                        <p className="text-sm text-muted-foreground text-center pt-2">Após o pagamento, sua assinatura será ativada. Se preferir, clique no botão abaixo para verificar.</p>
+                        <p className="text-sm text-muted-foreground text-center pt-2">Após o pagamento, clique no botão abaixo para ativar sua assinatura.</p>
                          <Button onClick={handleVerifyPayment} disabled={isVerifying} className="w-full">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCcw className="mr-2 h-4 w-4"/>}
                             Verificar Pagamento
                         </Button>
-                    </CardContent>
-                </Card>
-            );
-        }
-
-        if (apiResponse.type === 'subscription' && apiResponse.status === 'success') {
-            return (
-                <Card className="shadow-sm">
-                    <CardHeader><CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>Assinatura Criada</CardTitle></CardHeader>
-                    <CardContent className="text-center space-y-4">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                        <p className="text-muted-foreground">Sua assinatura foi criada com sucesso! Estamos aguardando a confirmação do pagamento da primeira parcela para ativar seu plano.</p>
-                        <p className="text-xs text-muted-foreground">Você pode fechar esta tela. A ativação é automática.</p>
                     </CardContent>
                 </Card>
             );

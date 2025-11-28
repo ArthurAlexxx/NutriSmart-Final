@@ -115,7 +115,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
-
+  
   useEffect(() => {
     if (user && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
