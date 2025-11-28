@@ -26,6 +26,7 @@ const subscriptionFormSchema = z.object({
     cycle: z.enum(['MONTHLY', 'YEARLY']),
     customerId: z.string(),
     userId: z.string(),
+    creditCardToken: z.string().min(1, 'Token do cartão é obrigatório.'),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
@@ -36,7 +37,7 @@ const tokenizationFormSchema = z.object({
     expiryMonth: z.string().min(2, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
-    // Customer Info
+    // Customer Info from createdCustomer state
     customerName: z.string().min(3, 'Nome do cliente obrigatório.'),
     customerEmail: z.string().email('Email do cliente obrigatório.'),
     customerCpfCnpj: z.string().min(11, 'CPF/CNPJ do cliente obrigatório.'),
@@ -64,7 +65,7 @@ export async function createCustomerAction(data: CustomerFormValues): Promise<an
     try {
         const createCustomerPayload = {
             name: data.name,
-            cpfCnpj: data.cpfCnpj,
+            cpfCnpj: data.cpfCnpj.replace(/\D/g, ''),
         };
 
         const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
@@ -163,6 +164,8 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
 export async function createSubscriptionAction(data: SubscriptionFormValues): Promise<any> {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasApiUrl = getAsaasApiUrl();
+    const forwarded = headers().get('x-forwarded-for');
+    const remoteIp = forwarded ? forwarded.split(/, /)[0] : '127.0.0.1';
 
     if (!asaasApiKey) {
         throw new Error('ASAAS_API_KEY não está configurada no servidor.');
@@ -177,6 +180,8 @@ export async function createSubscriptionAction(data: SubscriptionFormValues): Pr
             cycle: data.cycle,
             description: `Assinatura Teste (Cartão) - Ciclo ${data.cycle}`,
             externalReference: data.userId,
+            creditCardToken: data.creditCardToken,
+            remoteIp: remoteIp,
         };
 
         const response = await fetch(`${asaasApiUrl}/subscriptions`, {

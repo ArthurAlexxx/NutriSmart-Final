@@ -38,13 +38,14 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 const subscriptionFormSchema = z.object({
     value: z.coerce.number().positive('O valor deve ser maior que zero.'),
     cycle: z.enum(['MONTHLY', 'YEARLY']),
+    creditCardToken: z.string().min(1, 'O token do cartão é obrigatório para criar a assinatura.'),
 });
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 const tokenizationFormSchema = z.object({
     holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
     number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
-    expiryMonth: z.string().min(2, 'Mês inválido.').max(2, 'Mês inválido.'),
+    expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
     // Customer Info from createdCustomer state
@@ -64,6 +65,7 @@ export default function AsaasTestPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [createdCustomer, setCreatedCustomer] = useState<any>(null);
+    const [createdToken, setCreatedToken] = useState<any>(null);
 
     const customerForm = useForm<CustomerFormValues>({
         resolver: zodResolver(customerFormSchema),
@@ -77,23 +79,15 @@ export default function AsaasTestPage() {
 
     const subscriptionForm = useForm<SubscriptionFormValues>({
         resolver: zodResolver(subscriptionFormSchema),
-        defaultValues: { value: 1.00, cycle: 'MONTHLY' },
+        defaultValues: { value: 1.00, cycle: 'MONTHLY', creditCardToken: '' },
     });
 
     const tokenizationForm = useForm<TokenizationFormValues>({
         resolver: zodResolver(tokenizationFormSchema),
         defaultValues: { 
-            holderName: '', 
-            number: '', 
-            expiryMonth: '', 
-            expiryYear: '', 
-            ccv: '',
-            customerName: '',
-            customerEmail: '',
-            customerCpfCnpj: '',
-            customerPostalCode: '',
-            customerAddressNumber: '',
-            customerPhone: ''
+            holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '',
+            customerName: '', customerEmail: '', customerCpfCnpj: '',
+            customerPostalCode: '', customerAddressNumber: '', customerPhone: ''
         },
     });
     
@@ -106,6 +100,7 @@ export default function AsaasTestPage() {
         setIsLoading(true);
         setApiResponse(null);
         setCreatedCustomer(null);
+        setCreatedToken(null);
 
         try {
             const result = await createCustomerAction(data);
@@ -117,7 +112,7 @@ export default function AsaasTestPage() {
                 customerEmail: userProfile?.email || '', // Use logged in user email
                 customerCpfCnpj: result.cpfCnpj,
             });
-            toast({ title: "Cliente Criado!", description: `Agora você pode criar uma cobrança ou assinatura para ${result.name}.` });
+            toast({ title: "Cliente Criado!", description: `Agora você pode criar uma cobrança ou tokenizar um cartão para ${result.name}.` });
         } catch (error: any) {
             setApiResponse({ status: 'error', data: { message: error.message } });
             toast({ title: "Erro ao Criar Cliente", description: error.message, variant: 'destructive' });
@@ -151,8 +146,8 @@ export default function AsaasTestPage() {
     }
     
     const onSubscriptionSubmit = async (data: SubscriptionFormValues) => {
-         if (!createdCustomer?.id || !user?.uid) {
-            toast({ title: "Erro", description: "Cliente ou usuário não identificado para criar a assinatura.", variant: 'destructive'});
+         if (!createdCustomer?.id || !user?.uid || !createdToken?.creditCardToken) {
+            toast({ title: "Erro", description: "Cliente, usuário ou token do cartão não identificado.", variant: 'destructive'});
             return;
         }
 
@@ -162,7 +157,8 @@ export default function AsaasTestPage() {
             const result = await createSubscriptionAction({ 
                 ...data, 
                 customerId: createdCustomer.id,
-                userId: user.uid
+                userId: user.uid,
+                creditCardToken: createdToken.creditCardToken,
             });
             setApiResponse({ status: 'success', data: result, type: 'subscription' });
             toast({ title: "Assinatura Criada!", description: `Assinatura no cartão de crédito criada com sucesso.` });
@@ -181,6 +177,7 @@ export default function AsaasTestPage() {
         }
         setIsLoading(true);
         setApiResponse(null);
+        setCreatedToken(null);
 
         try {
             const result = await tokenizeCardAction({
@@ -188,6 +185,8 @@ export default function AsaasTestPage() {
                 customerId: createdCustomer.id,
             });
              setApiResponse({ status: 'success', data: result, type: 'tokenization' });
+             setCreatedToken(result);
+             subscriptionForm.setValue('creditCardToken', result.creditCardToken);
              toast({ title: "Cartão Tokenizado!", description: "O token foi gerado com sucesso." });
 
         } catch (error: any) {
@@ -322,29 +321,11 @@ export default function AsaasTestPage() {
                                     </CardContent>
                                 </Card>
 
-                                <Card>
-                                     <CardHeader>
-                                        <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>3</span> Criar Assinatura (Cartão)</CardTitle>
-                                        <CardDescription>Crie uma assinatura recorrente no cartão de crédito (sem token, para fins de teste da API).</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Form {...subscriptionForm}>
-                                            <form onSubmit={subscriptionForm.handleSubmit(onSubscriptionSubmit)} className="space-y-6">
-                                                <div className='grid grid-cols-2 gap-4'>
-                                                    <FormField control={subscriptionForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                    <FormField control={subscriptionForm.control} name="cycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="MONTHLY">Mensal</SelectItem><SelectItem value="YEARLY">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
-                                                </div>
-                                                <Button type="submit" disabled={isLoading} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Criar Assinatura</Button>
-                                            </form>
-                                        </Form>
-                                    </CardContent>
-                                </Card>
-
                                 <Separator />
 
                                  <Card>
                                      <CardHeader>
-                                        <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>4</span> Tokenizar Cartão</CardTitle>
+                                        <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>3</span> Tokenizar Cartão</CardTitle>
                                         <CardDescription>Gere um token de cartão de crédito para usar na criação de assinaturas.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -362,9 +343,9 @@ export default function AsaasTestPage() {
                                                     maxLength={19}
                                                 /></FormControl><FormMessage /></FormItem>)}/>
                                                 <div className='grid grid-cols-3 gap-4'>
-                                                    <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input placeholder="AAAA" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                    <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="expiryMonth" render={({ field }) => (<FormItem><FormLabel>Mês</FormLabel><FormControl><Input placeholder="MM" {...field} maxLength={2} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="expiryYear" render={({ field }) => (<FormItem><FormLabel>Ano</FormLabel><FormControl><Input placeholder="AAAA" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} maxLength={4} /></FormControl><FormMessage /></FormItem>)}/>
                                                 </div>
                                                 <Separator />
                                                 <h4 className="font-semibold">Informações do Titular</h4>
@@ -381,6 +362,39 @@ export default function AsaasTestPage() {
                                         </Form>
                                     </CardContent>
                                 </Card>
+
+                                {createdToken && (
+                                     <Card className="animate-in fade-in-50 duration-500">
+                                         <CardHeader>
+                                            <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>4</span> Criar Assinatura com Token</CardTitle>
+                                            <CardDescription>Use o token gerado para criar a assinatura recorrente.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Form {...subscriptionForm}>
+                                                <form onSubmit={subscriptionForm.handleSubmit(onSubscriptionSubmit)} className="space-y-6">
+                                                     <FormField
+                                                        control={subscriptionForm.control}
+                                                        name="creditCardToken"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                            <FormLabel>Token do Cartão</FormLabel>
+                                                            <FormControl>
+                                                                <Input {...field} readOnly disabled />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                        />
+                                                    <div className='grid grid-cols-2 gap-4'>
+                                                        <FormField control={subscriptionForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                        <FormField control={subscriptionForm.control} name="cycle" render={({ field }) => (<FormItem><FormLabel>Ciclo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="MONTHLY">Mensal</SelectItem><SelectItem value="YEARLY">Anual</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                                                    </div>
+                                                    <Button type="submit" disabled={isLoading} className="w-full"><RefreshCcw className="mr-2 h-4 w-4"/> Criar Assinatura</Button>
+                                                </form>
+                                            </Form>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
                         )}
                     </div>
