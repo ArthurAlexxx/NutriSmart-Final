@@ -133,7 +133,7 @@ function CheckoutPageContent() {
                     planName: planName,
                     isYearly: isYearly,
                     customerData: form.getValues(),
-                    billingType: paymentMethod,
+                    billingType: paymentMethod, // Sending the chosen method
                 }),
             });
             const data = await response.json();

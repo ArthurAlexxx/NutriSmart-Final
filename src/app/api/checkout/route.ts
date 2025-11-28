@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = planDetails.name;
+    const itemName = "Plano";
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -96,12 +96,12 @@ export async function POST(request: Request) {
 
     const checkoutPayload: any = {
         customer: asaasCustomerId,
-        billingType: billingType,
+        billingTypes: [billingType], // Correctly sending as an array
         externalReference: userId,
         minutesToExpire: 30,
         items: [
             {
-                name: "Plano",
+                name: itemName,
                 description: description,
                 value: value,
                 quantity: 1,
