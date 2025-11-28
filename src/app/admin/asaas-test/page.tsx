@@ -44,7 +44,7 @@ type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 const tokenizationFormSchema = z.object({
     holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
-    number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
+    number: z.string().min(19, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
     expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
@@ -197,9 +197,7 @@ export default function AsaasTestPage() {
     };
     
     const formatCardNumber = (value: string) => {
-        const cleaned = value.replace(/\D/g, '');
-        const matches = cleaned.match(/(\d{1,4})/g);
-        return matches ? matches.join(' ') : '';
+        return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
     };
 
     const renderResult = () => {
@@ -350,7 +348,7 @@ export default function AsaasTestPage() {
                                                 <h4 className="font-semibold">Informações do Titular</h4>
                                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <FormField control={tokenizationForm.control} name="customerName" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                                    <FormField control={tokenizationForm.control} name="customerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <FormField control={tokenizationForm.control} name="customerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={tokenizationForm.control} name="customerCpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={tokenizationForm.control} name="customerPostalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                                     <FormField control={tokenizationForm.control} name="customerAddressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -366,7 +364,7 @@ export default function AsaasTestPage() {
                                      <Card className="animate-in fade-in-50 duration-500">
                                          <CardHeader>
                                             <CardTitle className='flex items-center gap-2'><span className='flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-bold'>4</span> Criar Assinatura com Token</CardTitle>
-                                            <CardDescription>Use o token gerado para criar a assinatura recorrente.</CardDescription>
+                                            <CardDescription>Use o token gerado para criar la assinatura recorrente.</CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <Form {...subscriptionForm}>
