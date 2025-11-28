@@ -12,7 +12,7 @@ import * as z from 'zod';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, ChevronLeft, ArrowRight, XCircle, QrCode, Barcode, Copy, CreditCard, RefreshCcw, Key } from 'lucide-react';
+import { Loader2, ChevronLeft, ArrowRight, XCircle, QrCode, Barcode, Copy, CreditCard, RefreshCcw, Key, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import Link from 'next/link';
@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome completo é obrigatório.'),
@@ -118,15 +119,15 @@ function CheckoutPageContent() {
     }, [user, userProfile, isUserLoading, router, customerForm, tokenizationForm]);
     
     useEffect(() => {
-        // This effect pre-fills the form but does NOT advance the step.
-        if (userProfile) {
-            customerForm.reset({
-                name: userProfile.fullName || '',
-                email: userProfile.email || '',
-                cpfCnpj: userProfile.taxId || '',
-            });
+        // Redirect to success page if the user is already subscribed and lands here
+        if (user && userProfile && (userProfile.subscriptionStatus === 'premium' || userProfile.subscriptionStatus === 'professional')) {
+            const planMatches = userProfile.subscriptionStatus.toUpperCase() === planName;
+            if(planMatches) {
+               // router.push('/checkout/success');
+            }
         }
-    }, [userProfile, customerForm]);
+    }, [user, userProfile, planName, router]);
+
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
@@ -314,6 +315,13 @@ function CheckoutPageContent() {
                                 </div>
                             )}
                         </div>
+                        <Alert variant="destructive" className="mt-4">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Atenção!</AlertTitle>
+                            <AlertDescription>
+                                Este código é único para esta transação. Se você recarregar a página, precisará gerar uma nova cobrança.
+                            </AlertDescription>
+                        </Alert>
                         <p className="text-sm text-muted-foreground text-center pt-2">Após o pagamento, sua assinatura será ativada. Se preferir, clique no botão abaixo para verificar.</p>
                          <Button onClick={handleVerifyPayment} disabled={isVerifying} className="w-full">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCcw className="mr-2 h-4 w-4"/>}
