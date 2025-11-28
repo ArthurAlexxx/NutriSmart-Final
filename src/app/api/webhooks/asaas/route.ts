@@ -3,6 +3,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { updateUserSubscriptionAction, cancelSubscriptionAction } from '@/app/actions/billing-actions';
+import type { UserProfile } from '@/types/user';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,12 +56,25 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
     
     const directSubscriptionReference = payload?.subscription?.externalReference;
     if (directSubscriptionReference) return directSubscriptionReference;
+    
+    const directCustomerReference = payload?.customer?.externalReference;
+    if (directCustomerReference) return directCustomerReference;
 
-    const customerId = payload?.payment?.customer || payload?.subscription?.customer;
+    const customerId = payload?.payment?.customer || payload?.subscription?.customer || payload?.customer?.id;
     if (!customerId) {
         return null;
     }
 
+    // If we couldn't find the externalReference directly, query the customer from our DB
+    const usersRef = db.collection('users');
+    const q = query(usersRef, where('asaasCustomerId', '==', customerId));
+    const querySnapshot = await q.get();
+
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].id;
+    }
+    
+    // As a last resort, query Asaas API
     try {
         const asaasApiKey = process.env.ASAAS_API_KEY;
         const asaasApiUrl = getAsaasApiUrl();

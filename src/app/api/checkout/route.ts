@@ -1,6 +1,7 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
+import type { UserProfile } from '@/types/user';
 
 const getAsaasApiUrl = () => {
     const isSandbox = process.env.ASAAS_API_KEY?.includes('sandbox') || process.env.ASAAS_API_KEY?.includes('hmlg');
@@ -13,11 +14,16 @@ const plansConfig = {
 };
 
 async function getOrCreateAsaasCustomer(
-  customerData: { taxId: string, fullName: string, email: string, phone?: string },
+  userId: string,
+  customerData: Partial<UserProfile>,
   asaasApiKey: string,
   asaasApiUrl: string
 ): Promise<string> {
-    // 1. Check if customer exists
+    if (!customerData.taxId) {
+        throw new Error('CPF/CNPJ do cliente é obrigatório para criar ou buscar no gateway de pagamento.');
+    }
+    
+    // 1. Check if customer exists by CPF/CNPJ
     const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
         headers: { 'access_token': asaasApiKey },
         cache: 'no-store',
@@ -28,12 +34,18 @@ async function getOrCreateAsaasCustomer(
         return searchResult.data[0].id;
     }
 
-    // 2. If not, create customer
+    // 2. If not, create customer, now including externalReference
     const createCustomerPayload = {
         name: customerData.fullName,
         email: customerData.email,
         mobilePhone: customerData.phone,
         cpfCnpj: customerData.taxId,
+        externalReference: userId, // <<< CRITICAL FIX: Add our userId here
+        address: customerData.address,
+        addressNumber: customerData.addressNumber,
+        complement: customerData.complement,
+        province: customerData.province,
+        postalCode: customerData.postalCode,
     };
     const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
         method: 'POST',
@@ -51,7 +63,7 @@ async function getOrCreateAsaasCustomer(
 
 
 export async function POST(request: Request) {
-  const { userId, planName, isYearly, customerData, billingType } = await request.json();
+  const { userId, planName, isYearly, billingType } = await request.json();
   const asaasApiKey = process.env.ASAAS_API_KEY;
   const asaasApiUrl = getAsaasApiUrl();
 
@@ -60,37 +72,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'O gateway de pagamento não está configurado corretamente.' }, { status: 500 });
   }
 
-  if (!userId || !customerData || !customerData.fullName || !customerData.email || !customerData.taxId) {
-      return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
-  }
-   if (!billingType) {
-    return NextResponse.json({ error: "O campo 'billingTypes' é obrigatório." }, { status: 400 });
+  if (!userId || !billingType) {
+      return NextResponse.json({ error: 'Dados insuficientes para processar o pagamento (userId, billingType).' }, { status: 400 });
   }
   
   try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+        return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
+    }
+    const userProfile = userDoc.data() as UserProfile;
+
+    if (!userProfile.fullName || !userProfile.email || !userProfile.taxId) {
+       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
+    }
+    
     const planDetails = plansConfig[planName as keyof typeof plansConfig];
     if (!planDetails) {
         return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
     }
     
     // Step 1: Get or Create Asaas Customer
-    const asaasCustomerId = await getOrCreateAsaasCustomer(customerData, asaasApiKey, asaasApiUrl);
+    const asaasCustomerId = await getOrCreateAsaasCustomer(userId, userProfile, asaasApiKey, asaasApiUrl);
     
     // Step 2: Save asaasCustomerId to user's profile in Firestore (non-blocking)
-    const userRef = db.collection('users').doc(userId);
-    userRef.update({ asaasCustomerId: asaasCustomerId }).catch(err => {
-        console.error(`Failed to save asaasCustomerId for user ${userId}:`, err);
-    });
+    if (userProfile.asaasCustomerId !== asaasCustomerId) {
+        db.collection('users').doc(userId).update({ asaasCustomerId: asaasCustomerId }).catch(err => {
+            console.error(`Failed to save asaasCustomerId for user ${userId}:`, err);
+        });
+    }
+    
 
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
 
     // CREDIT CARD: Use Checkout API for subscriptions
     if (billingType === 'CREDIT_CARD') {
-        const checkoutPayload: any = {
+        const checkoutPayload = {
             customer: asaasCustomerId,
             billingType: "CREDIT_CARD",
-            chargeType: "RECURRENT",
+            chargeType: "RECURRENT", // Correct type for subscriptions
             externalReference: userId,
             minutesToExpire: 30,
             callback: {
@@ -125,7 +146,7 @@ export async function POST(request: Request) {
         value: value,
         dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0], // 3 days from now
         description: description,
-        externalReference: userId,
+        externalReference: userId, // << Add reference here as well
     };
     
     const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
