@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { format, addDays } from 'date-fns';
@@ -27,137 +28,60 @@ export async function POST(request: Request) {
   }
   
   try {
-    // Step 1: Find or create the customer and ensure externalReference is set
-    let customerId: string;
-
-    const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
-        headers: { 'access_token': asaasApiKey },
-        cache: 'no-store',
-    });
-    
-    const searchResult = await customerSearchResponse.json() as any;
-
-    if (searchResult.totalCount > 0) {
-        customerId = searchResult.data[0].id;
-        // Ensure externalReference is set on existing customer
-        await fetch(`${asaasApiUrl}/customers/${customerId}`, {
-            method: 'POST', // POST to update
-            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-            body: JSON.stringify({ externalReference: userId }),
-        });
-    } else {
-        const createCustomerPayload = {
-            name: customerData.fullName,
-            email: customerData.email,
-            mobilePhone: customerData.phone,
-            cpfCnpj: customerData.taxId,
-            externalReference: userId,
-        };
-        const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-            body: JSON.stringify(createCustomerPayload),
-        });
-        const newCustomerData = await createCustomerResponse.json() as any;
-        if (!createCustomerResponse.ok || newCustomerData.errors) {
-            throw new Error(newCustomerData.errors?.[0]?.description || 'Falha ao criar cliente no gateway de pagamento.');
-        }
-        customerId = newCustomerData.id;
-    }
-    
     const planDetails = plansConfig[planName as keyof typeof plansConfig];
     if (!planDetails) {
         return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
     }
-    
-    // Step 2: Handle payment/subscription creation based on billingType
-    if (billingType === 'CREDIT_CARD') {
-        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-        const description = `Assinatura ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
-        const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
-        
-        // Create a subscription object. Asaas will generate a checkout URL.
-        const subscriptionPayload = {
-            customer: customerId,
-            billingType: 'CREDIT_CARD',
-            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-            value: value,
-            cycle: cycle,
-            description: description,
-            externalReference: userId, // CRITICAL: Always send the userId
-        };
 
-        const subscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-            body: JSON.stringify(subscriptionPayload),
-        });
+    const isSubscription = billingType === 'CREDIT_CARD';
+    const value = isYearly ? planDetails.yearlyPrice * (isSubscription ? 1 : 12) : planDetails.monthly;
+    const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
 
-        const subscriptionData = await subscriptionResponse.json();
-        if (!subscriptionResponse.ok || subscriptionData.errors) {
-            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+    const checkoutPayload: any = {
+        name: description,
+        description: `Acesso ao plano ${planDetails.name} no Nutrinea.`,
+        billingTypes: [billingType],
+        chargeTypes: [isSubscription ? 'RECURRENT' : 'DETACHED'],
+        value: value,
+        externalReference: userId,
+        customer: {
+          name: customerData.fullName,
+          email: customerData.email,
+          cpfCnpj: customerData.taxId,
+          mobilePhone: customerData.phone,
+        },
+        callback: {
+            autoRedirect: true,
+            successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success`,
         }
-        
-        // The first payment of the subscription is a regular payment object
-        const firstPayment = subscriptionData.payments[0];
-
-        return NextResponse.json({
-            type: 'CREDIT_CARD',
-            id: firstPayment.id, // Return the ID of the first charge
-            url: firstPayment.invoiceUrl, // This is the URL to the checkout page for the subscription
-        });
+    };
+    
+    if (isSubscription) {
+        checkoutPayload.subscription = {
+            cycle: isYearly ? 'YEARLY' : 'MONTHLY',
+            description: description,
+        }
+    } else {
+       checkoutPayload.dueDateLimitDays = 3;
     }
 
-    // Handle PIX and BOLETO as one-time dynamic charges
-    const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-    const description = `Pagamento ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
-    const paymentPayload = {
-        customer: customerId,
-        billingType: billingType,
-        value: value,
-        dueDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-        description: description,
-        externalReference: userId,
-    };
-
-    const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
+    const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-        body: JSON.stringify(paymentPayload),
+        body: JSON.stringify(checkoutPayload),
     });
 
-    const paymentData = await paymentResponse.json();
-    if (!paymentResponse.ok || paymentData.errors) {
-        throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar cobrança dinâmica.');
+    const checkoutData = await checkoutResponse.json();
+    if (!checkoutResponse.ok || checkoutData.errors) {
+        throw new Error(checkoutData.errors?.[0]?.description || 'Falha ao criar o checkout.');
     }
     
-    const paymentId = paymentData.id;
-    
-    if (billingType === 'PIX') {
-        const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-            headers: { 'access_token': asaasApiKey },
-        });
-        const qrCodeData = await qrCodeResponse.json();
-         if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
-        return NextResponse.json({ type: 'PIX', id: paymentId, ...qrCodeData });
-    }
-    
-    if (billingType === 'BOLETO') {
-         const identificationFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
-            headers: { 'access_token': asaasApiKey },
-        });
-        const identificationFieldData = await identificationFieldResponse.json();
-        if (!identificationFieldResponse.ok) throw new Error(identificationFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
-        
-        return NextResponse.json({ 
-            type: 'BOLETO', 
-            id: paymentId,
-            identificationField: identificationFieldData.identificationField,
-            bankSlipUrl: paymentData.bankSlipUrl 
-        });
-    }
-    
-    return NextResponse.json({ error: 'Método de pagamento não suportado.'}, { status: 400 });
+    // The `url` field contains the link for the customer to complete the payment/subscription
+    return NextResponse.json({
+        type: billingType,
+        url: checkoutData.url,
+        id: checkoutData.id, // The checkout ID can be used to poll its status
+    });
 
   } catch (error: any) {
     console.error('Checkout API Route Error:', error);

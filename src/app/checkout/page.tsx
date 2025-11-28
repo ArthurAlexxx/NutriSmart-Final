@@ -1,3 +1,4 @@
+
 // src/app/checkout/page.tsx
 'use client';
 
@@ -122,20 +123,16 @@ function CheckoutPageContent() {
                 }),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Falha ao gerar a cobrança.');
+            if (!response.ok) throw new Error(data.error || 'Falha ao gerar o checkout.');
             
             setPaymentResult(data);
 
-            if (data.type === 'CREDIT_CARD' && data.url) {
+            if (data.url) {
                 window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
-            // Save the charge ID for manual verification for all payment types
-            if (data.id) {
-                localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
-            }
-
             setStep('payment');
+
         } catch (err: any) {
             setError(err.message);
             toast({ title: 'Erro', description: err.message, variant: 'destructive' });
@@ -225,62 +222,21 @@ function CheckoutPageContent() {
                     </Card>
                 );
             case 'payment':
-                if (paymentResult?.type === 'PIX') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                <CardTitle>Pague com PIX</CardTitle>
-                                <CardDescription>Escaneie o QR Code ou copie o código.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-center gap-4">
-                                <div className="p-4 bg-white rounded-lg border">
-                                    <img src={`data:image/png;base64,${paymentResult.encodedImage}`} alt="PIX QR Code" width={200} height={200} />
-                                </div>
-                                <Button onClick={() => handleCopyCode(paymentResult.payload)} variant="outline" className="w-full"><Copy className="mr-2 h-4 w-4" /> Copiar Código PIX</Button>
-                            </CardContent>
-                             <CardFooter>
-                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
-                            </CardFooter>
-                        </Card>
-                    )
-                }
-                 if (paymentResult?.type === 'BOLETO') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                <CardTitle>Pagamento com Boleto</CardTitle>
-                                <CardDescription>Copie a linha digitável ou baixe o PDF.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="p-4 border rounded-lg w-full bg-secondary/30"><p className="text-sm font-medium">Linha Digitável</p><p className="text-sm break-all">{paymentResult.identificationField}</p></div>
-                                <div className="grid grid-cols-2 gap-2 w-full">
-                                    <Button onClick={() => handleCopyCode(paymentResult.identificationField)} variant="outline"><Copy className="mr-2 h-4 w-4" /> Copiar</Button>
-                                    <Button asChild variant="secondary"><a href={paymentResult.bankSlipUrl} target="_blank" rel="noopener noreferrer"><Barcode className="mr-2 h-4 w-4" /> Ver Boleto</a></Button>
-                                </div>
-                            </CardContent>
-                            <CardFooter>
-                                <Button onClick={() => router.push('/dashboard')} className="w-full">Voltar para o Dashboard</Button>
-                            </CardFooter>
-                        </Card>
-                    )
-                 }
-                if (paymentResult?.type === 'CREDIT_CARD') {
-                    return (
-                        <Card>
-                            <CardHeader className="text-center">
-                                <CardTitle>Finalize na Nova Aba</CardTitle>
-                                <CardDescription>Sua página de pagamento foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
-                            </CardHeader>
-                             <CardFooter className="flex-col gap-2">
-                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
-                                <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="outline" className="w-full">
-                                    Abrir página de pagamento novamente
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    )
-                }
-                return <p>Método de pagamento inválido.</p>
+                 return (
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle>Finalize na Nova Aba</CardTitle>
+                            <CardDescription>Sua página de pagamento segura foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
+                        </CardHeader>
+                            <CardFooter className="flex-col gap-2">
+                            <p className="text-xs text-muted-foreground mb-2">Se a aba não abriu, clique no botão abaixo.</p>
+                            <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="secondary" className="w-full">
+                                Abrir página de pagamento
+                            </Button>
+                             <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">Voltar para o Dashboard</Button>
+                        </CardFooter>
+                    </Card>
+                )
         }
     }
 
