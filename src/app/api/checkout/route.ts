@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCustomer } from '@/app/actions/checkout-actions';
 
 // This API route is now simplified to only handle customer creation/retrieval.
-// The subscription creation logic is handled by the tokenizeCardAndCreateSubscription Server Action.
 export async function POST(request: NextRequest) {
   try {
     const { userId, customerData } = await request.json();
