@@ -1,7 +1,7 @@
 // src/app/checkout/page.tsx
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -12,14 +12,11 @@ import * as z from 'zod';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, User, ChevronLeft, CreditCard, ArrowRight, QrCode, Barcode, Copy, RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, ChevronLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
+import { createCustomer, tokenizeCardAndCreateSubscription } from '@/app/actions/checkout-actions';
 
 const customerFormSchema = z.object({
   fullName: z.string().min(3, 'O nome completo é obrigatório.'),
@@ -37,7 +34,7 @@ type CustomerDataFormValues = z.infer<typeof customerFormSchema>;
 const cardFormSchema = z.object({
     holderName: z.string().min(3, 'O nome no cartão é obrigatório.'),
     number: z.string().min(16, 'O número do cartão é inválido.').max(19, 'O número do cartão é inválido.'),
-    expiry: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Data de validade inválida (MM/AA).'),
+    expiry: z.string().regex(/^(0[1-9]|1[0-2])\s?\/?\s?(\d{2})$/, 'Data de validade inválida (MM/AA).'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
 });
 type CardFormValues = z.infer<typeof cardFormSchema>;
@@ -45,9 +42,23 @@ type CardFormValues = z.infer<typeof cardFormSchema>;
 type CheckoutStep = 'data' | 'payment';
 
 const plansConfig = {
-  PREMIUM: { name: 'Premium', price: 29.90, yearlyPrice: 23.90 },
-  PROFISSIONAL: { name: 'Profissional', price: 49.90, yearlyPrice: 39.90 },
+  PREMIUM: { name: 'Premium', monthlyPrice: 29.90, yearlyPrice: 23.90 },
+  PROFISSIONAL: { name: 'Profissional', monthlyPrice: 49.90, yearlyPrice: 39.90 },
 };
+
+const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    const matches = cleaned.match(/(\d{1,4})/g);
+    return matches ? matches.join(' ') : '';
+};
+
+const formatExpiry = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length >= 3) {
+        return `${cleaned.slice(0, 2)} / ${cleaned.slice(2, 4)}`;
+    }
+    return cleaned;
+}
 
 function CheckoutPageContent() {
     const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
@@ -57,7 +68,6 @@ function CheckoutPageContent() {
 
     const [step, setStep] = useState<CheckoutStep>('data');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [asaasCustomerId, setAsaasCustomerId] = useState<string | null>(null);
 
     const planName = searchParams.get('plan')?.toUpperCase() as keyof typeof plansConfig;
@@ -98,29 +108,28 @@ function CheckoutPageContent() {
     const planDetails = plansConfig[planName];
     const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
-    const periodText = isYearly ? 'anual' : 'mensal';
+    const periodText = isYearly ? 'Anual' : 'Mensal';
+    const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
+    const finalPrice = isYearly ? totalAmount / 12 : monthlyPrice;
 
     const handleDataSubmit = async (data: CustomerDataFormValues) => {
         setIsLoading(true);
-        setError(null);
         try {
+            if (!user) throw new Error("Usuário não autenticado.");
+
             if (customerForm.formState.isDirty) {
                 await onProfileUpdate(data);
                 toast({ title: "Dados atualizados!" });
             }
-            if (!user) throw new Error("Usuário não autenticado.");
+            
+            const customerResult = await createCustomer({ userId: user.uid, customerData: data });
+            if (!customerResult.success || !customerResult.asaasCustomerId) {
+                throw new Error(customerResult.message);
+            }
 
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid, customerData: data }),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error);
-            setAsaasCustomerId(result.asaasCustomerId);
+            setAsaasCustomerId(customerResult.asaasCustomerId);
             setStep('payment');
         } catch (err: any) {
-            setError(err.message);
             toast({ title: "Erro ao verificar dados", description: err.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -129,39 +138,40 @@ function CheckoutPageContent() {
     
     const handlePaymentSubmit = async (data: CardFormValues) => {
         setIsLoading(true);
-        setError(null);
-        toast({ title: 'Processando...', description: 'Tokenizando seu cartão de forma segura...' });
+        toast({ title: 'Processando...', description: 'Aguarde enquanto validamos seu pagamento.' });
         
-        // TODO: In the next step, we will implement the actual call to Asaas tokenization API here.
-        // For now, this is a placeholder.
         try {
-            // Placeholder for the fetch call to Asaas tokenization
-            // const tokenizationResponse = await fetch('https://api-sandbox.asaas.com/v3/creditCard/tokenizeCreditCard', { ... });
-            // const tokenData = await tokenizationResponse.json();
-            // if (!tokenizationResponse.ok) throw new Error(tokenData.errors[0].description);
-            // const creditCardToken = tokenData.creditCardToken;
+            if (!asaasCustomerId || !user) throw new Error('Dados do cliente ou usuário ausentes.');
             
-            // Now, send the token to our backend to create the subscription.
-            // const subscriptionResponse = await fetch('/api/subscribe', { body: JSON.stringify({ asaasCustomerId, creditCardToken, planName, isYearly }) });
-            
-            console.log("Card Data to be tokenized:", data);
-            console.log("Asaas Customer ID:", asaasCustomerId);
-            
-            // Simulating a delay for demonstration
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const [expiryMonth, expiryYear] = data.expiry.split(' / ');
 
-            // On success (in a future step)
-            // router.push('/checkout/success');
-
-             toast({
-                variant: 'destructive',
-                title: 'Funcionalidade em Desenvolvimento',
-                description: 'A tokenização e criação da assinatura serão implementadas na próxima etapa.',
+            const result = await tokenizeCardAndCreateSubscription({
+                asaasCustomerId,
+                card: { ...data, expiryMonth, expiryYear: `20${expiryYear}` },
+                holderInfo: {
+                    name: customerForm.getValues('fullName'),
+                    email: customerForm.getValues('email'),
+                    cpfCnpj: customerForm.getValues('taxId'),
+                    postalCode: customerForm.getValues('postalCode') || '',
+                    addressNumber: customerForm.getValues('addressNumber') || '',
+                    phone: customerForm.getValues('phone') || '',
+                },
+                subscription: {
+                    value: finalPrice,
+                    cycle: cycle,
+                    description: `Assinatura Plano ${planDetails.name} - ${periodText}`,
+                    userId: user.uid,
+                    planName,
+                }
             });
 
+            if (result.success) {
+                router.push('/checkout/success');
+            } else {
+                throw new Error(result.message);
+            }
 
         } catch (err: any) {
-             setError(err.message);
              toast({ title: 'Erro no Pagamento', description: err.message, variant: 'destructive' });
         } finally {
              setIsLoading(false);
@@ -180,6 +190,10 @@ function CheckoutPageContent() {
                                 <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={customerForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Celular</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={customerForm.control} name="taxId" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={customerForm.control} name="addressNumber" render={({ field }) => (<FormItem><FormLabel>Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+
                             </form></Form>
                         </CardContent>
                         <CardFooter><Button form="customer-data-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : 'Continuar para Pagamento'}</Button></CardFooter>
@@ -191,17 +205,33 @@ function CheckoutPageContent() {
                         <CardHeader><CardTitle>Pagamento com Cartão</CardTitle><CardDescription>Insira os dados do seu cartão de crédito.</CardDescription></CardHeader>
                         <CardContent>
                             <Form {...cardForm}><form onSubmit={cardForm.handleSubmit(handlePaymentSubmit)} id="card-payment-form" className="space-y-4">
-                                <FormField control={cardForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={cardForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={cardForm.control} name="holderName" render={({ field }) => (<FormItem><FormLabel>Nome no Cartão</FormLabel><FormControl><Input placeholder="Como está no cartão" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={cardForm.control} name="number" render={({ field }) => (<FormItem><FormLabel>Número do Cartão</FormLabel><FormControl><Input 
+                                    type="tel"
+                                    placeholder="0000 0000 0000 0000" 
+                                    {...field}
+                                    onChange={(e) => {
+                                        const formatted = formatCardNumber(e.target.value);
+                                        field.onChange(formatted);
+                                    }}
+                                    maxLength={19}
+                                /></FormControl><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={cardForm.control} name="expiry" render={({ field }) => (<FormItem><FormLabel>Validade (MM/AA)</FormLabel><FormControl><Input placeholder="MM/AA" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={cardForm.control} name="expiry" render={({ field }) => (<FormItem><FormLabel>Validade (MM/AA)</FormLabel><FormControl><Input
+                                        placeholder="MM / AA" {...field}
+                                        onChange={(e) => {
+                                            const formatted = formatExpiry(e.target.value);
+                                            field.onChange(formatted);
+                                        }}
+                                        maxLength={7}
+                                    /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={cardForm.control} name="ccv" render={({ field }) => (<FormItem><FormLabel>CCV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </form></Form>
                         </CardContent>
                         <CardFooter className="flex-col sm:flex-row gap-2">
                              <Button variant="outline" className="w-full" onClick={() => setStep('data')}>Voltar</Button>
-                             <Button form="card-payment-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : `Pagar R$ ${totalAmount.toFixed(2)}`}</Button>
+                             <Button form="card-payment-form" type="submit" className="w-full" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : `Pagar R$ ${finalPrice.toFixed(2)}`}</Button>
                         </CardFooter>
                     </Card>
                 );
@@ -218,7 +248,7 @@ function CheckoutPageContent() {
                         <CardContent className="space-y-4">
                             <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><span className="font-semibold">{planDetails.name}</span></div>
                             <div className="flex justify-between"><span className="text-muted-foreground">Ciclo</span><span className="font-semibold capitalize">{periodText}</span></div>
-                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {totalAmount.toFixed(2)}</span></div>
+                            <div className="border-t pt-4 flex justify-between font-bold text-lg"><span>Total</span><span>R$ {finalPrice.toFixed(2)} / mês</span></div>
                         </CardContent>
                     </Card></div>
                     <div>{renderStep()}</div>
