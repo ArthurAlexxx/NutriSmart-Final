@@ -38,6 +38,8 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
+    const itemName = description.replace(/ /g, '_').substring(0, 30);
+
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -50,10 +52,10 @@ export async function POST(request: Request) {
         minutesToExpire: 30,
         items: [
             {
-                name: description.substring(0, 30),
+                name: itemName,
                 description: description.substring(0, 150),
                 value: value,
-                quantity: 1, // Quantity is 1, total is calculated by subscription cycle if applicable
+                quantity: isSubscription ? 1 : (isYearly ? 12 : 1),
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
@@ -94,7 +96,8 @@ export async function POST(request: Request) {
     const checkoutData = await checkoutResponse.json();
     if (!checkoutResponse.ok || checkoutData.errors) {
         console.error('Asaas Checkout API Error:', checkoutData.errors);
-        throw new Error(checkoutData.errors?.[0]?.description || 'Falha ao criar o checkout.');
+        const errorMessage = checkoutData.errors?.[0]?.description || 'Falha ao criar o checkout.';
+        return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
     
     return NextResponse.json({
