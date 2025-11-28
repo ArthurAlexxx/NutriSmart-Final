@@ -1,4 +1,3 @@
-
 // src/app/checkout/page.tsx
 'use client';
 
@@ -131,7 +130,7 @@ function CheckoutPageContent() {
                 window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
-            if (data.id && data.type !== 'CREDIT_CARD') { // Do not store for fixed links
+            if (data.id) {
                 localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
 
@@ -268,11 +267,12 @@ function CheckoutPageContent() {
                     return (
                         <Card>
                             <CardHeader className="text-center">
-                                <CardTitle>Pagamento em Processo</CardTitle>
-                                <CardDescription>Sua assinatura será ativada automaticamente assim que o pagamento for confirmado na outra aba. Você pode fechar esta tela.</CardDescription>
+                                <CardTitle>Finalize na Nova Aba</CardTitle>
+                                <CardDescription>Seu pagamento foi aberto em uma nova aba. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
                             </CardHeader>
                              <CardFooter className="flex-col gap-2">
-                                <Button onClick={() => router.push('/dashboard')} className="w-full">
+                                <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
+                                <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">
                                     Voltar para o Dashboard
                                 </Button>
                             </CardFooter>
