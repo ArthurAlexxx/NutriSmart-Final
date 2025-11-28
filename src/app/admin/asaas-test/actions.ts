@@ -115,6 +115,11 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
             dueDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
             description: description,
             externalReference: data.userId,
+            metadata: {
+                userId: data.userId,
+                plan: data.planName,
+                billingCycle: data.billingCycle,
+            }
         };
 
         const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
@@ -138,7 +143,7 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
             });
             const qrCodeData = await qrCodeResponse.json();
             if (!qrCodeResponse.ok) throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter QR Code.');
-            return { type: 'PIX', ...qrCodeData };
+            return { type: 'PIX', chargeId: chargeId, ...qrCodeData };
         }
 
         if (data.billingType === 'BOLETO') {
@@ -151,6 +156,7 @@ export async function createPaymentAction(data: PaymentFormValues): Promise<any>
             
             return { 
                 type: 'BOLETO', 
+                chargeId: chargeId,
                 identificationField: identificationFieldData.identificationField,
                 bankSlipUrl: paymentData.bankSlipUrl
             };

@@ -51,6 +51,9 @@ function extractPlanInfoFromDescription(description: string): { planName: 'PREMI
 }
 
 async function getUserIdFromAsaas(payload: any): Promise<string | null> {
+    const metadataUserId = payload?.payment?.metadata?.userId;
+    if (metadataUserId) return metadataUserId;
+
     const directPaymentReference = payload?.payment?.externalReference;
     if (directPaymentReference) return directPaymentReference;
     
@@ -110,16 +113,31 @@ async function handlePaymentReceived(event: any) {
         return;
     }
 
-    const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
+    // Prioritize metadata for plan info
+    const metadata = paymentData.metadata;
+    const planNameFromMeta = metadata?.plan as 'PREMIUM' | 'PROFISSIONAL' | null;
+    const billingCycleFromMeta = metadata?.billingCycle as 'monthly' | 'yearly' | null;
+    
+    let planName = planNameFromMeta;
+    let billingCycle = billingCycleFromMeta;
+
+    // Fallback to description if metadata is missing
+    if (!planName || !billingCycle) {
+        const fromDescription = extractPlanInfoFromDescription(paymentData.description);
+        if (!planName) planName = fromDescription.planName;
+        if (!billingCycle) billingCycle = fromDescription.billingCycle;
+    }
+    
+
     if (planName && billingCycle) {
         const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
          if (updateResult.success) {
-            await saveWebhookLog(event, 'SUCCESS', `Assinatura atualizada para ${userId} via pagamento.`);
+            await saveWebhookLog(event, 'SUCCESS', `PAYMENT_RECEIVED - Assinatura atualizada para ${userId} via pagamento.`);
         } else {
-            await saveWebhookLog(event, 'FAILURE', `Falha ao atualizar assinatura para ${userId} via pagamento: ${updateResult.message}`);
+            await saveWebhookLog(event, 'FAILURE', `PAYMENT_RECEIVED - Falha ao atualizar assinatura para ${userId}: ${updateResult.message}`);
         }
     } else {
-        const failureMessage = `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`;
+        const failureMessage = `PAYMENT_RECEIVED - Webhook recebido para UserID ${userId}, mas os dados do plano não foram encontrados nos metadados ou na descrição.`;
         await saveWebhookLog(event, 'FAILURE', failureMessage);
     }
 }
@@ -165,7 +183,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Webhook recebido (sem evento)." }, { status: 200 });
   }
 
-  // Log every event first
+  // Log every event first, regardless of processing logic.
   await saveWebhookLog(event, 'SUCCESS', `Evento '${eventName}' recebido e logado.`);
     
   // Then, process specific events
