@@ -8,8 +8,8 @@ const getAsaasApiUrl = () => {
 };
 
 const plansConfig = {
-  PREMIUM: { name: 'Premium', monthly: 29.90, yearlyPrice: 23.90 },
-  PROFISSIONAL: { name: 'Profissional', monthly: 49.90, yearlyPrice: 39.90 },
+  PREMIUM: { name: 'Premium', price: 29.90, yearlyPrice: 23.90 },
+  PROFISSIONAL: { name: 'Profissional', price: 49.90, yearlyPrice: 39.90 },
 };
 
 export async function POST(request: Request) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     if (!planDetails) {
         return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
     }
-
+    
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
-            value: value, // Ensure value is also in the subscription object
+            value: value,
         }
     }
 
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
         body: JSON.stringify(checkoutPayload),
+        cache: 'no-store',
     });
 
     const checkoutData = await checkoutResponse.json();
