@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = "Item"; // Usando um nome genérico para evitar o erro da API Asaas
+    const itemName = planDetails.name;
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     const checkoutPayload: any = {
         billingTypes: [billingType],
-        chargeTypes: [isSubscription ? 'RECURRENT' : 'DETACHED'],
+        chargeTypes: isSubscription ? ['RECURRENT'] : ['DETACHED'],
         externalReference: userId,
         minutesToExpire: 30,
         items: [
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
                 name: itemName,
                 description: description,
                 value: value,
-                quantity: 1,
+                quantity: 1, // The subscription object handles the recurrence
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
