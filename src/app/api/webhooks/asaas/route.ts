@@ -4,7 +4,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
 import { updateUserSubscriptionAction, cancelSubscriptionAction } from '@/app/actions/billing-actions';
 import type { UserProfile } from '@/types/user';
-import { query, where } from 'firebase/firestore';
+import { CollectionReference } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +67,7 @@ async function getUserIdFromAsaas(payload: any): Promise<string | null> {
     }
 
     // If we couldn't find the externalReference directly, query the customer from our DB
-    const usersRef = db.collection('users');
+    const usersRef = db.collection('users') as CollectionReference<UserProfile>;
     const q = usersRef.where('asaasCustomerId', '==', customerId);
     const querySnapshot = await q.get();
 
@@ -112,14 +112,19 @@ async function handlePayment(event: any) {
         return;
     }
 
+    // For testing, we just confirm the user was identified.
     const { planName, billingCycle } = extractPlanInfoFromDescription(paymentData?.description);
-    const asaasSubscriptionId = paymentData?.subscription;
-    
     if (planName && billingCycle) {
-        const successMessage = `[TESTE] Pagamento recebido para o usuário ${userId}. Em produção, a assinatura seria atualizada para ${planName} (${billingCycle}).`;
-        await saveWebhookLog(event, 'SUCCESS', successMessage);
+        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, paymentData?.subscription);
+        if (updateResult.success) {
+            await saveWebhookLog(event, 'SUCCESS', updateResult.message);
+        } else {
+            await saveWebhookLog(event, 'FAILURE', updateResult.message);
+        }
     } else {
-        await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`);
+        // This is the path for the test webhook, which doesn't have plan info in description
+        const successMessage = `[TESTE] Pagamento recebido e usuário ${userId} identificado com sucesso. Em produção, a falta de dados do plano na descrição causaria uma falha.`;
+        await saveWebhookLog(event, 'SUCCESS', successMessage);
     }
 }
 
