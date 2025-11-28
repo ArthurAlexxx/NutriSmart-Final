@@ -135,6 +135,7 @@ export async function tokenizeCardAndCreateSubscription(payload: TokenizeAndSubs
             description: payload.subscription.description,
             externalReference: payload.subscription.userId,
             creditCardToken: creditCardToken,
+            remoteIp: remoteIp,
         };
 
         const subscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
