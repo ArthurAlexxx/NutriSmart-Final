@@ -27,6 +27,7 @@ export async function POST(request: Request) {
   }
   
   try {
+    // Step 1: Find or create the customer and ensure externalReference is set
     let customerId: string;
 
     const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
@@ -69,16 +70,54 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
     }
     
-    const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-    const description = `Assinatura ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
+    // Step 2: Handle payment/subscription creation based on billingType
+    if (billingType === 'CREDIT_CARD') {
+        const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+        const description = `Assinatura ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
+        const cycle = isYearly ? 'YEARLY' : 'MONTHLY';
+        
+        // Create a subscription object. Asaas will generate a checkout URL.
+        const subscriptionPayload = {
+            customer: customerId,
+            billingType: 'CREDIT_CARD',
+            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            value: value,
+            cycle: cycle,
+            description: description,
+            externalReference: userId, // CRITICAL: Always send the userId
+        };
 
+        const subscriptionResponse = await fetch(`${asaasApiUrl}/subscriptions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify(subscriptionPayload),
+        });
+
+        const subscriptionData = await subscriptionResponse.json();
+        if (!subscriptionResponse.ok || subscriptionData.errors) {
+            throw new Error(subscriptionData.errors?.[0]?.description || 'Falha ao criar a assinatura.');
+        }
+        
+        // The first payment of the subscription is a regular payment object
+        const firstPayment = subscriptionData.payments[0];
+
+        return NextResponse.json({
+            type: 'CREDIT_CARD',
+            id: firstPayment.id, // Return the ID of the first charge
+            url: firstPayment.invoiceUrl, // This is the URL to the checkout page for the subscription
+        });
+    }
+
+    // Handle PIX and BOLETO as one-time dynamic charges
+    const value = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
+    const description = `Pagamento ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
     const paymentPayload = {
         customer: customerId,
         billingType: billingType,
         value: value,
         dueDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
         description: description,
-        externalReference: userId, // CRITICAL: Always send the userId
+        externalReference: userId,
     };
 
     const paymentResponse = await fetch(`${asaasApiUrl}/payments`, {
@@ -93,14 +132,6 @@ export async function POST(request: Request) {
     }
     
     const paymentId = paymentData.id;
-    
-    if (billingType === 'CREDIT_CARD') {
-        return NextResponse.json({
-            type: 'CREDIT_CARD',
-            id: paymentId,
-            url: paymentData.transactionReceiptUrl, // The dynamic URL for this specific charge
-        });
-    }
     
     if (billingType === 'PIX') {
         const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {

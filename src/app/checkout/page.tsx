@@ -130,6 +130,7 @@ function CheckoutPageContent() {
                 window.open(data.url, '_blank', 'noopener,noreferrer,width=800,height=600');
             }
             
+            // Save the charge ID for manual verification for all payment types
             if (data.id) {
                 localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
@@ -268,12 +269,12 @@ function CheckoutPageContent() {
                         <Card>
                             <CardHeader className="text-center">
                                 <CardTitle>Finalize na Nova Aba</CardTitle>
-                                <CardDescription>Seu pagamento foi aberto em uma nova aba. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
+                                <CardDescription>Sua página de pagamento foi aberta. Após a conclusão, sua assinatura será ativada automaticamente.</CardDescription>
                             </CardHeader>
                              <CardFooter className="flex-col gap-2">
                                 <Button onClick={() => handleCheckPayment(paymentResult.id)} disabled={isVerifying} className="w-full">{isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}Já Paguei, Verificar</Button>
-                                <Button onClick={() => router.push('/dashboard')} variant="outline" className="w-full">
-                                    Voltar para o Dashboard
+                                <Button onClick={() => window.open(paymentResult.url, '_blank', 'noopener,noreferrer,width=800,height=600')} variant="outline" className="w-full">
+                                    Abrir página de pagamento novamente
                                 </Button>
                             </CardFooter>
                         </Card>
