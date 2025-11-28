@@ -223,10 +223,10 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
             creditCardHolderInfo: {
                 name: data.customerName,
                 email: data.customerEmail,
-                cpfCnpj: data.customerCpfCnpj,
-                postalCode: data.customerPostalCode,
+                cpfCnpj: data.customerCpfCnpj.replace(/\D/g, ''),
+                postalCode: data.customerPostalCode.replace(/\D/g, ''),
                 addressNumber: data.customerAddressNumber,
-                phone: data.customerPhone,
+                phone: data.customerPhone.replace(/\D/g, ''),
             },
             remoteIp,
         };
