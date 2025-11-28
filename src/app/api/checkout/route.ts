@@ -1,15 +1,15 @@
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
-import { format } from 'date-fns';
 
-const plans: { [key: string]: { monthly: number, yearlyPrice: number } } = {
+// Mapeamento de planos para os links de pagamento fixos do Asaas
+const paymentLinks = {
   PREMIUM: {
-    monthly: 29.90,
-    yearlyPrice: 23.90,
+    monthly: 'https://sandbox.asaas.com/c/rttsl59852lzvuth',
+    yearly: 'https://sandbox.asaas.com/c/tr84srz796zizmq1',
   },
   PROFISSIONAL: {
-    monthly: 49.90,
-    yearlyPrice: 39.90,
+    monthly: 'https://sandbox.asaas.com/c/x700urqc5ppdovkf',
+    yearly: 'https://sandbox.asaas.com/c/waiict1wxx3kigqg',
   }
 };
 
@@ -32,15 +32,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
   
-  const planDetails = plans[planName as keyof typeof plans];
-  if (!planDetails) {
+  // Seleciona a URL do link de pagamento fixo
+  const planLinks = paymentLinks[planName as keyof typeof paymentLinks];
+  if (!planLinks) {
       return NextResponse.json({ error: 'Plano selecionado inválido.' }, { status: 400 });
   }
+  const paymentUrl = isYearly ? planLinks.yearly : planLinks.monthly;
 
   try {
     let customerId: string;
 
-    // 1. Check if customer exists in Asaas
+    // 1. Check if customer exists in Asaas by CPF/CNPJ
     const customerSearchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId}`, {
         headers: { 'access_token': asaasApiKey },
         cache: 'no-store',
@@ -50,8 +52,15 @@ export async function POST(request: Request) {
 
     if (searchResult.totalCount > 0) {
         customerId = searchResult.data[0].id;
+        // 2. If customer exists, update their externalReference to our current userId
+        // This ensures the webhook will correctly identify the user.
+        await fetch(`${asaasApiUrl}/customers/${customerId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
+            body: JSON.stringify({ externalReference: userId }),
+        });
     } else {
-        // 2. If not, create the customer
+        // 3. If not, create the customer with the correct externalReference
         const createCustomerPayload = {
             name: customerData.fullName,
             email: customerData.email,
@@ -62,10 +71,7 @@ export async function POST(request: Request) {
 
         const createCustomerResponse = await fetch(`${asaasApiUrl}/customers`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'access_token': asaasApiKey,
-            },
+            headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
             body: JSON.stringify(createCustomerPayload),
         });
         
@@ -77,140 +83,12 @@ export async function POST(request: Request) {
         customerId = newCustomerData.id;
     }
     
-    // 3. Handle payment based on billingType
-    if (billingType === 'CREDIT_CARD') {
-        const description = `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`;
-
-        let cycle: 'MONTHLY' | 'YEARLY';
-        let finalPrice: number;
-
-        if (isYearly) {
-            cycle = 'YEARLY';
-            finalPrice = Math.round(planDetails.yearlyPrice * 12 * 100) / 100;
-        } else {
-            cycle = 'MONTHLY';
-            finalPrice = planDetails.monthly;
-        }
-
-        const paymentLinkPayload = {
-            name: description,
-            description: `Acesso ao plano ${planName} do Nutrinea.`,
-            billingType: "CREDIT_CARD",
-            chargeType: "RECURRENT",
-            subscriptionCycle: cycle,
-            value: finalPrice,
-            maxInstallmentCount: isYearly ? 12 : 1, 
-            notificationEnabled: true,
-        };
-
-        const createLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'access_token': asaasApiKey,
-            },
-            body: JSON.stringify(paymentLinkPayload),
-        });
-
-        const linkData = await createLinkResponse.json() as any;
-        
-        if (!createLinkResponse.ok || !linkData || linkData.errors) {
-            console.error('Asaas Payment Link Creation Error:', linkData?.errors);
-            throw new Error(linkData?.errors?.[0]?.description || 'Falha ao criar o link de pagamento.');
-        }
-
-        const updatePayload = {
-            customer: customerId,
-            subscriptionExternalReference: userId,
-        };
-
-        const updateLinkResponse = await fetch(`${asaasApiUrl}/paymentLinks/${linkData.id}`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json', 'access_token': asaasApiKey },
-            body: JSON.stringify(updatePayload),
-        });
-
-        if (!updateLinkResponse.ok) {
-            const errorData = await updateLinkResponse.json();
-            console.error('Asaas Payment Link Update Error:', errorData?.errors);
-            throw new Error(errorData?.errors?.[0]?.description || 'Falha ao associar usuário ao link de pagamento.');
-        }
-
-        return NextResponse.json({
-            type: 'CREDIT_CARD',
-            id: linkData.id,
-            url: linkData.url,
-        });
-
-    } else {
-        const basePrice = isYearly ? planDetails.yearlyPrice * 12 : planDetails.monthly;
-        let finalPrice = basePrice;
-        
-        // Sobretaxa de 10% para PIX
-        if (billingType === 'PIX') {
-            finalPrice = Math.round(finalPrice * 1.10 * 100) / 100;
-        }
-        
-        const paymentPayload = {
-            customer: customerId,
-            billingType: billingType,
-            value: finalPrice,
-            dueDate: format(new Date(), 'yyyy-MM-dd'),
-            description: `Assinatura ${planName} ${isYearly ? 'Anual' : 'Mensal'} - Nutrinea`,
-            externalReference: userId,
-        };
-
-        const createPaymentResponse = await fetch(`${asaasApiUrl}/payments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'access_token': asaasApiKey,
-            },
-            body: JSON.stringify(paymentPayload),
-        });
-
-        const paymentData = await createPaymentResponse.json() as any;
-        if (!createPaymentResponse.ok || paymentData.errors) {
-            console.error('Asaas Payment Creation Error:', paymentData.errors);
-            throw new Error(paymentData.errors?.[0]?.description || 'Falha ao criar a cobrança.');
-        }
-
-        const paymentId = paymentData.id;
-
-        if (billingType === 'PIX') {
-            const qrCodeResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/pixQrCode`, {
-                headers: { 'access_token': asaasApiKey },
-                cache: 'no-store',
-            });
-            const qrCodeData = await qrCodeResponse.json() as any;
-            if (!qrCodeResponse.ok || qrCodeData.errors) {
-                throw new Error(qrCodeData.errors?.[0]?.description || 'Falha ao obter o QR Code do PIX.');
-            }
-            return NextResponse.json({
-                type: 'PIX',
-                id: paymentId,
-                payload: qrCodeData.payload,
-                encodedImage: qrCodeData.encodedImage,
-            });
-        }
-
-        if (billingType === 'BOLETO') {
-             const idFieldResponse = await fetch(`${asaasApiUrl}/payments/${paymentId}/identificationField`, {
-                headers: { 'access_token': asaasApiKey }
-            });
-            const idFieldData = await idFieldResponse.json() as any;
-            if (!idFieldResponse.ok) throw new Error(idFieldData.errors?.[0]?.description || 'Falha ao obter linha digitável.');
-            
-            return NextResponse.json({
-                type: 'BOLETO',
-                id: paymentId,
-                identificationField: idFieldData.identificationField,
-                bankSlipUrl: paymentData.bankSlipUrl,
-            });
-        }
-    }
-
-    return NextResponse.json({ error: 'Tipo de cobrança não suportado.' }, { status: 400 });
+    // 4. Return the correct fixed payment link URL
+    return NextResponse.json({
+        type: 'CREDIT_CARD', // Or any other relevant type
+        id: 'fixed_link', // The ID is now static as it's a fixed link
+        url: paymentUrl,
+    });
 
   } catch (error: any) {
     console.error('Checkout API Route Error:', error);
