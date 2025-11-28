@@ -55,7 +55,7 @@ export async function POST(request: Request) {
                 name: itemName,
                 description: description,
                 value: value,
-                quantity: 1, // Quantity is 1 for the total period value
+                quantity: 1,
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
@@ -82,12 +82,8 @@ export async function POST(request: Request) {
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
-            value: value, // The monthly value
+            value: value,
         }
-        // For subscriptions, the quantity should be 1, representing one subscription item.
-        // The cycle determines the recurrence.
-        checkoutPayload.items[0].quantity = 1;
-        checkoutPayload.items[0].value = value;
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
