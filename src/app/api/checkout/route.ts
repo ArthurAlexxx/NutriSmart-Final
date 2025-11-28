@@ -13,7 +13,7 @@ const plansConfig = {
 };
 
 // A minimal 1x1 transparent JPEG encoded in Base64 with data URI prefix
-const PLACEHOLDER_IMAGE_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAEAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//9k=';
+const PLACEHOLDER_IMAGE_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAEAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAr/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AAgA//9k=';
 
 
 export async function POST(request: Request) {
@@ -39,8 +39,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = planDetails.name;
-
+    const itemName = "Item"; // Usando um nome genérico para evitar o erro da API Asaas
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -54,9 +53,9 @@ export async function POST(request: Request) {
         items: [
             {
                 name: itemName,
-                description: description.substring(0, 150),
+                description: description,
                 value: value,
-                quantity: isSubscription && isYearly ? 12 : 1,
+                quantity: 1, // Quantity is 1 for the total period value
                 imageBase64: PLACEHOLDER_IMAGE_BASE64,
             }
         ],
@@ -83,8 +82,12 @@ export async function POST(request: Request) {
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
-            value: value, 
+            value: value, // The monthly value
         }
+        // For subscriptions, the quantity should be 1, representing one subscription item.
+        // The cycle determines the recurrence.
+        checkoutPayload.items[0].quantity = 1;
+        checkoutPayload.items[0].value = value;
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
