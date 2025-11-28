@@ -20,6 +20,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<{ 
 
     if (!asaasApiKey) return { success: false, message: 'Gateway de pagamento não configurado.' };
     if (!customerData.taxId) return { success: false, message: 'CPF/CNPJ é obrigatório.' };
+    if (!customerData.email) return { success: false, message: 'Email é obrigatório.' };
 
     try {
         const searchResponse = await fetch(`${asaasApiUrl}/customers?cpfCnpj=${customerData.taxId.replace(/\D/g, '')}`, {
