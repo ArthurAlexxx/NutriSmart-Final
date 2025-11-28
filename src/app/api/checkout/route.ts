@@ -66,6 +66,9 @@ export async function POST(request: Request) {
   if (!userId || !customerData || !customerData.fullName || !customerData.email || !customerData.taxId) {
       return NextResponse.json({ error: 'Dados cadastrais incompletos (Nome, E-mail, CPF/CNPJ). Por favor, atualize seu perfil.' }, { status: 400 });
   }
+   if (!billingType) {
+    return NextResponse.json({ error: "O campo 'billingTypes' é obrigatório." }, { status: 400 });
+  }
   
   try {
     const planDetails = plansConfig[planName as keyof typeof plansConfig];
@@ -98,7 +101,7 @@ export async function POST(request: Request) {
         minutesToExpire: 30,
         items: [
             {
-                name: itemName,
+                name: "Plano",
                 description: description,
                 value: value,
                 quantity: 1,
