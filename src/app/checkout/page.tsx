@@ -1,4 +1,3 @@
-
 // src/app/checkout/page.tsx
 'use client';
 
@@ -85,11 +84,7 @@ function CheckoutPageContent() {
     
     const planDetails = plansConfig[planName];
     const monthlyPrice = isYearly ? planDetails.yearlyPrice : planDetails.price;
-    let totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
-
-    if (paymentMethod === 'PIX') {
-        totalAmount = Math.round(totalAmount * 1.10 * 100) / 100;
-    }
+    const totalAmount = isYearly ? monthlyPrice * 12 : monthlyPrice;
 
     const periodText = isYearly ? 'anual' : 'mensal';
 
@@ -131,9 +126,13 @@ function CheckoutPageContent() {
             
             if (data.type === 'CREDIT_CARD' && data.url) {
                 window.open(data.url, '_blank');
-                 toast({ title: "Continuar Pagamento", description: "Abra a nova aba para concluir o pagamento com cartão de crédito." });
+                 toast({ title: "Continuar Pagamento", description: "Sua tela de pagamento foi aberta em uma nova aba." });
                 setIsLoading(false);
                 return;
+            }
+
+            if (data.id) {
+                localStorage.setItem(`pendingChargeId_${user.uid}`, data.id);
             }
 
             setPaymentResult(data);
@@ -209,12 +208,12 @@ function CheckoutPageContent() {
                                 </Label>
                                 <Label htmlFor="pix" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'PIX' && 'ring-2 ring-primary border-primary')}>
                                     <QrCode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">PIX</p><p className="text-sm text-muted-foreground">Pagamento único com +10% de taxa.</p></div>
+                                    <div><p className="font-semibold">PIX</p><p className="text-sm text-muted-foreground">Pagamento único com confirmação rápida.</p></div>
                                     <RadioGroupItem value="PIX" id="pix" className="ml-auto" />
                                 </Label>
                                 <Label htmlFor="boleto" className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-accent", paymentMethod === 'BOLETO' && 'ring-2 ring-primary border-primary')}>
                                     <Barcode className="h-6 w-6 text-primary" />
-                                    <div><p className="font-semibold">Boleto Bancário</p><p className="text-sm text-muted-foreground">Pagamento único, vencimento em 3 dias.</p></div>
+                                    <div><p className="font-semibold">Boleto Bancário</p><p className="text-sm text-muted-foreground">Vencimento em 3 dias.</p></div>
                                     <RadioGroupItem value="BOLETO" id="boleto" className="ml-auto" />
                                 </Label>
                             </RadioGroup>
@@ -293,16 +292,13 @@ function CheckoutPageContent() {
                                     <span className="font-semibold capitalize">{periodText}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Valor {isYearly && paymentMethod !== 'CREDIT_CARD' ? 'mensal' : ''}</span>
-                                    <span className="font-semibold">R$ {monthlyPrice.toFixed(2)}</span>
+                                    <span className="text-muted-foreground">Valor {isYearly ? 'anual' : 'mensal'}</span>
+                                    <span className="font-semibold">R$ {totalAmount.toFixed(2)}</span>
                                 </div>
                                  <div className="border-t pt-4 flex justify-between font-bold text-lg">
                                     <span>Total</span>
                                     <span>R$ {totalAmount.toFixed(2)}</span>
                                 </div>
-                                {paymentMethod === 'PIX' && (
-                                    <p className='text-xs text-muted-foreground text-right -mt-2'>(+10% taxa PIX)</p>
-                                )}
                             </CardContent>
                         </Card>
                     </div>

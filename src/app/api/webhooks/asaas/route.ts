@@ -1,4 +1,3 @@
-
 // src/app/api/webhooks/asaas/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -86,6 +85,9 @@ async function handlePayment(event: any) {
                 headers: { 'access_token': asaasApiKey },
                 cache: 'no-store'
             });
+            if (!customerResponse.ok) {
+                 throw new Error(`Asaas API returned ${customerResponse.status} for customer ${paymentData.customer}`);
+            }
             const customerData = await customerResponse.json();
             userId = customerData.externalReference;
             if (!userId) {

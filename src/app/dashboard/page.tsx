@@ -1,4 +1,3 @@
-
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -58,24 +57,24 @@ export default function DashboardPage() {
                 try {
                     const result = await verifyAndFinalizeSubscription(user.uid, pendingChargeId);
                     if (result.success) {
-                        toast({ title: "Assinatura Ativada!", description: "Seu plano foi atualizado com sucesso." });
-                        localStorage.removeItem(`pendingChargeId_${user.uid}`);
                         // The userProfile will update via the onSnapshot listener in useUser
+                        // Redirect to success page
+                        router.push('/checkout/success');
                     } else if (result.message !== 'Pagamento não confirmado ou ainda pendente.') {
                         // Only show error if it's not a pending payment, to avoid annoying the user.
                         toast({ title: "Falha na Finalização", description: result.message, variant: 'destructive' });
-                        localStorage.removeItem(`pendingChargeId_${user.uid}`); // Clean up failed/invalid attempts
                     }
                 } catch (err: any) {
                     console.error("Erro ao tentar finalizar assinatura:", err);
                     toast({ title: 'Erro de Verificação', description: err.message, variant: 'destructive' });
+                } finally {
                     localStorage.removeItem(`pendingChargeId_${user.uid}`);
                 }
             }
         }
     };
     finalizePayment();
-  }, [user, userProfile, toast]);
+  }, [user, userProfile, toast, router]);
 
   useEffect(() => {
     if (!user || !db) return;
