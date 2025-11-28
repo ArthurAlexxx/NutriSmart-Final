@@ -116,16 +116,8 @@ async function handlePayment(event: any) {
     const asaasSubscriptionId = paymentData?.subscription;
     
     if (planName && billingCycle) {
-        try {
-            const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, asaasSubscriptionId);
-            if (updateResult.success) {
-                await saveWebhookLog(event, 'SUCCESS', updateResult.message);
-            } else {
-                await saveWebhookLog(event, 'FAILURE', updateResult.message);
-            }
-        } catch (dbError: any) {
-            await saveWebhookLog(event, 'FAILURE', `Falha crítica ao atualizar usuário ${userId}: ${dbError.message}`);
-        }
+        const successMessage = `[TESTE] Pagamento recebido para o usuário ${userId}. Em produção, a assinatura seria atualizada para ${planName} (${billingCycle}).`;
+        await saveWebhookLog(event, 'SUCCESS', successMessage);
     } else {
         await saveWebhookLog(event, 'FAILURE', `Webhook de pagamento recebido para UserID ${userId}, mas os dados do plano não foram extraídos da descrição.`);
     }
