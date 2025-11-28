@@ -31,19 +31,18 @@ const subscriptionFormSchema = z.object({
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 const tokenizationFormSchema = z.object({
-    customerId: z.string(),
     holderName: z.string().min(3, 'Nome no cartão obrigatório.'),
     number: z.string().min(16, 'Número do cartão inválido.').max(19, 'Número do cartão inválido.'),
-    expiryMonth: z.string().min(2, 'Mês inválido.').max(2, 'Mês inválido.'),
+    expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
-    // Customer Info from createdCustomer state
     customerName: z.string().min(3, 'Nome do cliente obrigatório.'),
     customerEmail: z.string().email('Email do cliente obrigatório.'),
     customerCpfCnpj: z.string().min(11, 'CPF/CNPJ do cliente obrigatório.'),
     customerPostalCode: z.string().min(8, 'CEP do cliente obrigatório.'),
     customerAddressNumber: z.string().min(1, 'Número do endereço obrigatório.'),
     customerPhone: z.string().min(10, 'Telefone do cliente obrigatório.'),
+    customerId: z.string(),
 });
 type TokenizationFormValues = z.infer<typeof tokenizationFormSchema>;
 
@@ -220,7 +219,7 @@ export async function tokenizeCardAction(data: TokenizationFormValues): Promise<
             customer: data.customerId,
             creditCard: {
                 holderName: data.holderName,
-                number: data.number.replace(/\s/g, ''), // Remove spaces from card number
+                number: data.number.replace(/\s/g, ''),
                 expiryMonth: data.expiryMonth,
                 expiryYear: data.expiryYear,
                 ccv: data.ccv,

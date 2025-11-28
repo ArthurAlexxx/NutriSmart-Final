@@ -48,7 +48,6 @@ const tokenizationFormSchema = z.object({
     expiryMonth: z.string().min(1, 'Mês inválido.').max(2, 'Mês inválido.'),
     expiryYear: z.string().min(4, 'Ano inválido.').max(4, 'Ano inválido.'),
     ccv: z.string().min(3, 'CCV inválido.').max(4, 'CCV inválido.'),
-    // Customer Info from createdCustomer state
     customerName: z.string().min(3, 'Nome do cliente obrigatório.'),
     customerEmail: z.string().email('Email do cliente obrigatório.'),
     customerCpfCnpj: z.string().min(11, 'CPF/CNPJ do cliente obrigatório.'),
@@ -106,10 +105,10 @@ export default function AsaasTestPage() {
             const result = await createCustomerAction(data);
             setApiResponse({ status: 'success', data: result, type: 'customer' });
             setCreatedCustomer(result);
-            tokenizationForm.reset({ // Pre-fill tokenization form with customer data
+            tokenizationForm.reset({ 
                 ...tokenizationForm.getValues(),
                 customerName: result.name,
-                customerEmail: userProfile?.email || '', // Use logged in user email
+                customerEmail: userProfile?.email || '',
                 customerCpfCnpj: result.cpfCnpj,
             });
             toast({ title: "Cliente Criado!", description: `Agora você pode criar uma cobrança ou tokenizar um cartão para ${result.name}.` });
