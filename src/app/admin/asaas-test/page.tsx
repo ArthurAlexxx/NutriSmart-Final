@@ -67,20 +67,13 @@ export default function AsaasTestPage() {
         setIsLoading(true);
         setPaymentApiResponse(null);
 
-        // Special handling for this test page: open a fixed CC link
-        if (data.billingType === 'CREDIT_CARD') {
-            window.open('https://sandbox.asaas.com/c/339x2iwzo849irrx', '_blank');
-            toast({ title: "Link Aberto!", description: `O link de pagamento com cartão foi aberto em uma nova aba.` });
-            setIsLoading(false);
-            return;
-        }
-
         try {
             const result = await createCustomerAndPaymentAction(data);
             setPaymentApiResponse({ status: 'success', data: result });
             toast({ title: "Cobrança Gerada!", description: `Cobrança via ${data.billingType} foi criada com sucesso.` });
         } catch (error: any) {
             setPaymentApiResponse({ status: 'error', data: { message: error.message } });
+            toast({ title: "Erro ao Gerar Cobrança", description: error.message, variant: 'destructive' });
         } finally {
             setIsLoading(false);
         }
@@ -100,9 +93,16 @@ export default function AsaasTestPage() {
 
         if (paymentApiResponse.status !== 'success') {
             return (
-                <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
-                    <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
-                </ScrollArea>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-destructive flex items-center gap-2"><XCircle/> Erro na Requisição</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
+                            <pre className="text-sm whitespace-pre-wrap">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
             );
         }
 
@@ -111,51 +111,70 @@ export default function AsaasTestPage() {
         switch (data.type) {
             case 'PIX':
                 return (
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="p-4 bg-white rounded-lg border">
-                            <img src={`data:image/png;base64,${data.encodedImage}`} alt="PIX QR Code" width={150} height={150} />
-                        </div>
-                        <Button onClick={() => handleCopyCode(data.payload)} variant="outline" className='w-full'>
-                            <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
-                        </Button>
-                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><QrCode/> Resultado PIX</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center gap-4">
+                            <div className="p-4 bg-white rounded-lg border">
+                                <img src={`data:image/png;base64,${data.encodedImage}`} alt="PIX QR Code" width={150} height={150} />
+                            </div>
+                            <Button onClick={() => handleCopyCode(data.payload)} variant="outline" className='w-full'>
+                                <Copy className="mr-2 h-4 w-4" /> Copiar Código PIX
+                            </Button>
+                        </CardContent>
+                    </Card>
                 );
             case 'BOLETO':
                  return (
-                    <div className="flex flex-col items-center gap-4 text-left w-full">
-                         <div className="p-4 border rounded-lg w-full">
-                            <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2">Linha Digitável</p>
-                            <p className="text-sm break-all">{data.identificationField}</p>
-                         </div>
-                        <Button onClick={() => handleCopyCode(data.identificationField)} variant="outline" className='w-full'>
-                            <Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável
-                        </Button>
-                        <Button asChild variant="secondary" className="w-full">
-                            <a href={data.bankSlipUrl} target="_blank" rel="noopener noreferrer">
-                                <Barcode className="mr-2 h-4 w-4" /> Ver Boleto (PDF)
-                            </a>
-                        </Button>
-                    </div>
+                    <Card>
+                        <CardHeader>
+                             <CardTitle className="flex items-center gap-2"><Barcode/> Resultado Boleto</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center gap-4 text-left w-full">
+                            <div className="p-4 border rounded-lg w-full bg-secondary/30">
+                                <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2">Linha Digitável</p>
+                                <p className="text-sm break-all">{data.identificationField}</p>
+                            </div>
+                            <Button onClick={() => handleCopyCode(data.identificationField)} variant="outline" className='w-full'>
+                                <Copy className="mr-2 h-4 w-4" /> Copiar Linha Digitável
+                            </Button>
+                            <Button asChild variant="secondary" className="w-full">
+                                <a href={data.bankSlipUrl} target="_blank" rel="noopener noreferrer">
+                                    <Barcode className="mr-2 h-4 w-4" /> Ver Boleto (PDF)
+                                </a>
+                            </Button>
+                        </CardContent>
+                    </Card>
                  );
             case 'CREDIT_CARD':
                 return (
-                    <div className="flex flex-col items-center gap-4 text-left w-full">
-                        <div className="p-4 border rounded-lg w-full">
-                            <p className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2">Link de Pagamento</p>
-                             <p className="text-sm text-primary break-all">O link foi gerado e pode ser enviado ao cliente.</p>
-                         </div>
-                        <Button asChild variant="default" className="w-full">
-                            <a href={data.transactionReceiptUrl} target="_blank" rel="noopener noreferrer">
-                                <CreditCard className="mr-2 h-4 w-4" /> Abrir Link de Pagamento
-                            </a>
-                        </Button>
-                    </div>
+                     <Card>
+                        <CardHeader>
+                             <CardTitle className="flex items-center gap-2"><CreditCard/> Resultado Cartão de Crédito</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <p className="text-muted-foreground">O link de pagamento foi gerado. Em um fluxo real, o usuário seria redirecionado.</p>
+                            <Button asChild variant="default" className="w-full mt-4">
+                                <a href={data.invoiceUrl} target="_blank" rel="noopener noreferrer">
+                                    <CreditCard className="mr-2 h-4 w-4" /> Ver Fatura
+                                </a>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 );
             default:
                 return (
-                    <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
-                        <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
-                    </ScrollArea>
+                     <Card>
+                        <CardHeader>
+                             <CardTitle>Resultado Desconhecido</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ScrollArea className="h-48 w-full rounded-md border bg-secondary/30 p-4">
+                                <pre className="text-sm">{JSON.stringify(paymentApiResponse?.data, null, 2)}</pre>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
                 );
         }
     };
@@ -190,7 +209,7 @@ export default function AsaasTestPage() {
                                             </FormControl><SelectContent>
                                                 <SelectItem value="PIX">PIX</SelectItem>
                                                 <SelectItem value="BOLETO">Boleto</SelectItem>
-                                                <SelectItem value="CREDIT_CARD">Cartão de Crédito (Link)</SelectItem>
+                                                <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
                                             </SelectContent></Select><FormMessage />
                                             </FormItem>
                                         )} />
@@ -223,14 +242,7 @@ export default function AsaasTestPage() {
                                 </CardContent>
                             </Card>
                         )}
-                        {paymentApiResponse && (
-                             <Card>
-                                <CardHeader><CardTitle>Resultado da Cobrança</CardTitle></CardHeader>
-                                <CardContent className='space-y-4'>
-                                    {renderPaymentResult()}
-                                </CardContent>
-                            </Card>
-                        )}
+                        {paymentApiResponse && renderPaymentResult()}
                     </div>
                 </div>
             </div>
