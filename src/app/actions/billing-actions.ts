@@ -11,6 +11,33 @@ const getAsaasApiUrl = () => {
     return isSandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://api.asaas.com/v3';
 };
 
+/**
+ * Extracts plan information from a payment description.
+ * @param description The payment description string from Asaas.
+ * @returns An object containing the plan name and billing cycle.
+ */
+function extractPlanInfoFromDescription(description: string): { planName: 'PREMIUM' | 'PROFISSIONAL' | null, billingCycle: 'monthly' | 'yearly' | null } {
+    if (!description) return { planName: null, billingCycle: null };
+    
+    const lowerCaseDesc = description.toLowerCase();
+    
+    let planName: 'PREMIUM' | 'PROFISSIONAL' | null = null;
+    if (lowerCaseDesc.includes('premium')) {
+        planName = 'PREMIUM';
+    } else if (lowerCaseDesc.includes('profissional')) {
+        planName = 'PROFISSIONAL';
+    }
+
+    let billingCycle: 'monthly' | 'yearly' | null = null;
+    if (lowerCaseDesc.includes('anual')) {
+        billingCycle = 'yearly';
+    } else if (lowerCaseDesc.includes('mensal')) {
+        billingCycle = 'monthly';
+    }
+
+    return { planName, billingCycle };
+}
+
 
 /**
  * Cancels a subscription in the Asaas payment gateway.
@@ -125,10 +152,23 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
             cache: 'no-store',
         });
 
-        const data = await response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = `Falha ao verificar o pagamento: ${response.statusText}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.errors?.[0]?.description || errorMessage;
+            } catch {
+                // Not a JSON error, use the raw text if available
+                if (errorText) errorMessage += ` - ${errorText}`;
+            }
+            return { success: false, message: errorMessage };
+        }
 
+        const data = await response.json();
+        
         const paidStatuses = ['RECEIVED', 'CONFIRMED'];
-        if (!response.ok || !paidStatuses.includes(data.status)) {
+        if (!paidStatuses.includes(data.status)) {
             return { success: false, message: "Pagamento não confirmado ou ainda pendente." };
         }
         
@@ -142,7 +182,8 @@ export async function verifyAndFinalizeSubscription(userId: string, chargeId: st
             return { success: false, message: "Não foi possível determinar o plano a partir da descrição do pagamento." };
         }
 
-        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle);
+        const asaasSubscriptionId = data.subscription;
+        const updateResult = await updateUserSubscriptionAction(userId, planName, billingCycle, asaasSubscriptionId);
 
         if (updateResult.success) {
             return { success: true, message: `Assinatura atualizada para ${planName} com sucesso.` };
