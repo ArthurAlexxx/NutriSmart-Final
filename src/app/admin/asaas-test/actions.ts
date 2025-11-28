@@ -5,6 +5,7 @@ import * as z from 'zod';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
+  email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
 });
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -63,6 +64,7 @@ export async function createCustomerAction(data: CustomerFormValues): Promise<an
     try {
         const createCustomerPayload = {
             name: data.name,
+            email: data.email,
             cpfCnpj: data.cpfCnpj.replace(/\D/g, ''),
         };
 

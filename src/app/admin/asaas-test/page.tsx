@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
+  email: z.string().email('O e-mail é obrigatório e deve ser válido.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
 });
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -68,7 +69,7 @@ export default function AsaasTestPage() {
 
     const customerForm = useForm<CustomerFormValues>({
         resolver: zodResolver(customerFormSchema),
-        defaultValues: { name: '', cpfCnpj: '' },
+        defaultValues: { name: '', email: '', cpfCnpj: '' },
     });
 
     const paymentForm = useForm<PaymentFormValues>({
@@ -108,7 +109,7 @@ export default function AsaasTestPage() {
             tokenizationForm.reset({ 
                 ...tokenizationForm.getValues(),
                 customerName: result.name,
-                customerEmail: userProfile?.email || '',
+                customerEmail: result.email || '',
                 customerCpfCnpj: result.cpfCnpj,
             });
             toast({ title: "Cliente Criado!", description: `Agora você pode criar uma cobrança ou tokenizar um cartão para ${result.name}.` });
@@ -286,6 +287,7 @@ export default function AsaasTestPage() {
                                 <Form {...customerForm}>
                                     <form onSubmit={customerForm.handleSubmit(onCustomerSubmit)} className="space-y-4">
                                         <FormField control={customerForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} placeholder="Nome do Cliente" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={customerForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} placeholder="email@cliente.com" /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={customerForm.control} name="cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} placeholder="000.000.000-00" /></FormControl><FormMessage /></FormItem>)} />
                                         
                                         <Button type="submit" disabled={isLoading} className="w-full">
