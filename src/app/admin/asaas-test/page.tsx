@@ -67,6 +67,7 @@ export default function AsaasTestPage() {
         setIsLoading(true);
         setPaymentApiResponse(null);
 
+        // Special handling for this test page: open a fixed CC link
         if (data.billingType === 'CREDIT_CARD') {
             window.open('https://sandbox.asaas.com/c/339x2iwzo849irrx', '_blank');
             toast({ title: "Link Aberto!", description: `O link de pagamento com cartão foi aberto em uma nova aba.` });

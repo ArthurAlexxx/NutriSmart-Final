@@ -116,7 +116,11 @@ export async function createCustomerAndPaymentAction(data: FormValues): Promise<
         }
         
         if (data.billingType === 'CREDIT_CARD') {
-            return { type: 'CREDIT_CARD', transactionReceiptUrl: paymentData.transactionReceiptUrl };
+             // For Credit Card, we don't have an immediate action like PIX QR or Boleto line.
+             // We can return the checkout URL for the user to be redirected.
+             // This might require a different flow (e.g., using the checkout endpoint).
+             // For this test, let's assume we'll just open a pre-defined payment link.
+             return { type: 'CREDIT_CARD', transactionReceiptUrl: paymentData.transactionReceiptUrl };
         }
 
         throw new Error('Tipo de cobrança não suportado.');
