@@ -1,3 +1,4 @@
+
 // src/app/api/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/admin';
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     const isSubscription = billingType === 'CREDIT_CARD';
     const value = isYearly ? planDetails.yearlyPrice : planDetails.price;
     const description = `Plano ${planDetails.name} ${isYearly ? 'Anual' : 'Mensal'}`;
-    const itemName = "Plano";
+    const itemName = planDetails.name; // Use "Premium" or "Profissional"
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.nutrinea.com.br';
     const successUrl = `${baseUrl}/checkout/success`;
@@ -96,7 +97,8 @@ export async function POST(request: Request) {
 
     const checkoutPayload: any = {
         customer: asaasCustomerId,
-        billingTypes: [billingType], // Correctly sending as an array
+        billingType: billingType,
+        chargeType: isSubscription ? 'RECURRENT' : 'DETACHED', // Define chargeType
         externalReference: userId,
         minutesToExpire: 30,
         items: [
@@ -117,14 +119,11 @@ export async function POST(request: Request) {
     };
     
     if (isSubscription) {
-        checkoutPayload.chargeType = 'RECURRENT';
         checkoutPayload.subscription = {
             cycle: isYearly ? 'YEARLY' : 'MONTHLY',
             description: description,
             value: value,
         }
-    } else {
-        checkoutPayload.chargeType = 'DETACHED';
     }
 
     const checkoutResponse = await fetch(`${asaasApiUrl}/checkouts`, {
