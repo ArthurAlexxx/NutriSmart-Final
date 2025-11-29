@@ -1,7 +1,8 @@
 // src/app/page.tsx
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { HeroSection } from '@/components/ui/hero-4';
@@ -10,6 +11,8 @@ import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { CTASection } from '@/components/ui/cta-section';
 import { Pricing } from '@/components/ui/pricing';
 import MetricsSection from '@/components/ui/metrics-section';
+import { useUser } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 const avatarData = [
   {
@@ -30,6 +33,36 @@ const avatarData = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
+  const [isPwa, setIsPwa] = React.useState(false);
+  const [isCheckingPwa, setIsCheckingPwa] = React.useState(true);
+
+  useEffect(() => {
+    // This check only runs on the client side
+    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches;
+    setIsPwa(isPwaMode);
+    setIsCheckingPwa(false);
+
+    if (isPwaMode) {
+      if (!isUserLoading) {
+        if (user) {
+          const destination = effectiveSubscriptionStatus === 'professional' ? '/pro/dashboard' : '/dashboard';
+          router.replace(destination);
+        } else {
+          router.replace('/login');
+        }
+      }
+    }
+  }, [isUserLoading, user, effectiveSubscriptionStatus, router]);
+  
+  if (isCheckingPwa || isPwa) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-background font-sans overflow-x-hidden">
