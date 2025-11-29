@@ -4,67 +4,67 @@
   "id": "/",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#72A159",
-  "orientation": "portrait-primary",
   "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
   "icons": [
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
   "screenshots": [
     {
-      "src": "https://i.imgur.com/eWRrJp7.png",
-      "sizes": "1080x1920",
+      "src": "/screenshots/screenshot-1.png",
+      "sizes": "1080x2340",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Diário Inteligente"
+      "label": "Diário de Refeições"
     },
     {
-      "src": "https://i.imgur.com/sC5I5qY.png",
-      "sizes": "1080x1920",
+      "src": "/screenshots/screenshot-2.png",
+      "sizes": "1080x2340",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Plano Alimentar"
+      "label": "Plano Alimentar Inteligente"
     }
   ]
 }
