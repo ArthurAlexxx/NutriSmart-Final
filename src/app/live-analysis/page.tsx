@@ -9,10 +9,13 @@ import LiveAnalysisView from '@/components/live-analysis-view';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SubscriptionOverlay from '@/components/subscription-overlay';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import OrientationLock from '@/components/orientation-lock';
 
 export default function LiveAnalysisPage() {
   const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
+  const isLandscape = useMediaQuery('(orientation: landscape)');
 
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
 
@@ -30,6 +33,10 @@ export default function LiveAnalysisPage() {
         </div>
       </AppLayout>
     );
+  }
+  
+  if (isLandscape) {
+    return <OrientationLock />;
   }
 
   return (
