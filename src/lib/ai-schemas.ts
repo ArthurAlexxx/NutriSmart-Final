@@ -1,4 +1,3 @@
-
 // src/lib/ai-schemas.ts
 import { z } from 'zod';
 
@@ -97,3 +96,29 @@ export const AnalysisInsightsOutputSchema = z.object({
 });
 
 export type AnalysisInsightsOutput = z.infer<typeof AnalysisInsightsOutputSchema>;
+
+// Schemas for Live Food Analysis
+export const FoodAnalysisResultSchema = z.object({
+  alimento: z.string().describe("O nome do alimento identificado."),
+  calorias: z.number().describe("Estimativa de calorias (kcal) para a porção visível."),
+  proteinas: z.number().describe("Estimativa de proteínas (g)."),
+  carboidratos: z.number().describe("Estimativa de carboidratos (g)."),
+  gorduras: z.number().describe("Estimativa de gorduras (g)."),
+  confianca: z.number().min(0).max(100).describe("Nível de confiança da detecção (0-100%)."),
+  box: z.object({
+    x: z.number().describe("Coordenada X do canto superior esquerdo da caixa (de 0 a 1)."),
+    y: z.number().describe("Coordenada Y do canto superior esquerdo da caixa (de 0 a 1)."),
+    width: z.number().describe("Largura da caixa (de 0 a 1)."),
+    height: z.number().describe("Altura da caixa (de 0 a 1)."),
+  }).describe("Caixa delimitadora do alimento na imagem."),
+});
+
+export const FrameAnalysisOutputSchema = z.object({
+  items: z.array(FoodAnalysisResultSchema),
+});
+
+export type FrameAnalysisOutput = z.infer<typeof FrameAnalysisOutputSchema>;
+
+export interface FrameAnalysisInput {
+  frameDataUri: string;
+}

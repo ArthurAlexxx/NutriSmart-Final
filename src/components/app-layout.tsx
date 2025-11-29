@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook, Send } from 'lucide-react';
+import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook, Send, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,7 @@ const navItemsPatient = [
   { href: '/analysis', label: 'Minha Análise', icon: BarChart3, id: 'nav-analysis', premium: true },
   { href: '/plan', label: 'Meu Plano (IA)', icon: BookMarked, id: 'nav-plan', premium: true },
   { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
+  { href: '/live-analysis', label: 'Análise ao Vivo', icon: Camera, id: 'nav-live-analysis', premium: true },
   { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
 ];
 
@@ -53,7 +54,7 @@ const navItemsAdmin = [
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
   const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
-  const isActive = isDashboard ? pathname.startsWith(href) && (pathname === href || !pathname.substring(href.length).includes('/')) : pathname === href;
+  const isActive = isDashboard ? pathname.startsWith(href) && (pathname === href || !pathname.substring(href.length).includes('/')) : pathname.startsWith(href);
 
 
   const linkContent = (
@@ -260,7 +261,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
           </header>
           <main className={cn(
             "relative flex-1 bg-muted/40 print:bg-white print:p-0", 
-            pathname.startsWith('/chef') ? 'overflow-hidden' : 'overflow-y-auto'
+            pathname.startsWith('/chef') || pathname.startsWith('/live-analysis') ? 'overflow-hidden' : 'overflow-y-auto'
           )}>
             {children}
           </main>

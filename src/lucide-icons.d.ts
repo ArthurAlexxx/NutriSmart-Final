@@ -28,6 +28,7 @@ declare module "lucide-react" {
     export const CalendarIcon: Icon;
     export const CalendarOff: Icon;
     export const CalendarX: Icon;
+    export const Camera: Icon;
     export const CaseSensitive: Icon;
     export const Check: Icon;
     export const CheckCircle: Icon;

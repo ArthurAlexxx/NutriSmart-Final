@@ -14,6 +14,9 @@ import {
   AnalysisInsightsOutputSchema,
   type AnalysisInsightsOutput,
   type AnalysisInsightsInput,
+  FrameAnalysisOutputSchema,
+  type FrameAnalysisOutput,
+  type FrameAnalysisInput,
 } from '@/lib/ai-schemas';
 
 const openai = new OpenAI({
@@ -364,6 +367,95 @@ export async function generateAnalysisInsightsAction(input: AnalysisInsightsInpu
     throw new Error(error.message || "Houve um problema ao se comunicar com a IA para gerar os insights.");
   }
 }
-    
 
+/**
+ * Analyzes a single frame from a video stream for food items.
+ * @param input - The frame data URI.
+ * @returns A validated object containing detected food items and their nutritional info.
+ */
+export async function analyzeFoodInFrameAction(input: FrameAnalysisInput): Promise<FrameAnalysisOutput> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('O serviço de IA não está configurado no servidor.');
+  }
+  const prompt = `
+    Você é um modelo de visão computacional treinado para nutrição. Sua única tarefa é analisar a imagem de um prato de comida e retornar uma lista de todos os alimentos identificados, com suas respectivas informações nutricionais e localização na imagem.
+
+    REGRAS DE ANÁLISE E SAÍDA:
+    1.  **DETECÇÃO MÚLTIPLA:** Identifique TODOS os itens alimentícios distintos na imagem.
+    2.  **ESTIMATIVA DE NUTRIENTES:** Para cada item, estime a quantidade visível e calcule as **calorias (kcal)**, **proteínas (g)**, **carboidratos (g)** e **gorduras (g)**. Baseie-se em porções padrão se a quantidade exata for incerta.
+    3.  **CAIXA DELIMITADORA (BOUNDING BOX):** Para cada item, forneça as coordenadas da caixa delimitadora. As coordenadas (x, y) representam o canto superior esquerdo e devem ser normalizadas (valores entre 0.0 e 1.0). A largura (width) e altura (height) também devem ser normalizadas.
+    4.  **CONFIANÇA:** Atribua um nível de confiança (0-100) para cada detecção. Se não tiver certeza, use um valor mais baixo.
+    5.  **FORMATO JSON ESTRITO:** Sua resposta deve ser APENAS o objeto JSON, seguindo o schema `FrameAnalysisOutputSchema`. A chave principal deve ser "items", que é um array de objetos. Não inclua nenhum texto antes ou depois do JSON.
+
+    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    {
+      "items": [
+        {
+          "alimento": "Filé de Salmão",
+          "calorias": 280,
+          "proteinas": 30,
+          "carboidratos": 0,
+          "gorduras": 18,
+          "confianca": 98,
+          "box": { "x": 0.2, "y": 0.3, "width": 0.6, "height": 0.3 }
+        },
+        {
+          "alimento": "Brócolis",
+          "calorias": 55,
+          "proteinas": 4,
+          "carboidratos": 11,
+          "gorduras": 1,
+          "confianca": 92,
+          "box": { "x": 0.25, "y": 0.65, "width": 0.5, "height": 0.2 }
+        }
+      ]
+    }
     
+    Se a imagem não contiver comida, retorne um objeto com um array "items" vazio: \`{"items": []}\`.
+    
+    AGORA, ANALISE A IMAGEM E GERE SOMENTE O OBJETO JSON FINAL.
+  `;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: input.frameDataUri,
+                detail: "low",
+              },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 1000,
+    });
+
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não retornou uma análise. A imagem pode estar muito escura ou embaçada.');
+    }
+
+    const analysisJson = JSON.parse(resultText);
+    const validationResult = FrameAnalysisOutputSchema.safeParse(analysisJson);
+
+    if (validationResult.success) {
+      return validationResult.data;
+    } else {
+      console.error("Zod validation error in analyzeFoodInFrameAction:", validationResult.error.errors);
+      console.error("Received JSON:", resultText);
+      throw new Error("A resposta da IA não corresponde ao formato de análise de frame esperado.");
+    }
+  } catch (error: any) {
+    console.error("Error in analyzeFoodInFrameAction:", error);
+    throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar o frame.");
+  }
+}
