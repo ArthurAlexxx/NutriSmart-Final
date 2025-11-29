@@ -8,6 +8,7 @@ import AppProvider from './app-provider';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import InstallPWAButton from '@/components/install-pwa-button';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -20,21 +21,6 @@ const lexend = Lexend({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-lexend',
 });
-
-// A metadata estática continua importante para SEO e para o primeiro carregamento
-const metadata: Metadata = {
-  title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
-  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
-  icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/icons/icon-192x192.png',
-  },
-  manifest: '/manifest.json?v=3',
-};
-
-const viewport: Viewport = {
-  themeColor: '#4A6B3A',
-};
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -59,6 +45,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      <InstallPWAButton />
     </>
   );
 }
@@ -75,6 +62,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+         <link rel="manifest" href="/manifest.json?v=13" />
       </head>
       <body className='h-full'>
         <AppProvider>

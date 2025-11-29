@@ -63,7 +63,6 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
             <div className='hidden md:flex items-center gap-2'>
-              <InstallPWAButton />
               {user ? (
                  <Button asChild className="rounded-full">
                    <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
@@ -96,7 +95,6 @@ export default function Header() {
                 <nav className="grid gap-6">
                   {navLinks}
                   <div className='grid gap-4 pt-6 border-t'>
-                      <InstallPWAButton />
                       {user ? (
                          <Button asChild>
                             <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>

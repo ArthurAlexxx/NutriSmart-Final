@@ -1,9 +1,11 @@
+
 // src/components/install-pwa-button.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Download } from 'lucide-react';
+import { Download, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
@@ -16,13 +18,17 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function InstallPWAButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      // @ts-ignore
+      if (window.navigator.standalone) {
+        return;
+      }
+      setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -36,28 +42,44 @@ export default function InstallPWAButton() {
     if (!deferredPrompt) {
       return;
     }
-    // Show the install prompt
     deferredPrompt.prompt();
-    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    // Optionally, send analytics event with the outcome
     console.log(`User response to the install prompt: ${outcome}`);
-    // We've used the prompt, and it can't be used again, so we clear it
     setDeferredPrompt(null);
+    setIsVisible(false);
   };
+  
+  const handleDismiss = () => {
+    setIsVisible(false);
+  }
 
-  if (!deferredPrompt) {
+  if (!isVisible) {
     return null;
   }
 
   return (
-    <Button
-      variant="outline"
-      onClick={handleInstallClick}
-      className="gap-2"
-    >
-      <Download className="h-4 w-4" />
-      Instalar App
-    </Button>
+    <AnimatePresence>
+        <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="fixed bottom-6 right-6 z-50"
+        >
+            <div className="bg-background border shadow-xl rounded-2xl p-4 flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Download className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                    <h3 className="font-semibold text-foreground">Instalar Aplicativo</h3>
+                    <p className="text-sm text-muted-foreground">Adicione à sua tela inicial para uma melhor experiência.</p>
+                </div>
+                <Button onClick={handleInstallClick} size="sm" className='ml-2'>Instalar</Button>
+                 <Button onClick={handleDismiss} variant="ghost" size="icon" className='h-7 w-7 absolute top-2 right-2 text-muted-foreground'>
+                    <X className="h-4 w-4"/>
+                </Button>
+            </div>
+        </motion.div>
+    </AnimatePresence>
   );
 }
