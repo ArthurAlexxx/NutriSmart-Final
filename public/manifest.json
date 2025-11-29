@@ -6,49 +6,62 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#72A159",
-  "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
+  "description": "Sua plataforma de nutrição inteligente.",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/android/icon-72x72.png",
+      "src": "/android/android-launchericon-48-48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/android/android-launchericon-72-72.png",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/android/icon-96x96.png",
+      "src": "/android/android-launchericon-96-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "/android/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "/android/icon-144x144.png",
+      "src": "/android/android-launchericon-144-144.png",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "/android/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "/android/icon-192x192.png",
+      "src": "/android/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/android/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "/android/icon-512x512.png",
+      "src": "/android/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://i.imgur.com/eWRrJp7.png",
+      "sizes": "1080x2340",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Diário Inteligente"
+    },
+    {
+      "src": "https://i.imgur.com/5u9b9sO.png",
+      "sizes": "1080x2340",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Análise de Desempenho"
+    },
+    {
+      "src": "https://i.imgur.com/tH03pNa.png",
+      "sizes": "1080x2340",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Chef Virtual com IA"
     }
   ]
 }
