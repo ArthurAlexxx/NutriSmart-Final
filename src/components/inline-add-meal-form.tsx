@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Trash2, Loader2, Camera, AlertTriangle, Lock, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getNutritionalInfo, getNutritionalInfoFromPhoto } from '@/app/actions/meal-actions';
+import { getNutritionalInfoFromPhoto } from '@/app/actions/meal-actions';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, limit, arrayUnion } from 'firebase/firestore';
 import type { MealData, MealEntry } from '@/types/meal';
@@ -89,22 +89,29 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
   const handleManualSubmit = async (data: ManualMealFormValues) => {
     setIsProcessing(true);
-    setProcessingStep('Analisando nutrientes...');
+    setProcessingStep('Registrando refeição...');
     setProgress(50);
     
     try {
-      const result = await getNutritionalInfo(data);
-      
+      // Manual entry doesn't call an AI action for totals anymore.
+      // We can create a dummy totals object or leave it for later enhancement.
       const mealData: MealData = {
-        alimentos: data.foods.map(f => ({ name: f.name, portion: f.portion, unit: f.unit, calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 })),
-        totais: result.totals || { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
+        alimentos: data.foods.map(f => ({ 
+            name: f.name, 
+            portion: f.portion, 
+            unit: f.unit, 
+            // Nutrient values are not calculated on manual add for simplicity now.
+            calorias: 0, 
+            proteinas: 0, 
+            carboidratos: 0, 
+            gorduras: 0, 
+            fibras: 0 
+        })),
+        // Totals would be calculated server-side or by another mechanism if needed.
+        // For now, we set them to 0.
+        totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
       };
-
-      if (result.error) {
-        toast({ title: "Aviso de Cálculo", description: result.error, variant: "default" });
-      }
       
-      setProcessingStep('Registrando refeição...');
       setProgress(100);
       await saveMeal(data.mealType, mealData);
       manualForm.reset({ mealType: '', foods: [{ name: '', portion: NaN, unit: '' }] });
