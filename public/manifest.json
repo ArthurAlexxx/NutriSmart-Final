@@ -7,7 +7,7 @@
   "background_color": "#ffffff",
   "theme_color": "#72A159",
   "orientation": "portrait-primary",
-  "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
+  "description": "Sua plataforma de nutrição com Inteligência Artificial.",
   "icons": [
     {
       "src": "/android/icon-72x72.png",
@@ -51,24 +51,5 @@
       "type": "image/png"
     }
   ],
-  "screenshots": [
-    {
-      "src": "https://i.imgur.com/sC5I5qY.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "label": "Plano alimentar personalizado"
-    },
-    {
-      "src": "https://i.imgur.com/eWRrJp7.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "label": "Dashboard de acompanhamento"
-    },
-    {
-      "src": "https://i.imgur.com/tH03pNa.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "label": "Chef Virtual com IA"
-    }
-  ]
+  "screenshots": []
 }

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
     icon: '/android/icon-192x192.png',
-    apple: '/android/icon-192x192.png',
+    apple: '/ios/icon-180x180.png',
   },
   manifest: '/manifest.json',
 };
@@ -42,6 +42,9 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/ios/icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/ios/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/ios/icon-167x167.png" />
       </head>
       <body className='h-full'>
         <AppProvider>
