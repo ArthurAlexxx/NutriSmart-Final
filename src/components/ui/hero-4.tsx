@@ -25,10 +25,19 @@ export interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const TypingAnimation = ({ texts }: { texts: string[] }) => {
   const [textIndex, setTextIndex] = React.useState(0);
-  const [displayedText, setDisplayedText] = React.useState("");
+  const [displayedText, setDisplayedText] = React.useState(texts[0]); // Start with the first full text
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setIsMounted(true);
+    setDisplayedText(''); // Clear text on mount to start animation
+  }, []);
+
+
+  React.useEffect(() => {
+    if (!isMounted) return; // Don't run animation on server or before mount
+
     const handleTyping = () => {
       const currentText = texts[textIndex];
       if (isDeleting) {
@@ -52,7 +61,7 @@ const TypingAnimation = ({ texts }: { texts: string[] }) => {
     const timeout = setTimeout(handleTyping, typingSpeed);
 
     return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, textIndex, texts]);
+  }, [displayedText, isDeleting, textIndex, texts, isMounted]);
 
   return (
     <span className="inline-block">
