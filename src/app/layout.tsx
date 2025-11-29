@@ -20,12 +20,12 @@ const lexend = Lexend({
 
 export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
-  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
+  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
   icons: {
     icon: '/icons/icon-192x192.png',
     apple: '/icons/icon-192x192.png',
   },
-  manifest: '/manifest.json?v=1',
+  manifest: '/manifest.json?v=2',
 };
 
 export const viewport: Viewport = {
@@ -56,9 +56,7 @@ export default function RootLayout({
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js').then(registration => {
                     console.log('SW registered: ', registration);
-                  }).catch(registrationError => {
-                    console.log('SW registration failed: ', registrationError);
-                  });
+                  }).catch(err => console.log('SW registration failed: ', err));
                 });
               }
             `,
