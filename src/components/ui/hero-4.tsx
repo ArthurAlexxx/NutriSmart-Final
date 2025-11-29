@@ -25,19 +25,10 @@ export interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const TypingAnimation = ({ texts }: { texts: string[] }) => {
   const [textIndex, setTextIndex] = React.useState(0);
-  const [displayedText, setDisplayedText] = React.useState(texts[0]); // Start with the first full text
+  const [displayedText, setDisplayedText] = React.useState('');
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setIsMounted(true);
-    setDisplayedText(''); // Clear text on mount to start animation
-  }, []);
-
-
-  React.useEffect(() => {
-    if (!isMounted) return; // Don't run animation on server or before mount
-
     const handleTyping = () => {
       const currentText = texts[textIndex];
       if (isDeleting) {
@@ -61,7 +52,7 @@ const TypingAnimation = ({ texts }: { texts: string[] }) => {
     const timeout = setTimeout(handleTyping, typingSpeed);
 
     return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, textIndex, texts, isMounted]);
+  }, [displayedText, isDeleting, textIndex, texts]);
 
   return (
     <span className="inline-block">
@@ -80,7 +71,12 @@ const TypingAnimation = ({ texts }: { texts: string[] }) => {
 
 const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
   ({ className, title, animatedTexts, subtitle, infoBadgeText, ctaButtonText, ctaButtonLink, socialProofText, avatars, ...props }, ref) => {
-    
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     return (
       <section
         className={cn("container mx-auto flex flex-col items-center justify-center text-center py-20 md:py-32", className)}
@@ -101,7 +97,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 <span className="absolute inset-0 border-2 border-dashed border-primary rounded-2xl"></span>
               </span>
               <div className="text-primary min-h-[1.2em] inline-block">
-                <TypingAnimation texts={animatedTexts} />
+                {isMounted ? <TypingAnimation texts={animatedTexts} /> : <span>{animatedTexts[0]}</span>}
               </div>
             </div>
           </h1>
