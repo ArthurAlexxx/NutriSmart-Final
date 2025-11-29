@@ -385,7 +385,7 @@ export async function analyzeFoodInFrameAction(input: FrameAnalysisInput): Promi
     2.  **ESTIMATIVA DE NUTRIENTES:** Para cada item, estime a quantidade visível e calcule as **calorias (kcal)**, **proteínas (g)**, **carboidratos (g)** e **gorduras (g)**. Baseie-se em porções padrão se a quantidade exata for incerta.
     3.  **CAIXA DELIMITADORA (BOUNDING BOX):** Para cada item, forneça as coordenadas da caixa delimitadora. As coordenadas (x, y) representam o canto superior esquerdo e devem ser normalizadas (valores entre 0.0 e 1.0). A largura (width) e altura (height) também devem ser normalizadas.
     4.  **CONFIANÇA:** Atribua um nível de confiança (0-100) para cada detecção. Se não tiver certeza, use um valor mais baixo.
-    5.  **FORMATO JSON ESTRITO:** Sua resposta deve ser APENAS o objeto JSON, seguindo o schema `FrameAnalysisOutputSchema`. A chave principal deve ser "items", que é um array de objetos. Não inclua nenhum texto antes ou depois do JSON.
+    5.  **FORMATO JSON ESTRITO:** Sua resposta deve ser APENAS o objeto JSON, seguindo o schema 'FrameAnalysisOutputSchema'. A chave principal deve ser "items", que é um array de objetos. Não inclua nenhum texto antes ou depois do JSON.
 
     EXEMPLO DE SAÍDA JSON VÁLIDA:
     {
@@ -411,7 +411,7 @@ export async function analyzeFoodInFrameAction(input: FrameAnalysisInput): Promi
       ]
     }
     
-    Se a imagem não contiver comida, retorne um objeto com um array "items" vazio: \`{"items": []}\`.
+    Se a imagem não contiver comida, retorne um objeto com um array "items" vazio: \'{"items": []}\'.
     
     AGORA, ANALISE A IMAGEM E GERE SOMENTE O OBJETO JSON FINAL.
   `;
