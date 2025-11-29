@@ -1,9 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "br.com.nutrinea.www.twa",
-        "sha256_cert_fingerprints": ["32:0F:80:64:86:E1:64:4B:92:59:FA:B7:57:F3:FD:F6:F9:D8:83:DE:65:64:65:10:FF:44:53:57:C5:51:27:65"]
-      }
-    }
-    
