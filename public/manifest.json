@@ -4,9 +4,9 @@
   "id": "/",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
+  "orientation": "portrait",
+  "background_color": "#F5F5DC",
+  "theme_color": "#A7D1AB",
   "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
   "icons": [
     {
@@ -53,18 +53,25 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/screenshot-1.png",
+      "src": "https://i.imgur.com/sC5I5qY.png",
       "sizes": "1080x2340",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Diário de Refeições"
+      "label": "Plano Alimentar"
     },
     {
-      "src": "/screenshots/screenshot-2.png",
+      "src": "https://i.imgur.com/5u9b9sO.png",
       "sizes": "1080x2340",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Plano Alimentar Inteligente"
+      "label": "Análise de Desempenho"
+    },
+    {
+      "src": "https://i.imgur.com/eWRrJp7.png",
+      "sizes": "1080x2340",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Diário Inteligente"
     }
   ]
 }
