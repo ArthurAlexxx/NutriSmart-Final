@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase/admin';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { Totals, MealData, MealEntry } from '@/types/meal';
 import { analyzeMealFromPhotoAction } from '@/app/actions/ai-actions';
 import type { AnalyzeMealOutput } from '@/lib/ai-schemas';
@@ -97,16 +97,16 @@ export async function saveAnalyzedMealAction(input: SaveAnalyzedMealInput): Prom
             },
         };
 
-        const newMealEntry: Omit<MealEntry, 'id'> = {
+        const newMealEntry = {
             userId: userId,
             date: getLocalDateString(new Date()),
             mealType: mealType,
             mealData: mealData,
-            createdAt: serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
         };
 
-        const mealEntriesRef = collection(db, 'users', userId, 'meal_entries');
-        await addDoc(mealEntriesRef, newMealEntry);
+        const mealEntriesRef = db.collection('users').doc(userId).collection('meal_entries');
+        await mealEntriesRef.add(newMealEntry);
 
         return { success: true, message: "Refeição salva com sucesso no seu diário." };
 
