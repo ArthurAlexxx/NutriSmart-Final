@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
-    icon: 'https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/favicon.png?alt=media&token=2bd99125-4f93-4534-80ff-94dc62d8789b',
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
   },
   manifest: '/manifest.json',
 };
@@ -38,6 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className='h-full'>
         <AppProvider>
           {children}

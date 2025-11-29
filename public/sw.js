@@ -1,17 +1,15 @@
-// Service Worker for offline capability
+// sw.js
 
 const CACHE_NAME = 'nutrinea-cache-v1';
 const urlsToCache = [
   '/',
-  '/dashboard',
-  '/login',
-  '/register',
-  '/manifest.json'
-  // Add other important URLs and assets here
+  '/manifest.json',
+  // Adicione aqui outros assets estáticos importantes que você queira cachear
+  // Ex: '/styles/main.css', '/images/logo.png', etc.
 ];
 
+// Evento de instalação: abre o cache e adiciona os arquivos principais
 self.addEventListener('install', event => {
-  // Perform install steps
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -21,6 +19,7 @@ self.addEventListener('install', event => {
   );
 });
 
+// Evento de fetch: responde com o cache se disponível, senão busca na rede
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
@@ -29,12 +28,32 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
-      }
-    )
-  );
+
+        // Se não está no cache, busca na rede
+        return fetch(event.request).then(
+          response => {
+            // Verifica se recebemos uma resposta válida
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clona a resposta. Uma stream só pode ser consumida uma vez.
+            // Precisamos de uma para o navegador e outra para o cache.
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
+    );
 });
 
+// Evento de ativação: limpa caches antigos
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
