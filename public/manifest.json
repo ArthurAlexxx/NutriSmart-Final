@@ -1,18 +1,7 @@
 {
   "name": "Nutrinea",
   "short_name": "Nutrinea",
-  "description": "Sua plataforma de nutrição inteligente.",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
   "icons": [
-    {
-      "src": "/icons/icon-48x48.png",
-      "sizes": "48x48",
-      "type": "image/png"
-    },
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
@@ -54,5 +43,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#72A159",
+  "description": "Sua plataforma de nutrição inteligente."
 }
