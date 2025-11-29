@@ -37,7 +37,7 @@ export default function Home() {
       <main className="flex-1">
         
         <HeroSection
-            title={<>O seu <span className='text-primary'>plano perfeito</span> para</>}
+            title={<>seu <span className='text-primary'>plano perfeito</span> para</>}
             animatedTexts={[
             "evoluir.",
             "conquistar.",
