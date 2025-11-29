@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/icons/icon-192x192.png',
+    icon: '/android/icon-192x192.png',
+    apple: '/android/icon-192x192.png',
   },
   manifest: '/manifest.json',
 };
