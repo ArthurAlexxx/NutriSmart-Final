@@ -1,13 +1,36 @@
 // src/components/live-analysis-view.tsx
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeFoodInFrameAction } from '@/app/actions/ai-actions';
 import type { FrameAnalysisOutput } from '@/lib/ai-schemas';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from './ui/button';
-import { CameraOff, Loader2, Zap } from 'lucide-react';
+import { CameraOff, Zap, Flame, Rocket, Donut } from 'lucide-react';
+import { FaBreadSlice } from 'react-icons/fa';
+import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+
+interface Totals {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+}
+
+const NutrientDisplay = ({ label, value, icon: Icon, color }: { label: string, value: number, icon: React.ElementType, color: string }) => (
+    <div className='flex flex-col items-center justify-center gap-1 text-center p-2 rounded-lg bg-background/50'>
+        <div className='flex items-center gap-1.5'>
+            <Icon className={cn('h-5 w-5', color)} />
+        </div>
+        <div>
+            <span className='font-bold text-foreground text-lg'>{value.toFixed(0)}</span>
+        </div>
+         <span className='text-xs font-semibold text-muted-foreground'>{label}</span>
+    </div>
+);
+
 
 export default function LiveAnalysisView() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,18 +63,8 @@ export default function LiveAnalysisView() {
     getCameraPermission();
   }, [getCameraPermission]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (videoRef.current && !isAnalyzing && hasCameraPermission) {
-        captureAndAnalyze();
-      }
-    }, 2000); // Analyze every 2 seconds
-
-    return () => clearInterval(interval);
-  }, [isAnalyzing, hasCameraPermission]);
-
-  const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+  const captureAndAnalyze = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !hasCameraPermission) return;
     setIsAnalyzing(true);
 
     const video = videoRef.current;
@@ -72,40 +85,39 @@ export default function LiveAnalysisView() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [hasCameraPermission]);
 
-  const renderAnalysisBoxes = () => {
-    if (!analysisResult || !videoRef.current) return null;
-    const { videoWidth, videoHeight } = videoRef.current;
-    const scaleX = videoRef.current.clientWidth / videoWidth;
-    const scaleY = videoRef.current.clientHeight / videoHeight;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (videoRef.current && !isAnalyzing && hasCameraPermission) {
+        captureAndAnalyze();
+      }
+    }, 2000); // Analyze every 2 seconds
 
-    return analysisResult.items.map((item, index) => {
-      const { x, y, width, height } = item.box;
-      const boxStyle: React.CSSProperties = {
-        position: 'absolute',
-        left: `${x * 100}%`,
-        top: `${y * 100}%`,
-        width: `${width * 100}%`,
-        height: `${height * 100}%`,
-        border: '2px solid #72A159',
-        borderRadius: '8px',
-        boxShadow: '0 0 10px rgba(114, 161, 89, 0.5)',
-      };
+    return () => clearInterval(interval);
+  }, [isAnalyzing, hasCameraPermission, captureAndAnalyze]);
 
-      return (
-        <div key={index} style={boxStyle}>
-          <div className="absolute -top-8 left-0 bg-primary text-primary-foreground text-xs font-bold p-1 rounded-md whitespace-nowrap">
-            {item.alimento} ({item.confianca}%)
-          </div>
-          <div className="absolute bottom-1 right-1 bg-background/80 backdrop-blur-sm p-1 rounded-md text-xs leading-tight">
-            <p>🔥 {item.calorias.toFixed(0)} kcal</p>
-            <p>⚡ {item.proteinas.toFixed(0)}g P</p>
-          </div>
-        </div>
-      );
-    });
-  };
+  const { totals, ingredients } = useMemo(() => {
+    if (!analysisResult) {
+      return { totals: { calories: 0, protein: 0, carbs: 0, fat: 0 }, ingredients: [] };
+    }
+
+    const newTotals: Totals = analysisResult.items.reduce(
+      (acc, item) => {
+        acc.calories += item.calorias;
+        acc.protein += item.proteinas;
+        acc.carbs += item.carboidratos;
+        acc.fat += item.gorduras;
+        return acc;
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    const ingredientList = analysisResult.items.map(item => item.alimento);
+
+    return { totals: newTotals, ingredients: ingredientList };
+  }, [analysisResult]);
+
 
   return (
     <div className="w-full h-full bg-black rounded-2xl relative flex items-center justify-center">
@@ -118,12 +130,6 @@ export default function LiveAnalysisView() {
           <h2 className="text-2xl font-bold mb-2">Acesso à Câmera Necessário</h2>
           <p className="text-muted-foreground mb-6">Você precisa permitir o acesso à câmera para usar a análise em tempo real.</p>
           <Button onClick={getCameraPermission}>Tentar Novamente</Button>
-        </div>
-      )}
-
-      {hasCameraPermission && (
-        <div className="absolute inset-0 z-10 pointer-events-none">
-          {renderAnalysisBoxes()}
         </div>
       )}
 
@@ -140,6 +146,29 @@ export default function LiveAnalysisView() {
         )}
        </div>
 
+        <AnimatePresence>
+            {analysisResult && analysisResult.items.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    className="absolute bottom-4 left-4 right-4 z-20 p-4 bg-background/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl"
+                >
+                    <div className="mb-3">
+                         <h3 className="font-semibold text-lg text-foreground">Análise do Prato</h3>
+                         <p className="text-sm text-muted-foreground">{ingredients.join(', ')}</p>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3">
+                        <NutrientDisplay label="Calorias" value={totals.calories} icon={Flame} color='text-orange-500'/>
+                        <NutrientDisplay label="Proteínas" value={totals.protein} icon={Rocket} color='text-blue-500'/>
+                        <NutrientDisplay label="Carbos" value={totals.carbs} icon={FaBreadSlice} color='text-yellow-500'/>
+                        <NutrientDisplay label="Gorduras" value={totals.fat} icon={Donut} color='text-pink-500'/>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     </div>
   );
 }
