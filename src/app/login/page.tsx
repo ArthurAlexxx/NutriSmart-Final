@@ -1,4 +1,3 @@
-
 // src/app/login/page.tsx
 'use client';
 
@@ -45,7 +44,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
-  const { user, userProfile, isUserLoading, isAdmin } = useUser();
+  const { user, userProfile, isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -63,14 +62,17 @@ export default function LoginPage() {
             description: "Redirecionando para o seu painel...",
         });
 
+        const isAdmin = userProfile.role === 'admin';
+        const isPro = userProfile.profileType === 'professional';
+
         if (isAdmin) {
             router.push('/admin');
         } else {
-            const destination = userProfile.role === 'professional' ? '/pro/patients' : '/dashboard';
+            const destination = isPro ? '/pro/patients' : '/dashboard';
             router.push(destination);
         }
     }
-  }, [user, userProfile, isUserLoading, isAdmin, router, toast]);
+  }, [user, userProfile, isUserLoading, router, toast]);
 
 
   const handleLogin = async (values: LoginFormValues) => {
@@ -126,6 +128,15 @@ export default function LoginPage() {
       });
     }
   };
+  
+  // Show a loading spinner while the user's auth state is being determined
+  if (isUserLoading || user) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+      );
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
