@@ -1,9 +1,10 @@
-// sw.js
+// public/sw.js
 
 const CACHE_NAME = 'nutrinea-cache-v1';
 const urlsToCache = [
   '/',
   '/manifest.json',
+  '/icons/icon-192x192.png',
   // Adicione aqui outros assets estáticos importantes que você queira cachear
   // Ex: '/styles/main.css', '/images/logo.png', etc.
 ];
@@ -21,6 +22,11 @@ self.addEventListener('install', event => {
 
 // Evento de fetch: responde com o cache se disponível, senão busca na rede
 self.addEventListener('fetch', event => {
+  // Ignora requisições que não são GET ou que não são para http/https (ex: chrome-extension://)
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
