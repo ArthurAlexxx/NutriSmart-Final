@@ -1,14 +1,12 @@
 {
   "name": "Nutrinea",
   "short_name": "Nutrinea",
-  "id": "/",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
-  "orientation": "portrait-primary",
-  "description": "Sua plataforma de nutrição com Inteligência Artificial.",
   "icons": [
+    {
+      "src": "/android/icon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
     {
       "src": "/android/icon-72x72.png",
       "sizes": "72x72",
@@ -37,8 +35,12 @@
     {
       "src": "/android/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
+    },
+    {
+      "src": "/android/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
     },
     {
       "src": "/android/icon-384x384.png",
@@ -51,5 +53,8 @@
       "type": "image/png"
     }
   ],
-  "screenshots": []
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#72A159"
 }
