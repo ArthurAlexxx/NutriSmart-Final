@@ -107,7 +107,7 @@ export default function RegisterPage() {
         status: 'active'
       };
       
-      await setDoc(userRef, { id: user.uid, ...newUserProfile });
+      await setDoc(userRef, newUserProfile);
       await updateProfile(user, { displayName: data.fullName });
       
     } catch (error: any) {

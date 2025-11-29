@@ -248,35 +248,37 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     }
   };
   
-    const handleRemoveMeal = (index: number) => {
+  const handleRemoveMeal = async (index: number) => {
     if (!firestore) return;
-    
+
     const mealToRemove = { ...fields[index] };
+    remove(index); // Optimistic UI update
+
+    const currentPlan = form.getValues();
+    const newMeals = currentPlan.meals.filter((_, i) => i !== index);
+
+    const dataToUpdate = {
+        ...currentPlan,
+        meals: newMeals,
+    };
     
-    remove(index);
-
-    const dataToSave = form.getValues();
-    const newMeals = dataToSave.meals.filter((_, i) => i !== index);
-
-    if (isProfessional && room) {
-        const roomRef = doc(firestore, 'rooms', room.id);
-        updateDoc(roomRef, { 'activePlan.meals': newMeals }).catch(error => {
-            append(mealToRemove, { shouldFocus: false }); 
-            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
+    try {
+        if (isProfessional && room) {
+            const roomRef = doc(firestore, 'rooms', room.id);
+            await updateDoc(roomRef, { activePlan: dataToUpdate });
+        } else if (!isProfessional && userProfile) {
+            const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
+            await setDoc(planRef, dataToUpdate);
+        }
+        toast({
+            title: "Refeição Removida",
+            description: "A refeição foi removida do seu plano.",
         });
-    } else if (!isProfessional && userProfile) {
-        const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
-        updateDoc(planRef, { meals: newMeals }).catch(error => {
-            append(mealToRemove, { shouldFocus: false });
-            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
-        });
+    } catch (error) {
+        append(mealToRemove, { shouldFocus: false }); // Revert on error
+        toast({ title: "Erro", description: "Não foi possível remover a refeição.", variant: 'destructive' });
     }
-
-    toast({
-        title: "Refeição Removida",
-        description: "A refeição foi removida do seu plano.",
-    });
-  };
+};
 
   const handleClearPlan = async () => {
     if (!isProfessional || !room || !firestore) return;
