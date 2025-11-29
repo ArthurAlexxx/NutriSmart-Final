@@ -1,8 +1,10 @@
 // sw.js
 
-const CACHE_NAME = 'nutrinea-cache-v3';
+const CACHE_NAME = 'nutrinea-cache-v4';
 const urlsToCache = [
   '/',
+  '/login',
+  '/register',
   '/manifest.json',
   // Adicione aqui outros assets estáticos importantes que você queira cachear
   // Ex: '/styles/main.css', '/images/logo.png', etc.
@@ -21,6 +23,11 @@ self.addEventListener('install', event => {
 
 // Evento de fetch: responde com o cache se disponível, senão busca na rede
 self.addEventListener('fetch', event => {
+  // Ignora requisições que não são GET ou de extensões do Chrome
+  if (event.request.method !== 'GET' || event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -29,16 +36,11 @@ self.addEventListener('fetch', event => {
           return response;
         }
 
-        // Somente faz cache de requisições http/https
-        if (!event.request.url.startsWith('http')) {
-            return fetch(event.request);
-        }
-
         // Se não está no cache, busca na rede
         return fetch(event.request).then(
           response => {
-            // Verifica se recebemos uma resposta válida
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+            // Verifica se recebemos uma resposta válida e se é um protocolo http/https
+            if(!response || response.status !== 200 || !['http', 'https'].includes(new URL(response.url).protocol.replace(':', ''))) {
               return response;
             }
 
