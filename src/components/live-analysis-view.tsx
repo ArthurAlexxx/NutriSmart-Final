@@ -2,14 +2,19 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeFoodInFrameAction } from '@/app/actions/ai-actions';
+import { saveAnalyzedMealAction } from '@/app/actions/meal-actions';
 import type { FrameAnalysisOutput } from '@/lib/ai-schemas';
 import { Button } from './ui/button';
-import { CameraOff, Zap, Flame, Rocket, Donut } from 'lucide-react';
+import { CameraOff, Zap, Flame, Rocket, Donut, Save } from 'lucide-react';
 import { FaBreadSlice } from 'react-icons/fa';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 
 
 interface Totals {
@@ -38,7 +43,11 @@ export default function LiveAnalysisView() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FrameAnalysisOutput | null>(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [selectedMealType, setSelectedMealType] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const getCameraPermission = useCallback(async () => {
     if (hasCameraPermission) return;
@@ -119,8 +128,35 @@ export default function LiveAnalysisView() {
   }, [analysisResult]);
 
 
+  const handleSaveMeal = async () => {
+      if (!user || !selectedMealType || !totals) return;
+      
+      setIsSaving(true);
+      try {
+          const result = await saveAnalyzedMealAction({
+              userId: user.uid,
+              mealType: selectedMealType,
+              totals: totals,
+              description: ingredients.join(', ') || 'Refeição da câmera',
+          });
+          if(result.success) {
+              toast({ title: 'Sucesso!', description: result.message });
+              setIsSaveModalOpen(false);
+              setSelectedMealType('');
+          } else {
+              throw new Error(result.message);
+          }
+      } catch (error: any) {
+          toast({ title: 'Erro ao Salvar', description: error.message, variant: 'destructive' });
+      } finally {
+        setIsSaving(false);
+      }
+  };
+
+
   return (
-    <div className="w-full h-full bg-black rounded-2xl relative flex items-center justify-center">
+    <>
+    <div className="w-full h-full bg-black rounded-2xl relative flex items-center justify-center overflow-hidden">
       <video ref={videoRef} className="w-full h-full object-cover rounded-2xl" autoPlay muted playsInline />
       <canvas ref={canvasRef} className="hidden" />
 
@@ -140,8 +176,9 @@ export default function LiveAnalysisView() {
 
        <div className="absolute top-4 right-4 z-20">
          {isAnalyzing && (
-            <div className="p-2 bg-primary/20 rounded-full animate-pulse">
+            <div className="p-3 bg-background/80 backdrop-blur-md rounded-full flex items-center gap-2 animate-pulse">
                 <Zap className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Analisando...</span>
             </div>
         )}
        </div>
@@ -149,26 +186,59 @@ export default function LiveAnalysisView() {
         <AnimatePresence>
             {analysisResult && analysisResult.items.length > 0 && (
                 <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 50, x: '-50%' }}
+                    animate={{ opacity: 1, y: 0, x: '-50%' }}
+                    exit={{ opacity: 0, y: 50, x: '-50%' }}
                     transition={{ duration: 0.5, ease: 'easeInOut' }}
-                    className="absolute bottom-4 left-4 right-4 z-20 p-4 bg-background/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl"
+                    className="absolute bottom-4 landscape:top-1/2 landscape:-translate-y-1/2 landscape:right-4 landscape:left-auto landscape:bottom-auto landscape:w-72 left-1/2 w-[calc(100%-2rem)] z-20 p-4 bg-background/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl"
                 >
                     <div className="mb-3">
                          <h3 className="font-semibold text-lg text-foreground">Análise do Prato</h3>
-                         <p className="text-sm text-muted-foreground">{ingredients.join(', ')}</p>
+                         <p className="text-sm text-muted-foreground line-clamp-2">{ingredients.join(', ')}</p>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-4 gap-3 mb-4">
                         <NutrientDisplay label="Calorias" value={totals.calories} icon={Flame} color='text-orange-500'/>
                         <NutrientDisplay label="Proteínas" value={totals.protein} icon={Rocket} color='text-blue-500'/>
                         <NutrientDisplay label="Carbos" value={totals.carbs} icon={FaBreadSlice} color='text-yellow-500'/>
                         <NutrientDisplay label="Gorduras" value={totals.fat} icon={Donut} color='text-pink-500'/>
                     </div>
+                    <Button onClick={() => setIsSaveModalOpen(true)} className="w-full">
+                        <Save className="mr-2 h-4 w-4" /> Salvar Refeição
+                    </Button>
                 </motion.div>
             )}
         </AnimatePresence>
     </div>
+    
+    <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Salvar Refeição Analisada</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                <p className="mb-2 text-sm font-medium">Selecione o tipo de refeição:</p>
+                <Select onValueChange={setSelectedMealType} value={selectedMealType}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Escolha o tipo da refeição" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="cafe-da-manha">Café da Manhã</SelectItem>
+                        <SelectItem value="almoco">Almoço</SelectItem>
+                        <SelectItem value="jantar">Jantar</SelectItem>
+                        <SelectItem value="lanche">Lanche</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>Cancelar</Button>
+                <Button onClick={handleSaveMeal} disabled={!selectedMealType || isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar e Salvar
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }

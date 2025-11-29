@@ -1,14 +1,12 @@
 
 'use server';
 
-import OpenAI from 'openai';
-import type { Totals } from '@/types/meal';
+import { db } from '@/lib/firebase/admin';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { Totals, MealData, MealEntry } from '@/types/meal';
 import { analyzeMealFromPhotoAction } from '@/app/actions/ai-actions';
 import type { AnalyzeMealOutput } from '@/lib/ai-schemas';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getLocalDateString } from '@/lib/date-utils';
 
 interface FoodItem {
   name: string;
@@ -29,75 +27,6 @@ interface GetNutritionalInfoResult {
 
 const defaultTotals: Totals = { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 };
 
-
-/**
- * Esta Server Action se comunica com a API da OpenAI
- * para obter os dados nutricionais de uma refeição.
- * 
- * @param data - Os dados da refeição enviados pelo formulário.
- * @returns Um objeto com os totais nutricionais ou uma mensagem de erro.
- */
-export async function getNutritionalInfo(data: AddMealFormData): Promise<GetNutritionalInfoResult> {
-    
-    if (!process.env.OPENAI_API_KEY) {
-        console.error("OpenAI API key não configurada.");
-        return { error: 'O serviço de IA não está configurado. A refeição será salva com valores padrão.', totals: defaultTotals };
-    }
-
-    try {
-        const formattedFoods = data.foods.map(food => `${food.portion}${food.unit} de ${food.name}`).join(', ');
-        
-        const prompt = `
-            Você é um assistente de nutrição altamente preciso. Sua tarefa é calcular as informações nutricionais totais para uma refeição descrita pelo usuário.
-
-            Analise a seguinte lista de alimentos e porções:
-            "${formattedFoods}"
-
-            Calcule os totais de calorias (kcal), proteínas (g), carboidratos (g), gorduras (g) e fibras (g) para a refeição inteira.
-            
-            Responda em um formato JSON estrito, sem nenhuma formatação adicional ou texto explicativo. O objeto principal deve se chamar "resultado".
-
-            Exemplo de saída para "100g de peito de frango e 150g de arroz branco":
-            {
-              "resultado": {
-                "calorias_kcal": 350,
-                "proteinas_g": 35,
-                "carboidratos_g": 45,
-                "gorduras_g": 3,
-                "fibras_g": 1
-              }
-            }
-        `;
-
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [{ role: "system", content: prompt }],
-            response_format: { type: "json_object" },
-            temperature: 0.1,
-        });
-
-        const resultText = response.choices[0].message.content;
-        if (!resultText) {
-            return { totals: defaultTotals, error: 'Não foi possível analisar os valores nutricionais. A refeição será salva com valores padrão.' };
-        }
-
-        const analysisResult = JSON.parse(resultText);
-
-        const totals: Totals = {
-            calorias: analysisResult.resultado.calorias_kcal || 0,
-            proteinas: analysisResult.resultado.proteinas_g || 0,
-            carboidratos: analysisResult.resultado.carboidratos_g || 0,
-            gorduras: analysisResult.resultado.gorduras_g || 0,
-            fibras: analysisResult.resultado.fibras_g || 0,
-        };
-        
-        return { totals };
-
-    } catch (error: any) {
-        console.error("[getNutritionalInfo] Falha Crítica na Server Action:", error);
-        return { error: error.message || 'Ocorreu um erro desconhecido ao processar sua refeição. A refeição será salva com valores padrão.', totals: defaultTotals };
-    }
-}
 
 /**
  * Analyzes a meal from a photo using OpenAI API.
@@ -125,4 +54,64 @@ export async function getNutritionalInfoFromPhoto(photoDataUri: string, mealType
       totals: defaultTotals,
     };
   }
+}
+
+interface SaveAnalyzedMealInput {
+    userId: string;
+    mealType: string;
+    totals: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+    };
+    description: string;
+}
+
+/**
+ * Saves a meal entry analyzed by the live analysis feature.
+ * @param input - The data from the analyzed meal.
+ * @returns An object indicating success or failure.
+ */
+export async function saveAnalyzedMealAction(input: SaveAnalyzedMealInput): Promise<{ success: boolean; message: string }> {
+    const { userId, mealType, totals, description } = input;
+
+    if (!userId || !mealType || !totals) {
+        return { success: false, message: "Dados insuficientes para salvar a refeição." };
+    }
+
+    try {
+        const mealData: MealData = {
+            alimentos: [{ 
+                name: description, 
+                portion: 1, 
+                unit: 'un',
+                calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0
+            }],
+            totais: {
+                calorias: totals.calories,
+                proteinas: totals.protein,
+                carboidratos: totals.carbs,
+                gorduras: totals.fat,
+                fibras: 0
+            },
+        };
+
+        const newMealEntry: Omit<MealEntry, 'id'> = {
+            userId: userId,
+            date: getLocalDateString(new Date()),
+            mealType: mealType,
+            mealData: mealData,
+            createdAt: serverTimestamp(),
+        };
+
+        const mealEntriesRef = collection(db, 'users', userId, 'meal_entries');
+        await addDoc(mealEntriesRef, newMealEntry);
+
+        return { success: true, message: "Refeição salva com sucesso no seu diário." };
+
+    } catch (error: any) {
+        console.error("[saveAnalyzedMealAction] Failed to save meal:", error);
+        return { success: false, message: error.message || "Ocorreu um erro ao salvar a refeição." };
+    }
 }
