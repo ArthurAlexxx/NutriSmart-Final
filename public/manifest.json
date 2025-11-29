@@ -1,13 +1,6 @@
 {
   "name": "Nutrinea",
   "short_name": "Nutrinea",
-  "id": "/",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
-  "description": "Sua plataforma de nutrição inteligente.",
-  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/android/android-launchericon-48-48.png",
@@ -32,36 +25,18 @@
     {
       "src": "/android/android-launchericon-192-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/android/android-launchericon-512-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "https://i.imgur.com/eWRrJp7.png",
-      "sizes": "1080x2340",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Diário Inteligente"
-    },
-    {
-      "src": "https://i.imgur.com/5u9b9sO.png",
-      "sizes": "1080x2340",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Análise de Desempenho"
-    },
-    {
-      "src": "https://i.imgur.com/tH03pNa.png",
-      "sizes": "1080x2340",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Chef Virtual com IA"
-    }
-  ]
+  "theme_color": "#72A159",
+  "background_color": "#F5F5DC",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }
