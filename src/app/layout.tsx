@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas. Transforme sua saúde com Nutrinea.',
   icons: {
     icon: 'https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/favicon.png?alt=media&token=2bd99125-4f93-4534-80ff-94dc62d8789b',
-  }
+  },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
@@ -42,6 +43,21 @@ export default function RootLayout({
           {children}
         </AppProvider>
         <Toaster />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                  }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
