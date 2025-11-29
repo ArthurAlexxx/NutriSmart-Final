@@ -3,7 +3,7 @@
   "short_name": "Nutrinea",
   "start_url": "/login",
   "scope": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#72A159",
   "description": "Sua plataforma de nutrição inteligente.",

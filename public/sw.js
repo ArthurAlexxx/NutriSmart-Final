@@ -1,7 +1,6 @@
 // public/sw.js
-const CACHE_NAME = 'nutrinea-cache-v12';
+const CACHE_NAME = 'nutrinea-cache-v13';
 
-// Apenas assets REAIS e estáticos vão no pré-cache
 const urlsToCache = [
   '/',
   '/manifest.json?v=2',
@@ -9,48 +8,37 @@ const urlsToCache = [
   '/icons/icon-512x512.png',
 ];
 
-// Instala o service worker
+// Instala o SW
 self.addEventListener('install', event => {
   console.log('SW instalando...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
-  self.skipWaiting(); // ativa mais rápido
+  self.skipWaiting();
 });
 
 // Ativa e limpa caches antigos
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys => Promise.all(
+      keys.map(key => key !== CACHE_NAME && caches.delete(key))
+    ))
   );
-  self.clients.claim(); // aplica a todos os clientes sem recarregar
+  self.clients.claim();
 });
 
-// Estratégia segura: Cache First APENAS para assets estáticos
+// Estratégia de fetch
 self.addEventListener('fetch', event => {
   const req = event.request;
 
-  // Ignora não-GET, API, extensões e chrome-extension
   if (
     req.method !== 'GET' ||
     !req.url.startsWith('http') ||
     req.url.includes('/api/') ||
     req.url.includes('chrome-extension')
-  ) {
-    return; // deixa o navegador cuidar
-  }
+  ) return;
 
-  // Network First para manifest para garantir que ele esteja sempre atualizado
+  // Network First para manifest
   if (req.url.includes('manifest.json')) {
     event.respondWith(
       fetch(req)
@@ -63,27 +51,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache First para todos os outros assets estáticos
+  // Cache First para todos os outros assets
   event.respondWith(
-    caches.match(req).then(cacheRes => {
-      // Se estiver no cache → retorna
-      if (cacheRes) return cacheRes;
-
-      // Se não, busca na rede e tenta salvar SE for seguro
-      return fetch(req).then(networkRes => {
-        // Cacheia apenas recursos básicos (do mesmo domínio) e bem-sucedidos
-        if (
-          networkRes &&
-          networkRes.status === 200 &&
-          networkRes.type === 'basic'
-        ) {
-          const resClone = networkRes.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(req, resClone);
-          });
-        }
-        return networkRes;
-      });
-    })
+    caches.match(req).then(cacheRes => cacheRes || fetch(req).then(networkRes => {
+      if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+        caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
+      }
+      return networkRes;
+    }))
   );
 });
