@@ -1,53 +1,60 @@
 {
   "name": "Nutrinea",
   "short_name": "Nutrinea",
-  "id": "/",
+  "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
-  "description": "Sua plataforma de nutrição inteligente.",
+  "background_color": "#F5F5DC",
+  "theme_color": "#A7D1AB",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://i.imgur.com/eWRrJp7.png",
+      "type": "image/png",
+      "sizes": "1080x2280",
+      "form_factor": "narrow",
+      "label": "Diário Inteligente"
+    },
+    {
+      "src": "https://i.imgur.com/tH03pNa.png",
+      "type": "image/png",
+      "sizes": "1080x2280",
+      "form_factor": "narrow",
+      "label": "Chef Virtual com IA"
+    },
+    {
+      "src": "https://i.imgur.com/sC5I5qY.png",
+      "type": "image/png",
+      "sizes": "1920x1080",
+      "form_factor": "wide",
+      "label": "Plano Alimentar Personalizado"
     }
   ]
 }
