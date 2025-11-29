@@ -15,7 +15,7 @@ export default function WaterIntakeSummary({ hydrationEntry, monthlyTotal, month
   if (monthlyTotal !== undefined && monthlyGoal !== undefined) {
       const progress = monthlyGoal > 0 ? Math.min((monthlyTotal / monthlyGoal) * 100, 100) : 0;
       return (
-        <Card className="shadow-sm rounded-2xl animate-fade-in">
+        <Card className="shadow-lg rounded-2xl animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Hidratação Total do Mês</CardTitle>
             <GlassWater className="h-5 w-5 text-primary" />
@@ -38,7 +38,7 @@ export default function WaterIntakeSummary({ hydrationEntry, monthlyTotal, month
   
   if (!hydrationEntry) {
     return (
-      <Card className="shadow-sm rounded-2xl animate-fade-in">
+      <Card className="shadow-lg rounded-2xl animate-fade-in">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Hidratação</CardTitle>
           <GlassWater className="h-5 w-5 text-primary" />
@@ -51,7 +51,7 @@ export default function WaterIntakeSummary({ hydrationEntry, monthlyTotal, month
   }
 
   return (
-    <Card className="shadow-sm rounded-2xl animate-fade-in">
+    <Card className="shadow-lg rounded-2xl animate-fade-in">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">Hidratação</CardTitle>
         <GlassWater className="h-5 w-5 text-primary" />

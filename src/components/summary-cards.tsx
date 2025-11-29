@@ -22,7 +22,7 @@ interface SummaryCardsProps {
 
 const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: string, value: string, unit: string, icon: React.ElementType, color: string, goal?: number | null }) => {
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl bg-card flex flex-col h-full">
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-2xl bg-card flex flex-col h-full">
             <CardContent className="p-4 flex flex-col justify-between flex-grow">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

@@ -17,7 +17,7 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onAddWater, o
   const progress = waterGoal > 0 ? Math.min((waterIntake / waterGoal) * 100, 100) : 0;
 
   return (
-    <Card className="shadow-sm rounded-2xl flex flex-col">
+    <Card className="shadow-lg rounded-2xl flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 font-semibold text-lg">
             <GlassWater className="h-5 w-5 text-primary" />

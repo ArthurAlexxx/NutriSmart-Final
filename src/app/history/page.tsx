@@ -144,7 +144,7 @@ export default function HistoryPage() {
             description="Navegue pelos dias para ver o detalhe de suas refeições."
         />
             
-        <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-100">
+        <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-100">
             <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
                 <CardTitle>Selecione um Dia</CardTitle>
                 <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
@@ -164,7 +164,7 @@ export default function HistoryPage() {
         ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
                 <div className="lg:col-span-8 space-y-6 sm:space-y-8">
-                    <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
+                    <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
                         <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
                              <CardTitle>Refeições de {getLocalDateString(selectedDate)}</CardTitle>
                              <CardDescription>

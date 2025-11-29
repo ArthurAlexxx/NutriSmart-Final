@@ -12,7 +12,7 @@ interface InsightsCardProps {
 
 export default function InsightsCard({ insights, isLoading }: InsightsCardProps) {
   return (
-    <Card className="shadow-sm rounded-2xl w-full bg-background animate-fade-in-down">
+    <Card className="shadow-lg rounded-2xl w-full bg-background animate-fade-in-down">
       <CardContent className='p-6'>
         {isLoading ? (
           <div className="flex items-center justify-center min-h-[100px] text-muted-foreground">

@@ -1,4 +1,4 @@
-
+// src/components/pro/plan-editor.tsx
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -412,7 +412,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                     </TabsList>
 
                     <TabsContent value="goals">
-                        <Card className="shadow-sm rounded-2xl">
+                        <Card className="shadow-lg rounded-2xl">
                             <CardHeader>
                                 <CardTitle>Objetivos de Peso</CardTitle>
                                 <CardDescription>Ajuste seus objetivos. Estes dados são essenciais para que a IA possa gerar um plano alimentar eficaz e personalizado para você.</CardDescription>
@@ -449,7 +449,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                     </TabsContent>
 
                     <TabsContent value="meals">
-                        <Card className="shadow-sm rounded-2xl">
+                        <Card className="shadow-lg rounded-2xl">
                              <CardHeader>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
@@ -505,7 +505,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                             </CardContent>
                         </Card>
                         {isProfessional && (
-                             <Card className="mt-6 shadow-sm rounded-2xl">
+                             <Card className="mt-6 shadow-lg rounded-2xl">
                                 <CardHeader>
                                      <div className="flex items-center gap-3">
                                         <div className="flex-1">
@@ -572,4 +572,3 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     </>
   );
 }
-

@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from './ui/button';
 
 const PlanMealItem = ({ meal }: { meal: MealPlanItem }) => (
-    <div className="rounded-2xl border p-4 space-y-4 relative bg-card shadow-sm">
+    <div className="rounded-2xl border p-4 space-y-4 relative bg-card shadow-lg">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             <div>
                 <p className="text-sm font-medium text-muted-foreground">Tipo de Refeição</p>
@@ -28,7 +28,7 @@ const PlanMealItem = ({ meal }: { meal: MealPlanItem }) => (
 );
 
 const InfoCard = ({ icon: Icon, title, value, unit, color }: { icon: React.ElementType, title: string, value: number, unit: string, color: string }) => (
-  <div className="flex items-center gap-4 rounded-2xl border p-4 bg-card shadow-sm">
+  <div className="flex items-center gap-4 rounded-2xl border p-4 bg-card shadow-lg">
     <div className={`flex items-center justify-center h-12 w-12 rounded-full ${color}`}>
       <Icon className="h-6 w-6 text-white" />
     </div>
@@ -42,7 +42,7 @@ const InfoCard = ({ icon: Icon, title, value, unit, color }: { icon: React.Eleme
 );
 
 const EmptyPlanState = () => (
-    <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in border-dashed mt-8">
+    <Card className="max-w-2xl mx-auto shadow-lg rounded-2xl animate-fade-in border-dashed mt-8">
         <CardHeader className="text-center p-8">
             <Soup className="h-12 w-12 text-primary mx-auto mb-4" />
             <CardTitle className="text-2xl">Nenhum Plano Alimentar Ativo</CardTitle>

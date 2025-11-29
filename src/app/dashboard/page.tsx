@@ -247,13 +247,13 @@ export default function DashboardPage() {
                 <div className="lg:col-span-2 space-y-8">
                      <Collapsible open={isAddMealFormOpen} onOpenChange={setAddMealFormOpen}>
                         <CollapsibleContent>
-                           <Card className="shadow-sm rounded-2xl w-full mb-8">
+                           <Card className="shadow-lg rounded-2xl w-full mb-8">
                              {user && <InlineAddMealForm userId={user.uid} onMealAdded={() => setAddMealFormOpen(false)} />}
                            </Card>
                         </CollapsibleContent>
                      </Collapsible>
                     
-                    <Card className="shadow-sm rounded-2xl w-full">
+                    <Card className="shadow-lg rounded-2xl w-full">
                         <CardHeader>
                             <CardTitle>Refeições de Hoje</CardTitle>
                         </CardHeader>

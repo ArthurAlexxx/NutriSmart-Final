@@ -39,7 +39,7 @@ export default function RoomCard({ room, professionalId }: RoomCardProps) {
   const creationDate = room.createdAt?.toDate ? format(room.createdAt.toDate(), "dd 'de' MMM, yyyy", { locale: ptBR }) : 'Data indisponível';
 
   return (
-    <Card className="relative flex flex-col shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl animate-fade-in">
+    <Card className="relative flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-2xl animate-fade-in">
         {hasUnreadMessages && (
             <div className="absolute top-2 right-2 z-10 p-2 bg-primary rounded-full animate-pulse">
               <MessageSquare className="h-4 w-4 text-primary-foreground" />

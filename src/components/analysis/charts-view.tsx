@@ -52,7 +52,7 @@ export default function ChartsView({ caloriesData, hydrationData, weightData }: 
   const selectedChartInfo = chartOptions.find(opt => opt.value === activeChart)!;
 
   return (
-    <Card className="shadow-sm rounded-2xl w-full overflow-hidden animate-fade-in">
+    <Card className="shadow-lg rounded-2xl w-full overflow-hidden animate-fade-in">
         <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>

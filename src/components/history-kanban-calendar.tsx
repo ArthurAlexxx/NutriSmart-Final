@@ -36,7 +36,7 @@ export default function HistoryKanbanCalendar({ selectedDate, onDateSelect }: Hi
   }
 
   return (
-    <Card className="shadow-sm rounded-2xl p-4 w-full">
+    <Card className="shadow-lg rounded-2xl p-4 w-full">
         <div className="flex items-center justify-between">
             <Button variant="outline" size="icon" onClick={handlePrev}>
                 <ChevronLeft className="h-5 w-5" />

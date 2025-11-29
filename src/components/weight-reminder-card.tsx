@@ -39,7 +39,7 @@ export default function WeightReminderCard({ currentWeight, onWeightSubmit }: We
   };
 
   return (
-    <Card className="shadow-sm rounded-2xl animate-fade-in border-primary/20 bg-primary/5">
+    <Card className="shadow-lg rounded-2xl animate-fade-in border-primary/20 bg-primary/5">
         <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
                 <Weight className="h-6 w-6 text-primary" />
