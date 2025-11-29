@@ -1,3 +1,4 @@
+
 // src/components/live-analysis-view.tsx
 'use client';
 
@@ -12,7 +13,7 @@ import { CameraOff, Zap, Flame, Rocket, Donut, Save, AlertTriangle } from 'lucid
 import { FaBreadSlice } from 'react-icons/fa';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 
@@ -44,7 +45,7 @@ export default function LiveAnalysisView() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FrameAnalysisOutput | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isSaveSheetOpen, setIsSaveSheetOpen] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -144,7 +145,7 @@ export default function LiveAnalysisView() {
           });
           if(result.success) {
               toast({ title: 'Sucesso!', description: result.message });
-              setIsSaveModalOpen(false);
+              setIsSaveSheetOpen(false);
               setSelectedMealType('');
           } else {
               throw new Error(result.message);
@@ -183,7 +184,7 @@ export default function LiveAnalysisView() {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="absolute top-12 left-4 z-20 p-2 text-xs bg-destructive/80 text-destructive-foreground rounded-lg flex items-center gap-2"
+                className="absolute top-12 left-4 right-4 z-20 p-2 text-xs bg-destructive/80 text-destructive-foreground rounded-lg flex items-center justify-center gap-2"
             >
                 <AlertTriangle className="h-4 w-4" />
                 <span>Análise falhou. Tente uma imagem mais nítida.</span>
@@ -221,7 +222,7 @@ export default function LiveAnalysisView() {
                         <NutrientDisplay label="Carbos" value={totals.carbs} icon={FaBreadSlice} color='text-yellow-500'/>
                         <NutrientDisplay label="Gorduras" value={totals.fat} icon={Donut} color='text-pink-500'/>
                     </div>
-                    <Button onClick={() => setIsSaveModalOpen(true)} className="w-full">
+                    <Button onClick={() => setIsSaveSheetOpen(true)} className="w-full">
                         <Save className="mr-2 h-4 w-4" /> Salvar Refeição
                     </Button>
                 </motion.div>
@@ -229,13 +230,14 @@ export default function LiveAnalysisView() {
         </AnimatePresence>
     </div>
     
-    <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Salvar Refeição Analisada</DialogTitle>
-            </DialogHeader>
+    <Sheet open={isSaveSheetOpen} onOpenChange={setIsSaveSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+            <SheetHeader className="text-left">
+                <SheetTitle>Salvar Refeição Analisada</SheetTitle>
+                 <SheetDescription>Selecione o tipo de refeição para registrar em seu diário.</SheetDescription>
+            </SheetHeader>
             <div className="py-4">
-                <p className="mb-2 text-sm font-medium">Selecione o tipo de refeição:</p>
+                <p className="mb-2 text-sm font-medium">Tipo de refeição</p>
                 <Select onValueChange={setSelectedMealType} value={selectedMealType}>
                     <SelectTrigger>
                         <SelectValue placeholder="Escolha o tipo da refeição" />
@@ -248,15 +250,14 @@ export default function LiveAnalysisView() {
                     </SelectContent>
                 </Select>
             </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>Cancelar</Button>
-                <Button onClick={handleSaveMeal} disabled={!selectedMealType || isSaving}>
+            <SheetFooter>
+                <Button onClick={handleSaveMeal} disabled={!selectedMealType || isSaving} className="w-full">
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Confirmar e Salvar
                 </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+            </SheetFooter>
+        </SheetContent>
+    </Sheet>
     </>
   );
 }
