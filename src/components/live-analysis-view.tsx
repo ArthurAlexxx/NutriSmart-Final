@@ -8,7 +8,7 @@ import { analyzeFoodInFrameAction } from '@/app/actions/ai-actions';
 import { saveAnalyzedMealAction } from '@/app/actions/meal-actions';
 import type { FrameAnalysisOutput } from '@/lib/ai-schemas';
 import { Button } from './ui/button';
-import { CameraOff, Zap, Flame, Rocket, Donut, Save } from 'lucide-react';
+import { CameraOff, Zap, Flame, Rocket, Donut, Save, AlertTriangle } from 'lucide-react';
 import { FaBreadSlice } from 'react-icons/fa';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ export default function LiveAnalysisView() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FrameAnalysisOutput | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -88,8 +89,10 @@ export default function LiveAnalysisView() {
     try {
       const result = await analyzeFoodInFrameAction({ frameDataUri });
       setAnalysisResult(result);
+      setLastError(null); // Clear error on success
     } catch (error: any) {
       console.error("Frame analysis failed:", error);
+      setLastError(error.message || 'A análise falhou. Tente novamente.');
       // Don't toast on every error to avoid spamming the user
     } finally {
       setIsAnalyzing(false);
@@ -173,6 +176,21 @@ export default function LiveAnalysisView() {
         <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
         <span className="font-mono text-sm font-bold text-white">LIVE</span>
       </div>
+      
+       <AnimatePresence>
+        {lastError && (
+             <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-12 left-4 z-20 p-2 text-xs bg-destructive/80 text-destructive-foreground rounded-lg flex items-center gap-2"
+            >
+                <AlertTriangle className="h-4 w-4" />
+                <span>Análise falhou. Tente uma imagem mais nítida.</span>
+            </motion.div>
+        )}
+       </AnimatePresence>
+
 
        <div className="absolute top-4 right-4 z-20">
          {isAnalyzing && (
