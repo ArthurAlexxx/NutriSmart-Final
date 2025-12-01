@@ -1,45 +1,39 @@
 // src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
-import { Badge } from './badge';
+import { Badge } from '@/components/ui/badge';
 import React from 'react';
 
 const metrics = [
     {
         icon: TrendingUp,
-        value: 10,
-        suffix: 'k+',
+        value: '10k+',
         label: 'Usuários Ativos',
     },
     {
         icon: Soup,
-        value: 50,
-        suffix: 'k+',
+        value: '50k+',
         label: 'Receitas Criadas com IA',
     },
     {
         icon: Award,
-        value: 4.8,
-        suffix: '/5',
-        decimals: 1,
+        value: '4.8/5',
         label: 'Nota na App Store',
     },
     {
         icon: Smile,
-        value: 98,
-        suffix: '%',
+        value: '98%',
         label: 'Satisfação dos Clientes',
     },
 ];
 
-const MetricItem = ({ icon: Icon, value, suffix, decimals = 0, label }: (typeof metrics)[0]) => (
+const MetricItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: string, label: string }) => (
     <div className="text-center">
         <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon className="h-8 w-8" />
         </div>
         <p className="text-4xl md:text-5xl font-bold text-primary">
-            <span>{value.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</span>
-            {suffix}
+            {value}
         </p>
         <p className="text-muted-foreground mt-1">{label}</p>
     </div>
