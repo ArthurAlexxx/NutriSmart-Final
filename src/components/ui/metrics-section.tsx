@@ -6,12 +6,15 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from './skeleton';
 import { Badge } from './badge';
 
-// Dynamic import for CountUp to ensure it only runs on the client side
-// FIX: We need to resolve the named export 'CountUp' from the module.
-const CountUp = dynamic(() => import('react-countup').then(mod => mod.CountUp), {
+// Dynamic import for CountUp to ensure it only runs on the client side.
+// The correct syntax for a named export is to resolve the promise and return the component.
+const CountUp = dynamic(
+  () => import('react-countup').then((mod) => mod.CountUp),
+  {
     ssr: false,
     loading: () => <span className="text-4xl md:text-5xl font-bold text-primary">0</span>,
-});
+  }
+);
 
 
 const metrics = [
