@@ -1,17 +1,13 @@
 
 // src/app/layout.tsx
-'use client'; 
-
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import InstallPWAButton from '@/components/install-pwa-button';
-import { useUser } from '@/firebase';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Suspense } from 'react';
+import RootLayoutContent from './layout-content'; // Importando o novo componente
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -25,32 +21,16 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
-function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isUserLoading } = useUser();
-  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  
-  // Display a global loader ONLY while the initial user state is being verified
-  // This avoids flashes of content or incorrect redirects.
-  if (isUserLoading || !isMounted) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {children}
-      <InstallPWAButton />
-    </>
-  );
-}
-
+// A metadata estática continua importante para SEO e para o primeiro carregamento
+export const metadata: Metadata = {
+  title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
+  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
+};
 
 export default function RootLayout({
   children,
@@ -60,10 +40,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
       <head>
-        <title>Nutrinea | Nutrição Inteligente, Vida Saudável</title>
-        <meta name="description" content="Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas." />
-        <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="manifest" href="/manifest.json?v=14" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -72,11 +48,7 @@ export default function RootLayout({
       </head>
       <body className='h-full'>
         <AppProvider>
-          <Suspense fallback={
-            <div className="flex h-screen w-full items-center justify-center">
-              <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            </div>
-          }>
+          <Suspense>
             <RootLayoutContent>
                 {children}
             </RootLayoutContent>
