@@ -2,20 +2,8 @@
 // src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { Skeleton } from './skeleton';
+import CountUp from 'react-countup';
 import { Badge } from './badge';
-
-// Dynamic import for CountUp to ensure it only runs on the client side.
-// The correct syntax for a named export is to resolve the promise and return the component.
-const CountUp = dynamic(
-  () => import('react-countup').then((mod) => mod.CountUp),
-  {
-    ssr: false,
-    loading: () => <span className="text-4xl md:text-5xl font-bold text-primary">0</span>,
-  }
-);
-
 
 const metrics = [
     {
