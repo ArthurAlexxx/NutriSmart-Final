@@ -1,13 +1,10 @@
-
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
-import InstallPWAButton from '@/components/install-pwa-button';
-import { Suspense } from 'react';
-import RootLayoutContent from './layout-content'; // Importando o novo componente
+import RootLayoutContent from './layout-content';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -21,8 +18,6 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
-
-// A metadata estática continua importante para SEO e para o primeiro carregamento
 export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
@@ -40,19 +35,17 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
       <head>
-        <link rel="manifest" href="/manifest.json?v=14" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#2E4C22" />
+        <meta name="theme-color" content="#72A159" />
       </head>
       <body className='h-full'>
         <AppProvider>
-          <Suspense>
             <RootLayoutContent>
                 {children}
             </RootLayoutContent>
-          </Suspense>
         </AppProvider>
         <Toaster />
         <script

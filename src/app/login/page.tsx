@@ -1,12 +1,10 @@
-
 // src/app/login/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +15,6 @@ import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
-import { Separator } from '@/components/ui/separator';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const formSchema = z.object({
@@ -68,7 +65,7 @@ export default function LoginPage() {
           title: "Login bem-sucedido!",
           description: "Redirecionando para o seu painel...",
       });
-      
+      // The redirection is handled by RootLayoutContent
     } catch (error: any) {
       setLoading(false);
       let description = "Ocorreu um erro desconhecido. Por favor, tente novamente.";
@@ -78,7 +75,6 @@ export default function LoginPage() {
           description = "O formato do e-mail é inválido.";
       } else {
           console.error("Login Error:", error);
-          description = "Falha no login. Verifique suas credenciais e tente novamente.";
       }
       toast({
         title: "Erro no Login",
@@ -99,7 +95,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in the provider and layout will handle profile creation and redirection.
+      // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
     } catch (error: any) {
       setLoading(false);
       console.error("Google Sign-In Error", error);
@@ -111,14 +107,6 @@ export default function LoginPage() {
     }
   };
   
-  if (isUserLoading) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-      );
-  }
-
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
@@ -132,7 +120,8 @@ export default function LoginPage() {
         
         <div className='space-y-4'>
             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
-                <FaGoogle className="mr-2 h-4 w-4"/> Continuar com Google
+                {isUserLoading && loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4"/>}
+                Continuar com Google
             </Button>
             
              <div className="relative">

@@ -1,9 +1,6 @@
-
 // src/app/page.tsx
 'use client';
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { HeroSection } from '@/components/ui/hero-4';
@@ -12,8 +9,6 @@ import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { CTASection } from '@/components/ui/cta-section';
 import { Pricing } from '@/components/ui/pricing';
 import MetricsSection from '@/components/ui/metrics-section';
-import { useUser } from '@/firebase';
-import { Loader2 } from 'lucide-react';
 
 const avatarData = [
   {
@@ -34,26 +29,6 @@ const avatarData = [
 ];
 
 export default function Home() {
-  const { isUserLoading } = useUser();
-  const [isPwa, setIsPwa] = React.useState(false);
-
-  useEffect(() => {
-    // This check only runs on the client side
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsPwa(true);
-    }
-  }, []);
-  
-  if (isUserLoading || isPwa) {
-    // If it's a PWA, the layout will handle the redirection.
-    // If user state is loading, show a loader to prevent flashes of the landing page.
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-dvh flex-col bg-background font-sans overflow-x-hidden">
       <Header />
