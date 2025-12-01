@@ -40,7 +40,7 @@ export default function Home() {
 
   useEffect(() => {
     // This check only runs on the client side
-    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches;
+    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
     setIsPwa(isPwaMode);
     setIsCheckingPwa(false);
 
