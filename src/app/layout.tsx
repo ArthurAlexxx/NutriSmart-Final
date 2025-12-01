@@ -2,7 +2,7 @@
 // src/app/layout.tsx
 'use client'; 
 
-import type { Viewport } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -25,32 +25,25 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
-const staticMetadata = {
-  title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
-  description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
-};
-
-export const viewport: Viewport = {
-  themeColor: '#72A159',
-};
-
-
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, userProfile, isUserLoading, isAdmin } = useUser();
   const [isPwa, setIsPwa] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // This check only runs on the client side
+    setIsMounted(true);
+    // This check only runs on the client side after mounting
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsPwa(true);
     }
   }, []);
 
   useEffect(() => {
-    // Don't do anything while loading
-    if (isUserLoading) return;
+    // Wait until the component is mounted to avoid hydration errors
+    // and until user loading is complete
+    if (!isMounted || isUserLoading) return;
 
     const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
 
@@ -70,7 +63,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
       }
     }
     
-    // PWA specific logic: if installed and not on an auth page, force to login/dashboard flow.
+    // PWA specific logic: if installed and on the landing page, force to login/dashboard flow.
     if(isPwa && pathname === '/') {
         if(user) {
              const destination = isAdmin ? '/admin' : (userProfile?.profileType === 'professional' ? '/pro/patients' : '/dashboard');
@@ -80,10 +73,10 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
         }
     }
 
-  }, [isUserLoading, user, userProfile, pathname, router, isAdmin, isPwa]);
+  }, [isMounted, isUserLoading, user, userProfile, pathname, router, isAdmin, isPwa]);
 
   // Display a global loader ONLY while the initial user state is being verified
-  if (isUserLoading) {
+  if (isUserLoading || !isMounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -108,14 +101,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
       <head>
-        <title>{staticMetadata.title}</title>
-        <meta name="description" content={staticMetadata.description} />
+        <title>Nutrinea | Nutrição Inteligente, Vida Saudável</title>
+        <meta name="description" content="Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas." />
         <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="manifest" href="/manifest.json?v=13" />
+        <link rel="manifest" href="/manifest.json?v=14" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#2E4C22" />
       </head>
       <body className='h-full'>
         <AppProvider>
