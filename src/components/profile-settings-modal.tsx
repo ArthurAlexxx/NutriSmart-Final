@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
@@ -25,6 +25,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Separator } from './ui/separator';
+import { usePWA } from '@/context/pwa-context';
 
 
 const profileFormSchema = z.object({
@@ -39,7 +40,7 @@ const profileFormSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-type NavItem = 'personal' | 'sharing' | 'subscription' | 'advanced';
+type NavItem = 'personal' | 'sharing' | 'subscription' | 'install';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -65,6 +66,7 @@ const NavButton = ({ active, onClick, icon: Icon, label, variant = 'ghost' }: { 
 export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile, userId }: ProfileSettingsModalProps) {
   const { toast } = useToast();
   const { onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useUser();
+  const { isInstallable, promptToInstall } = usePWA();
   const auth = useAuth();
   const router = useRouter();
 
@@ -258,6 +260,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
+    { id: 'install', label: 'Instalar Aplicativo', icon: Download, visible: isInstallable },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
@@ -424,6 +427,23 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     </CardContent>
                 </Card>
             );
+        case 'install':
+            return (
+                <Card className="w-full shadow-none border-none">
+                    <CardHeader>
+                        <CardTitle>Instalar Aplicativo</CardTitle>
+                        <CardDescription>
+                            Instale o Nutrinea em seu dispositivo para uma experiência mais rápida e integrada, como um aplicativo nativo.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={promptToInstall} className="w-full">
+                            <Download className="mr-2 h-4 w-4" />
+                            Instalar no Dispositivo
+                        </Button>
+                    </CardContent>
+                </Card>
+            );
         default: return null;
     }
   }
@@ -446,7 +466,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     onClick={() => setActiveTab(item.id as NavItem)}
                     icon={item.icon}
                     label={item.label}
-                    variant={item.id === 'advanced' ? 'destructive' : 'ghost'}
                  />
             ))}
             <div className='flex-1 sm:hidden'></div>
