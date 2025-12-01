@@ -64,7 +64,7 @@ export default function InstallPWAButton() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-6 left-6 z-[200]"
         >
             <div className="relative bg-background border shadow-xl rounded-2xl p-4 flex items-center gap-4">
                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
