@@ -2,7 +2,7 @@
 
 import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import InstallPWAButton from '@/components/install-pwa-button';
 
@@ -21,10 +21,9 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     
     if (user) {
       // User is logged in.
-      // If trying to access a public route that is ONLY for unauthenticated users, redirect.
       const authRoutes = ['/login', '/register', '/forgot-password'];
       if (authRoutes.includes(pathname)) {
-        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/dashboard' : '/dashboard';
+        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.replace(targetDashboard);
       }
     } else {

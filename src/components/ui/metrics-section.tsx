@@ -2,6 +2,7 @@
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
 import React from 'react';
+import { Badge } from "@/components/ui/badge";
 
 const metrics = [
     {
@@ -43,7 +44,7 @@ export default function MetricsSection() {
         <section className="w-full py-20 lg:py-24 bg-secondary/30">
             <div className="container mx-auto">
                  <div className="text-center max-w-3xl mx-auto mb-16">
-                     <div className="mb-4 inline-block border border-primary text-primary px-3 py-1 rounded-full text-sm font-semibold">Resultados</div>
+                     <Badge variant="outline" className="mb-4">Resultados</Badge>
                     <h2 className="text-3xl font-bold md:text-4xl font-heading">Nossos números falam por nós</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
                         Estamos orgulhosos do impacto que geramos na vida de nossos usuários e da confiança que construímos.

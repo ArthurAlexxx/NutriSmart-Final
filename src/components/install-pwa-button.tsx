@@ -66,11 +66,11 @@ export default function InstallPWAButton() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="fixed bottom-6 right-6 z-50"
         >
-            <div className="relative bg-background border shadow-xl rounded-2xl p-4 pr-12 flex items-center gap-4">
+            <div className="relative bg-background border shadow-xl rounded-2xl p-4 flex items-center gap-4">
                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Download className="w-6 h-6 text-primary" />
                 </div>
-                <div>
+                <div className='pr-8'>
                     <h3 className="font-semibold text-foreground">Instalar Aplicativo</h3>
                     <p className="text-sm text-muted-foreground">Adicione à sua tela inicial para uma melhor experiência.</p>
                 </div>
