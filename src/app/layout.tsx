@@ -1,4 +1,3 @@
-
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
@@ -19,7 +18,6 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
-// A metadata estática continua importante para SEO e para o primeiro carregamento
 export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
