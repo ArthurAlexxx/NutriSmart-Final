@@ -12,14 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   email: z.string().email('E-mail inválido.'),
   password: z.string().min(1, 'A senha é obrigatória.'),
+  rememberMe: z.boolean().default(false).optional(),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -48,6 +51,7 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
+      rememberMe: true,
     },
   });
 
@@ -60,6 +64,8 @@ export default function LoginPage() {
     }
 
     try {
+      const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistence);
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
           title: "Login bem-sucedido!",
@@ -94,6 +100,7 @@ export default function LoginPage() {
 
     const provider = new GoogleAuthProvider();
     try {
+      await setPersistence(auth, browserLocalPersistence); // Always remember Google users
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
     } catch (error: any) {
@@ -136,7 +143,7 @@ export default function LoginPage() {
             </div>
 
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="email"
@@ -155,15 +162,7 @@ export default function LoginPage() {
                     name="password"
                     render={({ field }) => (
                     <FormItem>
-                        <div className="flex justify-between items-center">
-                            <FormLabel>Senha</FormLabel>
-                            <Link
-                                href="/forgot-password"
-                                className="text-xs font-semibold text-primary hover:underline"
-                            >
-                                Esqueceu a senha?
-                            </Link>
-                        </div>
+                         <FormLabel>Senha</FormLabel>
                         <FormControl>
                         <Input type="password" placeholder="Sua senha" {...field} />
                         </FormControl>
@@ -171,7 +170,30 @@ export default function LoginPage() {
                     </FormItem>
                     )}
                 />
-                <Button type="submit" className="w-full" disabled={loading || isUserLoading}>
+                 <div className="flex items-center justify-between">
+                    <FormField
+                      control={form.control}
+                      name="rememberMe"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <Label className="font-normal" htmlFor="rememberMe">Lembrar-me</Label>
+                        </FormItem>
+                      )}
+                    />
+                     <Link
+                        href="/forgot-password"
+                        className="text-xs font-semibold text-primary hover:underline"
+                    >
+                        Esqueceu a senha?
+                    </Link>
+                </div>
+                <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
                     {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Entrar
                 </Button>

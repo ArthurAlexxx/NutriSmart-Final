@@ -17,24 +17,30 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   }, []);
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Aguarde o carregamento do estado do usuário
+    if (isUserLoading || !isClient) {
+      return; // Aguarde o carregamento do estado do usuário e a montagem do cliente
     }
 
     const publicRoutes = ['/login', '/register', '/forgot-password', '/pricing', '/about', '/careers', '/press', '/terms', '/privacy'];
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
 
-    if (user && isAuthRoute) {
-      // Usuário logado tentando acessar uma página de autenticação
-      const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
-      router.replace(targetDashboard);
-    } else if (!user && !isPublicRoute) {
-      // Usuário deslogado tentando acessar uma página protegida
-      router.replace('/login');
+    if (user) {
+      // Usuário está logado
+      if (isAuthRoute) {
+        // Se estiver em uma página de autenticação, redirecione para o dashboard apropriado
+        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/dashboard' : '/dashboard';
+        router.replace(targetDashboard);
+      }
+    } else {
+      // Usuário não está logado
+      if (!isPublicRoute) {
+        // Se estiver tentando acessar uma página protegida, redirecione para o login
+        router.replace('/login');
+      }
     }
 
-  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus]);
+  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isClient]);
   
   if (isUserLoading || !isClient) {
     return (

@@ -1,8 +1,6 @@
-
 // src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
-import CountUp from 'react-countup';
 import { Badge } from './badge';
 
 const metrics = [
@@ -39,7 +37,7 @@ const MetricItem = ({ icon: Icon, value, suffix, decimals = 0, label }: typeof m
             <Icon className="h-8 w-8" />
         </div>
         <p className="text-4xl md:text-5xl font-bold text-primary">
-            <CountUp end={value} duration={3} decimals={decimals} enableScrollSpy scrollSpyOnce />
+            <span>{value.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</span>
             {suffix}
         </p>
         <p className="text-muted-foreground mt-1">{label}</p>
