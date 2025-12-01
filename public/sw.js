@@ -1,11 +1,12 @@
 // public/sw.js
 const CACHE_NAME = 'nutrinea-cache-v14';
 
+// Apenas assets REAIS e estáticos vão no pré-cache
 const urlsToCache = [
   '/',
-  '/manifest.json?v=2', // A query string força a revalidação
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/manifest.json',
+  '/icons/icon-192x192.png?v=1',
+  '/icons/icon-512x512.png?v=1',
 ];
 
 // Instala o service worker
@@ -16,7 +17,7 @@ self.addEventListener('install', event => {
       return cache.addAll(urlsToCache);
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // ativa mais rápido
 });
 
 // Ativa e limpa caches antigos
@@ -32,78 +33,70 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // aplica a todos os clientes sem recarregar
 });
 
-// Estratégia de fetch segura
+// Estratégia de fetch
 self.addEventListener('fetch', event => {
   const req = event.request;
 
-  // Ignora requisições que não devem ser cacheadas
+  // Ignora não-GET, API, extensões e chrome-extension
   if (
     req.method !== 'GET' ||
     !req.url.startsWith('http') ||
     req.url.includes('/api/') ||
     req.url.includes('chrome-extension')
   ) {
-    return; // Deixa o navegador cuidar
+    return; // deixa o navegador cuidar
   }
 
-  // Estratégia "Network First" para o manifest.json
-  // Garante que o app sempre tenha as configurações mais recentes.
+  // Network First para manifest para garantir que esteja sempre atualizado
   if (req.url.includes('manifest.json')) {
     event.respondWith(
       fetch(req)
         .then(networkRes => {
-          const resClone = networkRes.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
+          caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
           return networkRes;
         })
-        .catch(() => caches.match(req)) // Fallback para o cache se a rede falhar
+        .catch(() => caches.match(req))
     );
     return;
   }
-  
-  // Estratégia "Stale-While-Revalidate" para as páginas HTML (rotas do Next)
-  // Serve rápido do cache, mas busca uma nova versão em segundo plano.
-  if (req.headers.get('accept').includes('text/html')) {
+
+  // Stale-While-Revalidate para o HTML principal
+  if (req.mode === 'navigate') {
     event.respondWith(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.match(req).then(cachedResponse => {
-                const fetchedResponsePromise = fetch(req).then(networkResponse => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        cache.put(req, networkResponse.clone());
-                    }
-                    return networkResponse;
-                }).catch(() => cachedResponse); // Se a rede falhar, mantém o cache
-
-                return cachedResponse || fetchedResponsePromise;
-            });
-        })
+      caches.open(CACHE_NAME).then(cache => {
+        // Tenta pegar da rede primeiro para ter o conteúdo mais fresco
+        return fetch(req)
+          .then(networkResponse => {
+            // Se bem-sucedido, atualiza o cache e retorna a resposta da rede
+            if (networkResponse.status === 200) {
+              cache.put(req, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Se a rede falhar, retorna o que estiver no cache
+            return cache.match(req);
+          });
+      })
     );
     return;
   }
 
-  // Estratégia "Cache First" para todos os outros assets estáticos (imagens, fontes, etc.)
+  // Cache First para todos os outros assets estáticos
   event.respondWith(
-    caches.match(req).then(cacheRes => {
-      // Se estiver no cache, retorna do cache
-      if (cacheRes) return cacheRes;
-
-      // Se não, busca na rede, salva no cache e retorna
-      return fetch(req).then(networkRes => {
-        if (
-          networkRes &&
-          networkRes.status === 200 &&
-          networkRes.type === 'basic' // Cacheia apenas assets do mesmo domínio
-        ) {
-          const resClone = networkRes.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(req, resClone);
-          });
-        }
-        return networkRes;
-      });
-    })
+    caches.match(req).then(cacheRes => cacheRes || fetch(req).then(networkRes => {
+      // Condição de segurança para cachear apenas respostas válidas
+      if (
+        networkRes &&
+        networkRes.status === 200 &&
+        networkRes.type === 'basic'
+      ) {
+        caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
+      }
+      return networkRes;
+    }))
   );
 });
