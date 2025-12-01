@@ -1,3 +1,4 @@
+
 // src/app/login/page.tsx
 'use client';
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -52,9 +53,6 @@ export default function LoginPage() {
       password: '',
     },
   });
-  
-  // A lógica de redirecionamento foi movida para o layout principal (RootLayoutContent)
-  // para centralizar a lógica e evitar loops.
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -66,21 +64,21 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // O useEffect no layout cuidará do redirecionamento.
       toast({
           title: "Login bem-sucedido!",
           description: "Redirecionando para o seu painel...",
       });
       
     } catch (error: any) {
-      setLoading(false); // Stop loading on error
+      setLoading(false);
       let description = "Ocorreu um erro desconhecido. Por favor, tente novamente.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = "E-mail ou senha inválidos.";
       } else if (error.code === 'auth/invalid-email') {
           description = "O formato do e-mail é inválido.";
       } else {
-          description = error.message;
+          console.error("Login Error:", error);
+          description = "Falha no login. Verifique suas credenciais e tente novamente.";
       }
       toast({
         title: "Erro no Login",
@@ -101,7 +99,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // O onAuthStateChanged listener no provider cuidará da criação do perfil e o layout cuidará do redirecionamento.
+      // The onAuthStateChanged listener in the provider and layout will handle profile creation and redirection.
     } catch (error: any) {
       setLoading(false);
       console.error("Google Sign-In Error", error);
@@ -113,9 +111,7 @@ export default function LoginPage() {
     }
   };
   
-  // Se o usuário já estiver logado, o layout principal irá redirecioná-lo.
-  // Mostramos o loader enquanto isso para evitar que a página de login pisque na tela.
-  if (isUserLoading || user) {
+  if (isUserLoading) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

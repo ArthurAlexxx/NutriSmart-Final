@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 'use client';
 
@@ -33,23 +34,19 @@ const avatarData = [
 ];
 
 export default function Home() {
-  const router = useRouter();
   const { isUserLoading } = useUser();
   const [isPwa, setIsPwa] = React.useState(false);
 
   useEffect(() => {
     // This check only runs on the client side
-    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-    setIsPwa(isPwaMode);
-    
-    // O redirecionamento principal agora é tratado no layout.tsx
-    // Esta página não precisa mais ter essa lógica complexa.
-
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsPwa(true);
+    }
   }, []);
   
-  if (isPwa) {
-    // Se for PWA, o layout já está tratando o redirecionamento.
-    // Exibir um loader aqui garante que o usuário não veja a landing page piscar.
+  if (isUserLoading || isPwa) {
+    // If it's a PWA, the layout will handle the redirection.
+    // If user state is loading, show a loader to prevent flashes of the landing page.
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
