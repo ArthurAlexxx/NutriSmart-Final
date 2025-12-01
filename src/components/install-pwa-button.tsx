@@ -25,7 +25,7 @@ export default function InstallPWAButton() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       // @ts-ignore
-      if (window.navigator.standalone) {
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
         return;
       }
       setIsVisible(true);
@@ -66,7 +66,7 @@ export default function InstallPWAButton() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="fixed bottom-6 right-6 z-50"
         >
-            <div className="bg-background border shadow-xl rounded-2xl p-4 flex items-center gap-4">
+            <div className="relative bg-background border shadow-xl rounded-2xl p-4 pr-12 flex items-center gap-4">
                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Download className="w-6 h-6 text-primary" />
                 </div>
@@ -74,8 +74,10 @@ export default function InstallPWAButton() {
                     <h3 className="font-semibold text-foreground">Instalar Aplicativo</h3>
                     <p className="text-sm text-muted-foreground">Adicione à sua tela inicial para uma melhor experiência.</p>
                 </div>
-                <Button onClick={handleInstallClick} size="sm" className='ml-2'>Instalar</Button>
-                 <Button onClick={handleDismiss} variant="ghost" size="icon" className='h-7 w-7 absolute top-2 right-2 text-muted-foreground'>
+                <div className='pl-2'>
+                    <Button onClick={handleInstallClick} size="sm" className='ml-2'>Instalar</Button>
+                </div>
+                 <Button onClick={handleDismiss} variant="ghost" size="icon" className='h-7 w-7 absolute top-1 right-1 text-muted-foreground'>
                     <X className="h-4 w-4"/>
                 </Button>
             </div>

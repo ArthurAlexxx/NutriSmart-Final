@@ -1,3 +1,4 @@
+
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
@@ -18,13 +19,16 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
+// A metadata estática continua importante para SEO e para o primeiro carregamento
 export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
   icons: {
     icon: '/icons/icon-192x192.png',
+    shortcut: '/icons/icon-192x192.png',
     apple: '/icons/icon-192x192.png',
   },
+   manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -35,7 +39,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
       <head>
-        <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
