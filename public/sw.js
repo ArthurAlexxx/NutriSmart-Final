@@ -1,102 +1,79 @@
 // public/sw.js
-const CACHE_NAME = 'nutrinea-cache-v14';
 
-// Apenas assets REAIS e estáticos vão no pré-cache
+// Define o nome e a versão do cache
+const CACHE_NAME = 'nutrinea-cache-v13';
+
+// Lista de URLs para fazer pré-cache (arquivos estáticos essenciais)
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/icons/icon-192x192.png?v=1',
-  '/icons/icon-512x512.png?v=1',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
 ];
 
-// Instala o service worker
-self.addEventListener('install', event => {
-  console.log('SW instalando...');
+// Evento de instalação: abre o cache e adiciona os arquivos da lista
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
   );
-  self.skipWaiting(); // ativa mais rápido
 });
 
-// Ativa e limpa caches antigos
-self.addEventListener('activate', event => {
+// Evento de ativação: limpa caches antigos
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(keys => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
+        cacheNames.map((cacheName) => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  self.clients.claim(); // aplica a todos os clientes sem recarregar
 });
 
-// Estratégia de fetch
-self.addEventListener('fetch', event => {
-  const req = event.request;
-
-  // Ignora não-GET, API, extensões e chrome-extension
-  if (
-    req.method !== 'GET' ||
-    !req.url.startsWith('http') ||
-    req.url.includes('/api/') ||
-    req.url.includes('chrome-extension')
-  ) {
-    return; // deixa o navegador cuidar
-  }
-
-  // Network First para manifest para garantir que esteja sempre atualizado
-  if (req.url.includes('manifest.json')) {
-    event.respondWith(
-      fetch(req)
-        .then(networkRes => {
-          caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
-          return networkRes;
-        })
-        .catch(() => caches.match(req))
-    );
+// Evento de fetch: intercepta requisições e serve do cache se possível (estratégia Cache-First)
+self.addEventListener('fetch', (event) => {
+  // Ignora requisições que não são GET
+  if (event.request.method !== 'GET') {
     return;
   }
-
-  // Stale-While-Revalidate para o HTML principal
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        // Tenta pegar da rede primeiro para ter o conteúdo mais fresco
-        return fetch(req)
-          .then(networkResponse => {
-            // Se bem-sucedido, atualiza o cache e retorna a resposta da rede
-            if (networkResponse.status === 200) {
-              cache.put(req, networkResponse.clone());
-            }
-            return networkResponse;
-          })
-          .catch(() => {
-            // Se a rede falhar, retorna o que estiver no cache
-            return cache.match(req);
-          });
-      })
-    );
-    return;
-  }
-
-  // Cache First para todos os outros assets estáticos
+  
   event.respondWith(
-    caches.match(req).then(cacheRes => cacheRes || fetch(req).then(networkRes => {
-      // Condição de segurança para cachear apenas respostas válidas
-      if (
-        networkRes &&
-        networkRes.status === 200 &&
-        networkRes.type === 'basic'
-      ) {
-        caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
-      }
-      return networkRes;
-    }))
+    caches.match(event.request)
+      .then((response) => {
+        // Se a resposta estiver no cache, retorna ela
+        if (response) {
+          return response;
+        }
+
+        // Se não estiver, busca na rede
+        return fetch(event.request).then(
+          (response) => {
+            // Verifica se recebemos uma resposta válida
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // IMPORTANTE: Clona a resposta. Uma resposta é um stream e só pode ser consumida uma vez.
+            // Precisamos de uma cópia para o navegador e uma para o cache.
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          }
+        );
+      })
   );
 });
