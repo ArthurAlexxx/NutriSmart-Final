@@ -2,6 +2,7 @@
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
 import { Badge } from './badge';
+import React from 'react';
 
 const metrics = [
     {
@@ -31,7 +32,7 @@ const metrics = [
     },
 ];
 
-const MetricItem = ({ icon: Icon, value, suffix, decimals = 0, label }: typeof metrics[0]) => (
+const MetricItem = ({ icon: Icon, value, suffix, decimals = 0, label }: (typeof metrics)[0]) => (
     <div className="text-center">
         <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon className="h-8 w-8" />
