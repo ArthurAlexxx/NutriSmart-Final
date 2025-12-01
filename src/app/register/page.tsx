@@ -51,10 +51,9 @@ const LogoDisplay = () => {
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, effectiveSubscriptionStatus, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -67,17 +66,8 @@ export default function RegisterPage() {
     },
   });
 
-  useEffect(() => {
-    if (!isUserLoading && user && effectiveSubscriptionStatus) {
-      toast({
-        title: "Bem-vindo(a)! 🎉",
-        description: "Sua conta foi criada com sucesso.",
-      });
-      const destination = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
-      router.push(destination);
-    }
-  }, [user, effectiveSubscriptionStatus, isUserLoading, router, toast]);
-
+  // A lógica de redirecionamento foi movida para o layout principal (RootLayoutContent)
+  // para centralizar a lógica e evitar loops.
 
   const handleRegister = async (data: RegisterFormValues) => {
     setLoading(true);
@@ -110,6 +100,12 @@ export default function RegisterPage() {
       await setDoc(userRef, newUserProfile);
       await updateProfile(user, { displayName: data.fullName });
       
+      toast({
+        title: "Bem-vindo(a)! 🎉",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      // O layout principal cuidará do redirecionamento
+      
     } catch (error: any) {
       setLoading(false);
       let description = 'Ocorreu um erro desconhecido. Por favor, tente novamente.';
@@ -136,6 +132,7 @@ export default function RegisterPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      // O onAuthStateChanged listener no provider cuidará da criação do perfil e o layout cuidará do redirecionamento.
     } catch (error: any) {
       setLoading(false);
       console.error("Google Sign-In Error", error);
@@ -147,6 +144,14 @@ export default function RegisterPage() {
     }
   };
   
+  if (isUserLoading || user) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+      );
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">

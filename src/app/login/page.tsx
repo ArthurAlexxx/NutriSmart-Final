@@ -12,8 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, ArrowLeft, LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword, signOut, signInWithPopup, GoogleAuthProvider, sendEmailVerification, type User } from 'firebase/auth';
+import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
@@ -42,9 +42,8 @@ const LogoDisplay = () => {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
   const auth = useAuth();
-  const { user, userProfile, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -54,21 +53,8 @@ export default function LoginPage() {
     },
   });
   
-  useEffect(() => {
-    // This effect handles redirection AFTER the user state and profile are fully resolved.
-    if (!isUserLoading && user && userProfile) {
-        const isAdmin = userProfile.role === 'admin';
-        const isPro = userProfile.profileType === 'professional';
-
-        if (isAdmin) {
-            router.push('/admin');
-        } else {
-            const destination = isPro ? '/pro/patients' : '/dashboard';
-            router.push(destination);
-        }
-    }
-  }, [user, userProfile, isUserLoading, router, toast]);
-
+  // A lógica de redirecionamento foi movida para o layout principal (RootLayoutContent)
+  // para centralizar a lógica e evitar loops.
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -80,7 +66,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // The useEffect will handle the redirect on successful login.
+      // O useEffect no layout cuidará do redirecionamento.
       toast({
           title: "Login bem-sucedido!",
           description: "Redirecionando para o seu painel...",
@@ -102,7 +88,6 @@ export default function LoginPage() {
         variant: 'destructive',
       });
     }
-    // No finally block to set loading to false, as the useEffect handles the final state.
   };
 
   const handleGoogleSignIn = async () => {
@@ -116,7 +101,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener will handle user creation and redirection
+      // O onAuthStateChanged listener no provider cuidará da criação do perfil e o layout cuidará do redirecionamento.
     } catch (error: any) {
       setLoading(false);
       console.error("Google Sign-In Error", error);
@@ -128,7 +113,8 @@ export default function LoginPage() {
     }
   };
   
-  // Show a loading spinner while the user's auth state is being determined
+  // Se o usuário já estiver logado, o layout principal irá redirecioná-lo.
+  // Mostramos o loader enquanto isso para evitar que a página de login pisque na tela.
   if (isUserLoading || user) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
