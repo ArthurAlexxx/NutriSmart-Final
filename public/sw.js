@@ -1,6 +1,6 @@
 // public/sw.js
 
-const CACHE_NAME = 'nutrinea-cache-v15';
+const CACHE_NAME = 'nutrinea-cache-v1';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -11,12 +11,9 @@ const urlsToCache = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache and caching URLs');
-        return cache.addAll(urlsToCache);
-      })
-      .then(() => self.skipWaiting()) // Force the waiting service worker to become the active service worker.
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(urlsToCache);
+    })
   );
 });
 
@@ -27,67 +24,65 @@ self.addEventListener('activate', event => {
       Promise.all(
         cacheNames.map(cacheName => {
           if (!cacheWhitelist.includes(cacheName)) {
-            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       )
-    ).then(() => self.clients.claim()) // Take control of all clients as soon as the service worker activates.
+    ).then(() => self.clients.claim()) // Force the new service worker to take control immediately
   );
 });
 
 self.addEventListener('fetch', event => {
   const request = event.request;
 
-  // Ignore non-GET requests and requests from extensions.
+  // Ignore non-GET requests and requests from browser extensions
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
     return;
   }
 
-  // For navigation requests, use a network-first strategy to get the latest page,
-  // but fall back to the offline page if the network fails.
+  // Cache-First strategy for navigation requests
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .catch(() => {
-          return caches.match('/offline.html');
-        })
+      caches.open(CACHE_NAME).then(cache => {
+        return fetch(request)
+          .then(response => {
+            // If the fetch is successful, cache it and return the response
+            cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() => {
+            // If the fetch fails, try to serve from cache, falling back to the offline page
+            return cache.match(request)
+              .then(response => response || cache.match('/offline.html'));
+          });
+      })
     );
     return;
   }
 
-  // For all other requests (CSS, JS, images), use a cache-first strategy.
+  // Stale-While-Revalidate for other assets (CSS, JS, images)
   event.respondWith(
-    caches.match(request)
-      .then(cachedResponse => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // If not in cache, fetch from network, cache it, and return it.
-        return fetch(request).then(networkResponse => {
-          // Check if we received a valid response
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(request).then(response => {
+        // Return from cache immediately if available
+        const fetchPromise = fetch(request).then(networkResponse => {
+          // If the request is for a resource from our origin, cache it
+          if (request.url.startsWith(self.location.origin)) {
+            cache.put(request, networkResponse.clone());
           }
-
-          // IMPORTANT: clone the response. A response is a stream
-          // and because we want the browser to consume the response
-          // as well as the cache consuming the response, we need
-          // to clone it so we have two streams.
-          const responseToCache = networkResponse.clone();
-
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(request, responseToCache);
-            });
-
           return networkResponse;
         });
-      }).catch(() => {
-        // If both cache and network fail, for non-navigation requests,
-        // we can return a generic error or nothing. For simplicity, we let it fail.
-        // The offline.html is mainly for page navigations.
-      })
+
+        // Return the cached response if it exists, otherwise wait for the network
+        return response || fetchPromise;
+      });
+    }).catch(() => {
+        // Generic fallback for any other failed asset fetch, although this is less likely
+        // with the stale-while-revalidate strategy. For images, this could be a placeholder.
+        if (request.headers.get('accept').includes('image')) {
+            // You could return a placeholder image from cache here if you have one
+        }
+        // For other requests, just let the network failure propagate
+    })
   );
 });

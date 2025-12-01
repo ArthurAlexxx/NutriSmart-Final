@@ -249,36 +249,8 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
   };
   
   const handleRemoveMeal = async (index: number) => {
-    if (!firestore) return;
-
-    const mealToRemove = { ...fields[index] };
-    remove(index); // Optimistic UI update
-
-    const currentPlan = form.getValues();
-    const newMeals = currentPlan.meals.filter((_, i) => i !== index);
-
-    const dataToUpdate = {
-        ...currentPlan,
-        meals: newMeals,
-    };
-    
-    try {
-        if (isProfessional && room) {
-            const roomRef = doc(firestore, 'rooms', room.id);
-            await updateDoc(roomRef, { 'activePlan.meals': newMeals });
-        } else if (!isProfessional && userProfile) {
-            const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
-            await setDoc(planRef, { ...activePlan, meals: newMeals });
-        }
-        toast({
-            title: "Refeição Removida",
-            description: "A refeição foi removida do seu plano.",
-        });
-    } catch (error) {
-        append(mealToRemove, { shouldFocus: false }); // Revert on error
-        toast({ title: "Erro", description: "Não foi possível remover a refeição.", variant: 'destructive' });
-    }
-};
+    remove(index);
+  };
 
   const handleClearPlan = async () => {
     if (!isProfessional || !room || !firestore) return;

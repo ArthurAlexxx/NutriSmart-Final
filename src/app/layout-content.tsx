@@ -21,7 +21,7 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     
     if (user) {
       // User is logged in.
-      // If trying to access a public route that is NOT the main landing page or pricing/info pages, redirect to dashboard.
+      // If trying to access a public route that is ONLY for unauthenticated users, redirect.
       const authRoutes = ['/login', '/register', '/forgot-password'];
       if (authRoutes.includes(pathname)) {
         const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/dashboard' : '/dashboard';

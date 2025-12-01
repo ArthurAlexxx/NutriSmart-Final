@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/user';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateUserSubscriptionStatusAction } from '@/app/actions/user-actions';
 
 export default function ViewUserPage() {
     const { user, userProfile, isAdmin, isUserLoading, onProfileUpdate } = useUser();
@@ -46,18 +47,10 @@ export default function ViewUserPage() {
         setIsUpdating(true);
         try {
             const idToken = await user.getIdToken();
-            const response = await fetch('/api/admin/update-subscription', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ userId: userToView.id, newStatus }),
-            });
+            
+            const result = await updateUserSubscriptionStatusAction(userToView.id, newStatus);
 
-            const result = await response.json();
-
-            if (!response.ok) {
+            if (!result.success) {
                 throw new Error(result.message || 'Falha ao atualizar a assinatura.');
             }
 
