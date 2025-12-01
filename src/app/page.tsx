@@ -8,7 +8,6 @@ import { FeaturesSection } from '@/components/ui/features-section';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { CTASection } from '@/components/ui/cta-section';
 import { Pricing } from '@/components/ui/pricing';
-import MetricsSection from '@/components/ui/metrics-section';
 
 const avatarData = [
   {
@@ -52,8 +51,6 @@ export default function Home() {
         <FeaturesSection />
                 
         <TestimonialsSection />
-
-        <MetricsSection />
 
         <section id="pricing" className="w-full py-20 lg:py-24 bg-background">
           <div className="container mx-auto">
