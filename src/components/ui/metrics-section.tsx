@@ -1,7 +1,7 @@
+// src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
 
 const metrics = [
     {
