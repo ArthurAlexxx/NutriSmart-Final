@@ -10,39 +10,32 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isUserLoading || !isClient) {
-      return; // Aguarde o carregamento do estado do usuário e a montagem do cliente
+    if (isUserLoading) {
+      return; 
     }
 
     const publicRoutes = ['/login', '/register', '/forgot-password', '/pricing', '/about', '/careers', '/press', '/terms', '/privacy'];
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
-    const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
-
+    
     if (user) {
-      // Usuário está logado
-      if (isAuthRoute) {
-        // Se estiver em uma página de autenticação, redirecione para o dashboard apropriado
+      // User is logged in.
+      // If trying to access a public route that is NOT the main landing page or pricing/info pages, redirect to dashboard.
+      const authRoutes = ['/login', '/register', '/forgot-password'];
+      if (authRoutes.includes(pathname)) {
         const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/dashboard' : '/dashboard';
         router.replace(targetDashboard);
       }
     } else {
-      // Usuário não está logado
+      // User is not logged in.
       if (!isPublicRoute) {
-        // Se estiver tentando acessar uma página protegida, redirecione para o login
         router.replace('/login');
       }
     }
-
-  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isClient]);
+  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus]);
   
-  if (isUserLoading || !isClient) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

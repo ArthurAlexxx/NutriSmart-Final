@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,7 +43,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
-  const { isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -57,12 +55,6 @@ export default function LoginPage() {
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
-    if (!auth) {
-      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
     try {
       const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
       await setPersistence(auth, persistence);
@@ -73,7 +65,6 @@ export default function LoginPage() {
       });
       // The redirection is handled by RootLayoutContent
     } catch (error: any) {
-      setLoading(false);
       let description = "Ocorreu um erro desconhecido. Por favor, tente novamente.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = "E-mail ou senha inválidos.";
@@ -87,30 +78,27 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
+    } finally {
+        setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    if (!auth) {
-      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
     const provider = new GoogleAuthProvider();
     try {
       await setPersistence(auth, browserLocalPersistence); // Always remember Google users
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
     } catch (error: any) {
-      setLoading(false);
       console.error("Google Sign-In Error", error);
        toast({
         title: "Erro com Google",
         description: error.message || 'Não foi possível fazer login com Google. Tente novamente.',
         variant: "destructive",
       });
+    } finally {
+        setLoading(false);
     }
   };
   
@@ -126,8 +114,8 @@ export default function LoginPage() {
         </div>
         
         <div className='space-y-4'>
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
-                {isUserLoading && loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4"/>}
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4"/>}
                 Continuar com Google
             </Button>
             
@@ -193,8 +181,8 @@ export default function LoginPage() {
                         Esqueceu a senha?
                     </Link>
                 </div>
-                <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
-                    {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full !mt-6" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Entrar
                 </Button>
                 </form>

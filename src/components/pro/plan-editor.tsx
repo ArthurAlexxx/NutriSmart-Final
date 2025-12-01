@@ -1,4 +1,3 @@
-// src/components/pro/plan-editor.tsx
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -14,18 +13,18 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus, Save, Trash2, Utensils, Droplet, Flame, RotateCcw, Sparkles, BrainCircuit, Rocket, Library, Download, Target, Weight, CalendarIcon } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFirestore } from '@/firebase';
 import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Timestamp, arrayRemove, collection, query, onSnapshot, Unsubscribe, setDoc, addDoc } from 'firebase/firestore';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-import { Separator } from '../ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Separator } from '@/components/ui/separator';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import AIPlanConfirmationModal from '../ai-plan-confirmation-modal';
+import AIPlanConfirmationModal from '@/components/ai-plan-confirmation-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Calendar } from '../ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 import { ptBR } from 'date-fns/locale';
 import { generateMealPlanAction } from '@/app/actions/ai-actions';
 
@@ -164,14 +163,14 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
         const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
         const historyCollectionRef = collection(firestore, 'users', userProfile.id, 'plan_history');
 
-        // Archive the old plan
+        // Archive the old plan if it exists
         const oldPlanDoc = await getDoc(planRef);
         if (oldPlanDoc.exists()) {
             await addDoc(historyCollectionRef, oldPlanDoc.data());
         }
 
         // Save new active plan
-        const newActivePlan = {
+        const newActivePlan: Omit<ActivePlan, 'id'> = {
             name: `Meu Plano (IA) - ${format(new Date(), 'dd/MM/yy')}`,
             calorieGoal: data.calorieGoal,
             proteinGoal: data.proteinGoal,
@@ -249,35 +248,37 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     }
   };
   
-    const handleRemoveMeal = (index: number) => {
+  const handleRemoveMeal = async (index: number) => {
     if (!firestore) return;
-    
+
     const mealToRemove = { ...fields[index] };
+    remove(index); // Optimistic UI update
+
+    const currentPlan = form.getValues();
+    const newMeals = currentPlan.meals.filter((_, i) => i !== index);
+
+    const dataToUpdate = {
+        ...currentPlan,
+        meals: newMeals,
+    };
     
-    remove(index);
-
-    const dataToSave = form.getValues();
-    const newMeals = dataToSave.meals.filter((_, i) => i !== index);
-
-    if (isProfessional && room) {
-        const roomRef = doc(firestore, 'rooms', room.id);
-        updateDoc(roomRef, { 'activePlan.meals': newMeals }).catch(error => {
-            append(mealToRemove, { shouldFocus: false }); 
-            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
+    try {
+        if (isProfessional && room) {
+            const roomRef = doc(firestore, 'rooms', room.id);
+            await updateDoc(roomRef, { 'activePlan.meals': newMeals });
+        } else if (!isProfessional && userProfile) {
+            const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
+            await setDoc(planRef, { ...activePlan, meals: newMeals });
+        }
+        toast({
+            title: "Refeição Removida",
+            description: "A refeição foi removida do seu plano.",
         });
-    } else if (!isProfessional && userProfile) {
-        const userRef = doc(firestore, 'users', userProfile.id);
-        updateDoc(userRef, { 'activePlan.meals': newMeals }).catch(error => {
-            append(mealToRemove, { shouldFocus: false });
-            toast({ title: "Erro", description: "Não foi possível remover a refeição." });
-        });
+    } catch (error) {
+        append(mealToRemove, { shouldFocus: false }); // Revert on error
+        toast({ title: "Erro", description: "Não foi possível remover a refeição.", variant: 'destructive' });
     }
-
-    toast({
-        title: "Refeição Removida",
-        description: "A refeição foi removida do seu plano.",
-    });
-  };
+};
 
   const handleClearPlan = async () => {
     if (!isProfessional || !room || !firestore) return;
@@ -412,7 +413,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                     </TabsList>
 
                     <TabsContent value="goals">
-                        <Card className="shadow-lg rounded-2xl">
+                        <Card className="shadow-sm rounded-2xl">
                             <CardHeader>
                                 <CardTitle>Objetivos de Peso</CardTitle>
                                 <CardDescription>Ajuste seus objetivos. Estes dados são essenciais para que a IA possa gerar um plano alimentar eficaz e personalizado para você.</CardDescription>
@@ -449,7 +450,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                     </TabsContent>
 
                     <TabsContent value="meals">
-                        <Card className="shadow-lg rounded-2xl">
+                        <Card className="shadow-sm rounded-2xl">
                              <CardHeader>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
@@ -505,7 +506,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                             </CardContent>
                         </Card>
                         {isProfessional && (
-                             <Card className="mt-6 shadow-lg rounded-2xl">
+                             <Card className="mt-6 shadow-sm rounded-2xl">
                                 <CardHeader>
                                      <div className="flex items-center gap-3">
                                         <div className="flex-1">
