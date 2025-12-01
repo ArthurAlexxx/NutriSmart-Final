@@ -22,6 +22,7 @@ import { differenceInDays, differenceInHours } from 'date-fns';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
 import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
+import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
   user: User | null;
@@ -92,9 +93,9 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
     </div>
 );
 
-const LogoDisplay = () => {
+const LogoDisplay = ({ isPwa = false }: { isPwa?: boolean }) => {
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-    return (
+    const LogoComponent = (
         <Image 
             src={logoImage?.imageUrl || ''}
             alt="Nutrinea Logo"
@@ -103,6 +104,16 @@ const LogoDisplay = () => {
             priority
         />
     );
+    
+    if (isPwa) {
+        return <div className="flex items-center gap-2 font-semibold">{LogoComponent}</div>;
+    }
+    
+    return (
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+            {LogoComponent}
+        </Link>
+    );
 };
 
 
@@ -110,18 +121,29 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const { isUserLoading } = useUser();
   const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+  const [isPwa, setIsPwa] = useState(false);
+
+  useEffect(() => {
+    // This check only runs on the client side
+    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsPwa(isPwaMode);
+  }, []);
 
   const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
   
   useEffect(() => {
-    if (user && !isProUser && pathname.startsWith('/pro')) {
+    if (!isUserLoading && user && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
-  }, [isProUser, pathname, router, user]);
+     if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isProUser, pathname, router, user, isUserLoading]);
   
   const handleSignOut = async () => {
     if (!auth) return;
@@ -191,14 +213,21 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     </>
   );
 
+  if (isUserLoading || !userProfile) {
+    return (
+      <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
+         <Loader2 className="h-16 w-16 animate-spin text-primary" />
+         <p className="mt-4 text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
         <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
-              <Link href="/" className="flex items-center gap-2 font-semibold">
-                <LogoDisplay />
-              </Link>
+              <LogoDisplay isPwa={isPwa} />
             </div>
             <SidebarContent />
         </div>
@@ -217,9 +246,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetTrigger>
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                            <LogoDisplay />
-                          </Link>
+                          <LogoDisplay isPwa={isPwa} />
                            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                               <X className="h-5 w-5" />
                               <span className="sr-only">Close</span>

@@ -57,11 +57,6 @@ export default function LoginPage() {
   useEffect(() => {
     // This effect handles redirection AFTER the user state and profile are fully resolved.
     if (!isUserLoading && user && userProfile) {
-        toast({
-            title: "Login bem-sucedido!",
-            description: "Redirecionando para o seu painel...",
-        });
-
         const isAdmin = userProfile.role === 'admin';
         const isPro = userProfile.profileType === 'professional';
 
@@ -86,6 +81,10 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       // The useEffect will handle the redirect on successful login.
+      toast({
+          title: "Login bem-sucedido!",
+          description: "Redirecionando para o seu painel...",
+      });
       
     } catch (error: any) {
       setLoading(false); // Stop loading on error

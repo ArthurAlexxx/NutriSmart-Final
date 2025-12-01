@@ -7,7 +7,7 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import type { WeightLog } from '@/types/weight';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Settings, LayoutDashboard } from 'lucide-react';
+import { Plus, Settings, LayoutDashboard } from 'lucide-react';
 import { collection, query, onSnapshot, deleteDoc, updateDoc, setDoc, Unsubscribe, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { getLocalDateString } from '@/lib/date-utils';
@@ -29,7 +29,7 @@ import WeightReminderCard from '@/components/weight-reminder-card';
 
 export default function DashboardPage() {
   const db = useFirestore();
-  const { user, userProfile, isUserLoading, onProfileUpdate } = useUser();
+  const { user, userProfile, onProfileUpdate } = useUser();
   const router = useRouter();
 
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
@@ -40,12 +40,6 @@ export default function DashboardPage() {
   const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
   const [isGoalsModalOpen, setGoalsModalOpen] = useState(false);
   const [isAddMealFormOpen, setAddMealFormOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (!user || !db) return;
@@ -207,15 +201,6 @@ export default function DashboardPage() {
     protein: userProfile?.proteinGoal || 140,
   }), [userProfile]);
 
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
-         <Loader2 className="h-16 w-16 animate-spin text-primary" />
-         <p className="mt-4 text-muted-foreground">Carregando seu diário...</p>
-      </div>
-    );
-  }
-  
   return (
     <AppLayout
         user={user}

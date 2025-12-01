@@ -6,7 +6,7 @@ import { collection, doc, onSnapshot, query, orderBy, addDoc, serverTimestamp, w
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/app-layout';
-import { Loader2, ChefHat, Trash2 } from 'lucide-react';
+import { ChefHat, Trash2 } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChatView from '@/components/chat-view';
 import { Message, initialMessages as defaultInitialMessages } from '@/components/chat-message';
@@ -22,7 +22,7 @@ import { Card } from '@/components/ui/card';
 
 
 export default function ChefPage() {
-  const { user, isUserLoading, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
+  const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
 
@@ -31,13 +31,6 @@ export default function ChefPage() {
   const { toast } = useToast();
   
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
-
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (!user || !firestore) {
@@ -211,16 +204,6 @@ export default function ChefPage() {
         });
         errorEmitter.emit('permission-error', contextualError);
     }
-  }
-
-
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Carregando o Chef Virtual...</p>
-      </div>
-    );
   }
 
   return (

@@ -31,28 +31,12 @@ function DesktopWarning() {
 
 
 export default function LiveAnalysisPage() {
-  const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
+  const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const isLandscape = useMediaQuery('(orientation: landscape)');
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading || !userProfile) {
-    return (
-      <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-        <div className="flex h-full w-full items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-      </AppLayout>
-    );
-  }
   
   if (isLandscape && !isDesktop) {
     return <OrientationLock />;

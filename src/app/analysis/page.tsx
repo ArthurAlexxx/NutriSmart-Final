@@ -30,7 +30,7 @@ type Period = 7 | 15 | 30;
 const DEMO_USER_ID = 'z9Ru4QiC4Kf5Okf257OruaazvyF2';
 
 export default function AnalysisPage() {
-  const { user, isUserLoading, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
+  const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -46,12 +46,6 @@ export default function AnalysisPage() {
 
   const isDemoUser = user?.uid === DEMO_USER_ID;
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   const handleSeedData = async () => {
     setIsSeeding(true);
@@ -87,8 +81,8 @@ export default function AnalysisPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (isUserLoading || !user || !firestore) {
-      setLoading(isUserLoading);
+    if (!user || !firestore) {
+      setLoading(false);
       return;
     };
 
@@ -120,7 +114,7 @@ export default function AnalysisPage() {
       if (unsubHydration) unsubHydration();
       if (unsubWeight) unsubWeight();
     };
-  }, [user, isUserLoading, firestore, handleError]);
+  }, [user, firestore, handleError]);
 
   
   const getDateFilteredData = useCallback((entries: {date: string}[], period: number) => {
@@ -244,7 +238,7 @@ export default function AnalysisPage() {
 
 
   const mainContent = () => {
-    if (loading || isUserLoading) {
+    if (loading) {
       return (
         <div className="flex min-h-[50vh] w-full flex-col bg-background items-center justify-center">
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
