@@ -26,56 +26,15 @@ const lexend = Lexend({
 });
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user, userProfile, isUserLoading, isAdmin } = useUser();
-  const [isPwa, setIsPwa] = useState(false);
+  const { isUserLoading } = useUser();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    // This check only runs on the client side after mounting
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsPwa(true);
-    }
   }, []);
-
-  useEffect(() => {
-    // Wait until the component is mounted to avoid hydration errors
-    // and until user loading is complete
-    if (!isMounted || isUserLoading) return;
-
-    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
-
-    if (user && userProfile) {
-      // User is logged in
-      if (isAuthPage) {
-        // If on an auth page, redirect to the appropriate dashboard
-        const destination = isAdmin ? '/admin' : (userProfile.profileType === 'professional' ? '/pro/patients' : '/dashboard');
-        router.replace(destination);
-      }
-    } else {
-      // User is not logged in
-      const isPublicPage = ['/', '/about', '/careers', '/press', '/pricing', '/privacy', '/terms'].includes(pathname);
-      if (!isAuthPage && !isPublicPage) {
-        // If user is on a protected page and not logged in, redirect to login
-        router.replace('/login');
-      }
-    }
-    
-    // PWA specific logic: if installed and on the landing page, force to login/dashboard flow.
-    if(isPwa && pathname === '/') {
-        if(user) {
-             const destination = isAdmin ? '/admin' : (userProfile?.profileType === 'professional' ? '/pro/patients' : '/dashboard');
-             router.replace(destination);
-        } else {
-            router.replace('/login');
-        }
-    }
-
-  }, [isMounted, isUserLoading, user, userProfile, pathname, router, isAdmin, isPwa]);
-
+  
   // Display a global loader ONLY while the initial user state is being verified
+  // This avoids flashes of content or incorrect redirects.
   if (isUserLoading || !isMounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
