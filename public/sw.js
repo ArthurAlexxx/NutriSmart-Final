@@ -1,36 +1,33 @@
 // public/sw.js
 
-// Define o nome e a versão do cache
-const CACHE_NAME = 'nutrinea-cache-v13';
-
-// Lista de URLs para fazer pré-cache (arquivos estáticos essenciais)
+const CACHE_NAME = 'nutrinea-cache-v14';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/manifest.json?v=14',
+  '/icons/icon-192x192.png?v=1',
+  '/icons/icon-512x512.png?v=1',
+  '/offline.html'
 ];
 
-// Evento de instalação: abre o cache e adiciona os arquivos da lista
-self.addEventListener('install', (event) => {
+// Install a service worker
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(cache => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// Evento de ativação: limpa caches antigos
-self.addEventListener('activate', (event) => {
+// Activate the service worker
+self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
+        cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -39,41 +36,51 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Evento de fetch: intercepta requisições e serve do cache se possível (estratégia Cache-First)
-self.addEventListener('fetch', (event) => {
-  // Ignora requisições que não são GET
-  if (event.request.method !== 'GET') {
+// Cache and return requests
+self.addEventListener('fetch', event => {
+  // Only handle GET requests and ignore requests from chrome extensions or other non-http sources
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
-  
+
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        // Se a resposta estiver no cache, retorna ela
+      .then(response => {
+        // Cache hit - return response
         if (response) {
           return response;
         }
 
-        // Se não estiver, busca na rede
-        return fetch(event.request).then(
-          (response) => {
-            // Verifica se recebemos uma resposta válida
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+        // IMPORTANT: Clone the request. A request is a stream and
+        // can only be consumed once. Since we are consuming this
+        // once by cache and once by the browser for fetch, we need
+        // to clone the response.
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(
+          response => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
 
-            // IMPORTANTE: Clona a resposta. Uma resposta é um stream e só pode ser consumida uma vez.
-            // Precisamos de uma cópia para o navegador e uma para o cache.
+            // IMPORTANT: Clone the response. A response is a stream
+            // and because we want the browser to consume the response
+            // as well as the cache consuming the response, we need
+            // to clone it so we have two streams.
             const responseToCache = response.clone();
 
             caches.open(CACHE_NAME)
-              .then((cache) => {
+              .then(cache => {
                 cache.put(event.request, responseToCache);
               });
 
             return response;
           }
         );
+      }).catch(() => {
+        // If the fetch fails (e.g., user is offline), return the offline page from the cache.
+        return caches.match('/offline.html');
       })
   );
 });
