@@ -1,3 +1,4 @@
+
 // src/components/ui/metrics-section.tsx
 'use client';
 import { Award, Soup, Smile, TrendingUp } from 'lucide-react';
@@ -6,7 +7,8 @@ import { Skeleton } from './skeleton';
 import { Badge } from './badge';
 
 // Dynamic import for CountUp to ensure it only runs on the client side
-const CountUp = dynamic(() => import('react-countup'), {
+// FIX: We need to resolve the named export 'CountUp' from the module.
+const CountUp = dynamic(() => import('react-countup').then(mod => mod.CountUp), {
     ssr: false,
     loading: () => <span className="text-4xl md:text-5xl font-bold text-primary">0</span>,
 });
