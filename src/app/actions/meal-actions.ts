@@ -23,6 +23,7 @@ interface GetNutritionalInfoResult {
     error?: string;
     totals?: Totals;
     description?: string;
+    identifiedFoods?: { food: string; quantity: string }[];
 }
 
 const defaultTotals: Totals = { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 };
@@ -46,7 +47,7 @@ export async function getNutritionalInfoFromPhoto(photoDataUri: string, mealType
       fibras: 0, // The model does not yet return fiber
     };
 
-    return { totals, description: result.description };
+    return { totals, description: result.description, identifiedFoods: result.identifiedFoods };
   } catch (error: any) {
     console.error("[getNutritionalInfoFromPhoto] Failed to analyze photo:", error);
     return {

@@ -22,13 +22,22 @@ export type Recipe = z.infer<typeof RecipeSchema>;
 
 
 // Schema for meal analysis from a photo
+export const FoodItemAnalysisSchema = z.object({
+  food: z.string().describe("Nome do alimento identificado, ex: 'Arroz branco'."),
+  quantity: z.string().describe("Quantidade estimada do alimento, ex: '100g'."),
+});
+
 export const AnalyzeMealOutputSchema = z.object({
   calories: z.coerce.number().catch(0).describe('Estimativa de calorias totais (kcal).'),
   protein: z.coerce.number().catch(0).describe('Estimativa de proteína total (g).'),
   carbs: z.coerce.number().catch(0).describe('Estimativa de carboidratos totais (g).'),
   fat: z.coerce.number().catch(0).describe('Estimativa de gordura total (g).'),
-  description: z.string().catch('').describe('Descrição curta da refeição identificada.'),
+  description: z.string().catch('').describe('Descrição geral da refeição em uma única frase.'),
+  rating: z.coerce.number().min(0).max(10).catch(5).describe('Nota de 0 a 10 sobre quão saudável é a refeição.'),
+  ratingJustification: z.string().catch('').describe('Justificativa curta para a nota de saudabilidade.'),
+  identifiedFoods: z.array(FoodItemAnalysisSchema).catch([]).describe('Lista dos alimentos individuais identificados com suas quantidades.'),
 });
+
 
 export type AnalyzeMealOutput = z.infer<typeof AnalyzeMealOutputSchema>;
 

@@ -200,15 +200,26 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
         const mealData: MealData = {
           imageUrl: imageUrl,
-          alimentos: [{ 
-            name: result.description || 'Análise de Foto', 
-            portion: 1, 
-            unit: 'un', 
-            calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 
-          }],
+          alimentos: result.identifiedFoods.map(food => ({
+            name: food.food,
+            portion: parseFloat(food.quantity) || 1,
+            unit: food.quantity.replace(/[0-9-.,]/g, '').trim() || 'un',
+             calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 
+          })),
           totais: result.totals || { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
         };
         
+        // Use the new detailed description if available
+        if (result.description) {
+            mealData.alimentos = [{
+                name: result.description,
+                portion: 1,
+                unit: 'prato',
+                calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 
+            }];
+        }
+
+
         setProcessingStep('Registrando refeição...');
         setProgress(100);
 
