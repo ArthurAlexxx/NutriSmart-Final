@@ -88,14 +88,14 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader className='p-6 pb-0 sm:p-6 sm:pb-0'>
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Editar Refeição</DialogTitle>
           <DialogDescription>
             Ajuste os totais para: <span className='font-semibold text-foreground'>{getMealTypeName(mealEntry.mealType)}</span>.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-4 pb-4 sm:px-6 sm:pb-6 pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                 control={form.control}

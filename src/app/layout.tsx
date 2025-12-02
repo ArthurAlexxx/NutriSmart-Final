@@ -34,6 +34,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Nutrinea',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  }
 };
 
 export const viewport: Viewport = {
