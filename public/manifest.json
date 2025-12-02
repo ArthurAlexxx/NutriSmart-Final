@@ -2,13 +2,6 @@
   "name": "Nutrinea",
   "short_name": "Nutrinea",
   "description": "Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.",
-  "start_url": "/",
-  "display_override": [
-    "window-controls-overlay"
-  ],
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#72A159",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -22,5 +15,11 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay"],
+  "orientation": "portrait"
 }

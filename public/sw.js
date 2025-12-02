@@ -1,77 +1,77 @@
 // public/sw.js
-const CACHE_NAME = 'nutrinea-cache-v2';
-const urlsToCache = [
+
+// Increment this version number whenever you update the app
+const CACHE_VERSION = 2;
+const CACHE_NAME = `nutrinea-cache-v${CACHE_VERSION}`;
+
+const URLS_TO_CACHE = [
   '/',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  // Add other critical assets you want to cache on install
+  // e.g., '/icons/icon-192x192.png', '/offline.html'
 ];
 
-// Evento de instalação: abre o cache e adiciona os arquivos principais.
+// Install event: cache core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
+        console.log('Opened cache');
+        return cache.addAll(URLS_TO_CACHE);
+      })
+      .catch(err => {
+        console.error('Failed to open cache', err);
       })
   );
 });
 
-// Evento de ativação: limpa caches antigos.
+// Activate event: clean up old caches
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deletando cache antigo:', cacheName);
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
+  // Tell the active service worker to take control of the page immediately.
+  return self.clients.claim();
 });
 
-
-// Evento de fetch: implementa a estratégia "Network First".
+// Fetch event: serve from network first, then cache
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições que não são GET (como POST, etc.)
+  // We only want to cache GET requests.
   if (event.request.method !== 'GET') {
     return;
   }
-  
+
   event.respondWith(
     fetch(event.request)
-      .then((networkResponse) => {
-        // Se a resposta da rede for bem-sucedida, clona, armazena no cache e retorna.
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        return networkResponse;
+      .then((response) => {
+        // If we get a valid response, cache it and return it.
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+        }
+        return response;
       })
       .catch(() => {
-        // Se a rede falhar, tenta buscar do cache.
+        // If the network request fails, try to get it from the cache.
         return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
+          .then((response) => {
+            if (response) {
+              return response;
             }
-            // Se não estiver no cache, retorna uma resposta de erro genérica (ou uma página offline padrão)
-            // Para APIs, é importante retornar um erro para que a aplicação possa tratá-lo.
-            if (event.request.url.includes('/api/')) {
-                 return new Response(JSON.stringify({ error: 'Offline' }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 503 // Service Unavailable
-                });
-            }
-            // Para outras requisições (páginas), você pode retornar uma página offline.
-            // Por simplicidade, vamos apenas deixar falhar para que o navegador mostre sua página de erro offline.
-            return Response.error();
+            // If the request is not in cache, you could return a fallback offline page
+            // For now, we just let the browser handle it (which will show a network error).
           });
       })
   );
