@@ -1,3 +1,4 @@
+
 // src/lib/ai-schemas.ts
 import { z } from 'zod';
 
@@ -45,6 +46,14 @@ export interface AnalyzeMealInput {
     photoDataUri: string;
     mealType: string;
 }
+
+export const AnalyzeMealFromTextInputSchema = z.object({
+  mealType: z.string(),
+  textDescription: z.string(),
+});
+
+export type AnalyzeMealFromTextInput = z.infer<typeof AnalyzeMealFromTextInputSchema>;
+
 
 const MealPlanItemSchema = z.object({
   name: z.string().describe("Tipo da refeição (ex: Café da Manhã, Almoço, Jantar)."),

@@ -9,6 +9,7 @@ import {
   AnalyzeMealOutputSchema,
   type AnalyzeMealOutput,
   type AnalyzeMealInput,
+  type AnalyzeMealFromTextInput,
   GeneratedPlan,
   type GeneratePlanInput,
   AnalysisInsightsOutputSchema,
@@ -310,6 +311,83 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
      throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar a foto.");
   }
 }
+
+/**
+ * Analyzes a meal from a text description using the OpenAI API.
+ * @param input - The user's input containing the text description and meal type.
+ * @returns A validated meal analysis object.
+ */
+export async function analyzeMealFromTextAction(input: AnalyzeMealFromTextInput): Promise<AnalyzeMealOutput> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('O serviço de IA não está configurado no servidor.');
+  }
+  const prompt = `
+    VOCÊ É UM NUTRICIONISTA ESPECIALISTA e sua tarefa é analisar a descrição de uma refeição e retornar uma análise nutricional detalhada em formato JSON.
+
+    REFEIÇÃO DESCRITA PELO USUÁRIO:
+    - Tipo de Refeição: ${input.mealType}
+    - Alimentos: "${input.textDescription}"
+
+    REGRAS DE ANÁLISE:
+    1.  **INTERPRETAÇÃO**: Interprete a descrição do usuário para identificar os alimentos e suas quantidades. Use bom senso para estimar porções se não forem explícitas.
+    2.  **CÁLCULO NUTRICIONAL**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. Os valores devem ser números.
+    3.  **DESCRIÇÃO**: Crie uma descrição geral da refeição em uma única frase (campo 'description').
+    4.  **AVALIAÇÃO DE SAUDABILIDADE**: Dê uma nota de 0 a 10 para o quão saudável a refeição é (campo 'rating').
+    5.  **JUSTIFICATIVA DA NOTA**: Forneça uma justificativa curta (1-2 frases) para a nota que você deu (campo 'ratingJustification').
+    6.  **LISTA DE ALIMENTOS**: Crie uma lista dos alimentos que você identificou na descrição (campo 'identifiedFoods').
+
+    EXEMPLO DE ENTRADA: "150g de peito de frango grelhado, 100g de arroz e uma salada de alface com tomate"
+    EXEMPLO DE SAÍDA JSON:
+    {
+      "calories": 520,
+      "protein": 42,
+      "carbs": 50,
+      "fat": 16,
+      "description": "Uma refeição com frango grelhado, arroz e salada de alface e tomate.",
+      "identifiedFoods": [
+        { "food": "Peito de frango grelhado", "quantity": "150g" },
+        { "food": "Arroz", "quantity": "100g" },
+        { "food": "Salada de alface e tomate", "quantity": "N/A" }
+      ],
+      "rating": 8,
+      "ratingJustification": "Refeição equilibrada com boa fonte de proteína. A adição de mais vegetais poderia aumentar a nota."
+    }
+    
+    AGORA, ANALISE A DESCRIÇÃO DA REFEIÇÃO E GERE SOMENTE O OBJETO JSON FINAL.
+  `;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT_JSON_ONLY },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
+
+    const resultText = response.choices[0].message.content;
+    if (!resultText) {
+      throw new Error('A IA não conseguiu analisar a descrição. Tente ser mais específico.');
+    }
+
+    const analysisJson = JSON.parse(resultText);
+    const validationResult = AnalyzeMealOutputSchema.safeParse(analysisJson);
+
+    if (validationResult.success) {
+      return validationResult.data;
+    } else {
+      console.error("Zod validation error in analyzeMealFromTextAction:", validationResult.error.errors);
+      console.error("Received JSON:", resultText);
+      throw new Error("A resposta da IA não estava no formato de análise esperado.");
+    }
+  } catch (error: any) {
+    console.error("Error in analyzeMealFromTextAction:", error);
+    throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar a refeição.");
+  }
+}
+
 
 /**
  * Generates nutritional insights based on user's meal data and goals.
