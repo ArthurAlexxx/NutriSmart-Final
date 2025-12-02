@@ -18,6 +18,7 @@ import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface AppLayoutProps {
   user: User | null;
@@ -33,6 +34,7 @@ const navItemsPatient = [
   { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
   { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
   { href: '/live-analysis', label: 'Análise ao Vivo', icon: Camera, id: 'nav-live-analysis', premium: true },
+  { href: '/profile', label: 'Configurações', icon: Settings, id: 'nav-settings', premium: false },
 ];
 
 const navItemsPro = [
@@ -211,7 +213,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetTrigger>
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <Link href="/" className="flex items-center gap-2 font-semibold">
+                          <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
                             <LogoDisplay />
                           </Link>
                            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
@@ -221,25 +223,36 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                           <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
                       </SheetHeader>
                       <SidebarContent isMobile />
-                       <div className="mt-auto border-t p-4 space-y-2">
-                           <Link 
-                                href="/profile"
-                                onClick={() => setSheetOpen(false)}
-                                className="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            >
-                                <Avatar className="h-10 w-10 border">
-                                    <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
-                                    <AvatarFallback>{userProfile?.fullName?.[0]}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 overflow-hidden text-left">
-                                    <p className="font-semibold text-sm truncate">{userProfile?.fullName}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                                </div>
-                           </Link>
-                           <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start gap-4 text-muted-foreground hover:text-destructive">
-                                <LogOut className="h-5 w-5"/>
-                                <span>Sair</span>
-                            </Button>
+                       <div className="mt-auto border-t p-4">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="w-full justify-start h-auto p-2">
+                                         <div className="flex w-full cursor-pointer items-center gap-3">
+                                            <Avatar className="h-10 w-10 border">
+                                                <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
+                                                <AvatarFallback>{userProfile?.fullName?.[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 overflow-hidden text-left">
+                                                <p className="font-semibold text-sm truncate">{userProfile?.fullName}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                                            </div>
+                                        </div>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/profile">
+                                            <Settings className="mr-2 h-4 w-4" />
+                                            <span>Configurações</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50/80">
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        <span>Sair</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                       </div>
                   </SheetContent>
               </Sheet>
