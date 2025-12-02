@@ -1,69 +1,76 @@
 // public/sw.js
-
-const CACHE_NAME = 'nutrinea-cache-v2';
+const CACHE_NAME = 'nutrinea-cache-v1';
 const urlsToCache = [
   '/',
-  '/dashboard',
-  '/login',
-  '/register',
   '/manifest.json',
   '/icon.png',
-  // Adicione aqui outros recursos estáticos que você quer cachear
-  // Ex: '/styles/globals.css', '/scripts/main.js'
+  '/offline.html' // Uma página de fallback offline
 ];
 
-self.addEventListener('install', (event) => {
-  // Realiza a instalação do Service Worker e armazena os recursos em cache
+// 1. Instalação: Adiciona os arquivos principais ao cache.
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(cache => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  // Estratégia: Network First, caindo para Cache
+// 2. Ativação: Limpa caches antigos para garantir que a versão mais recente seja usada.
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// 3. Fetch (NOVA ADIÇÃO CRÍTICA): Intercepta as requisições de rede.
+// Isso é necessário para que o Chrome considere o app "instalável".
+self.addEventListener('fetch', event => {
+  // Estratégia: Network First (Tenta a rede, se falhar, usa o cache)
   event.respondWith(
     fetch(event.request)
-      .then((networkResponse) => {
-        // Se a requisição à rede for bem-sucedida, clona e armazena no cache
+      .then(networkResponse => {
+        // Se a requisição para a rede foi bem-sucedida,
+        // clona a resposta e a armazena no cache para uso offline futuro.
         if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME)
-            .then((cache) => {
+            .then(cache => {
               cache.put(event.request, responseToCache);
             });
         }
         return networkResponse;
       })
       .catch(() => {
-        // Se a rede falhar, tenta buscar do cache
+        // Se a requisição de rede falhar (ex: offline),
+        // tenta encontrar uma resposta no cache.
         return caches.match(event.request)
-          .then((cachedResponse) => {
+          .then(cachedResponse => {
+            // Se encontrarmos no cache, retornamos a resposta cacheada.
+            // Se não, para requisições de navegação, retorna a página de fallback.
             if (cachedResponse) {
               return cachedResponse;
             }
-            // Se não estiver no cache, você pode retornar uma página offline padrão
-            // return caches.match('/offline.html');
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline.html');
+            }
+            // Para outros tipos de requisição (imagens, etc.), apenas falha.
+            return new Response("Network error and not in cache", {
+              status: 408,
+              headers: { 'Content-Type': 'text/plain' }
+            });
           });
       })
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // Deleta caches antigos
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
   );
 });
