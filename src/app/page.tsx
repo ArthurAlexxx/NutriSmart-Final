@@ -1,6 +1,7 @@
 // src/app/page.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { HeroSection } from '@/components/ui/hero-4';
@@ -8,6 +9,8 @@ import { FeaturesSection } from '@/components/ui/features-section';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { CTASection } from '@/components/ui/cta-section';
 import { Pricing } from '@/components/ui/pricing';
+import { usePWA } from '@/context/pwa-context';
+import PWAInstallModal from '@/components/pwa-install-modal';
 
 const avatarData = [
   {
@@ -28,6 +31,21 @@ const avatarData = [
 ];
 
 export default function Home() {
+  const { canInstall } = usePWA();
+  const [isInstallModalOpen, setInstallModalOpen] = useState(false);
+
+  useEffect(() => {
+    // Abre o modal de instalação após 5 segundos se for instalável
+    // e se o modal ainda não foi mostrado nesta sessão.
+    if (canInstall && !sessionStorage.getItem('pwaInstallPrompted')) {
+      const timer = setTimeout(() => {
+        setInstallModalOpen(true);
+        sessionStorage.setItem('pwaInstallPrompted', 'true');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [canInstall]);
+
   return (
     <div className="flex min-h-dvh flex-col bg-background font-sans overflow-x-hidden">
       <Header />
@@ -62,6 +80,7 @@ export default function Home() {
         
       </main>
       <Footer />
+      <PWAInstallModal isOpen={isInstallModalOpen} onOpenChange={setInstallModalOpen} />
     </div>
   );
 }

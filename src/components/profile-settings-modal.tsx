@@ -38,7 +38,7 @@ const profileFormSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-type NavItem = 'personal' | 'sharing' | 'subscription' | 'install';
+type NavItem = 'personal' | 'sharing' | 'subscription';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -66,7 +66,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const { onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useUser();
   const auth = useAuth();
   const router = useRouter();
-  const { canInstall, triggerInstall } = usePWA();
 
   const [activeTab, setActiveTab] = useState<NavItem>('personal');
   const [isCopied, setIsCopied] = useState(false);
@@ -77,12 +76,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  // Force reactivity to PWA context
-  const [showInstallButton, setShowInstallButton] = useState(canInstall);
-  useEffect(() => {
-    setShowInstallButton(canInstall);
-  }, [canInstall]);
-
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -264,7 +257,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
-    { id: 'install', label: 'Instalar Aplicativo', icon: Download, visible: showInstallButton },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
@@ -431,20 +423,6 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                     </CardContent>
                 </Card>
             );
-        case 'install':
-             return (
-                <Card className="w-full shadow-none border-none">
-                    <CardHeader>
-                        <CardTitle>Instalar Aplicativo</CardTitle>
-                        <CardDescription>Instale o Nutrinea no seu dispositivo para uma experiência mais rápida e integrada, como um aplicativo nativo.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <Button onClick={triggerInstall} className="w-full">
-                            <Download className="mr-2 h-4 w-4" /> Instalar no Dispositivo
-                        </Button>
-                    </CardContent>
-                </Card>
-             );
         default: return null;
     }
   }
@@ -464,13 +442,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                  <NavButton 
                     key={item.id}
                     active={activeTab === item.id}
-                    onClick={() => {
-                        if (item.id === 'install') {
-                            triggerInstall();
-                        } else {
-                            setActiveTab(item.id as NavItem);
-                        }
-                    }}
+                    onClick={() => setActiveTab(item.id as NavItem)}
                     icon={item.icon}
                     label={item.label}
                  />
