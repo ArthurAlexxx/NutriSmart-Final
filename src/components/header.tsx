@@ -1,11 +1,11 @@
 // src/components/header.tsx
 'use client';
 
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader, SheetClose } from '@/components/ui/sheet';
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
@@ -86,30 +86,36 @@ export default function Header() {
                   <span className="sr-only">Menu de Navegação</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right">
-                <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
-                 <Link href="/" className="flex items-center gap-2 border-b pb-6 mb-6">
-                    <LogoDisplay />
-                </Link>
-                <nav className="grid gap-6">
+              <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                 <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
+                     <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
+                        <LogoDisplay />
+                      </Link>
+                       <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                          <X className="h-5 w-5" />
+                          <span className="sr-only">Close</span>
+                      </SheetClose>
+                      <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                  </SheetHeader>
+                <nav className="flex flex-col flex-1 p-6 gap-6">
                   {navLinks}
-                  <div className='grid gap-4 pt-6 border-t'>
+                </nav>
+                 <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
                       {user ? (
-                         <Button asChild>
+                         <Button asChild size="lg">
                             <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
                          </Button>
                       ) : (
                         <>
-                           <Button asChild>
+                           <Button asChild size="lg">
                               <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
                            </Button>
-                           <Button asChild variant="secondary">
+                           <Button asChild variant="secondary" size="lg">
                               <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
                            </Button>
                         </>
                        )}
                    </div>
-                </nav>
               </SheetContent>
             </Sheet>
           </div>
