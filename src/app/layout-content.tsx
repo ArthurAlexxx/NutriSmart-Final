@@ -1,4 +1,4 @@
-
+// src/app/layout-content.tsx
 'use client'; 
 
 import { useUser, usePWA } from '@/firebase';
@@ -14,43 +14,33 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Wait until the user session is verified
+      return; // Wait until the user session is verified, show splash screen.
     }
 
-    const publicRoutes = [
-      '/', '/login', '/register', '/forgot-password', '/pricing',
-      '/about', '/careers', '/press', '/terms', '/privacy',
-    ];
     const authRoutes = ['/login', '/register', '/forgot-password'];
-    
-    // Check if the current route is considered public
+    const publicRoutes = [
+      '/', '/pricing', '/about', '/careers', '/press', '/terms', '/privacy',
+      ...authRoutes
+    ];
+
     const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/checkout');
 
     if (user) {
-      // User is LOGGED IN
-      
-      // If PWA is on root, redirect to dashboard
-      if (isPWA && pathname === '/') {
-        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
-        router.replace(targetDashboard);
-        return;
-      }
-
-      // If user is on an auth page, redirect to dashboard
+      // User is LOGGED IN.
       if (authRoutes.includes(pathname)) {
+        // If user is on an auth page (e.g., /login), redirect to the appropriate dashboard.
         const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.replace(targetDashboard);
-        return;
       }
+      // For any other route, including /profile, do nothing and allow access.
     } else {
-      // User is NOT LOGGED IN
-      // If trying to access a protected route, redirect to login
+      // User is NOT LOGGED IN.
       if (!isPublicRoute) {
+        // If trying to access a protected route, redirect to login.
         router.replace('/login');
-        return;
       }
     }
-  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isPWA]);
+  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus]);
   
   if (isUserLoading) {
     return <SplashScreen />;
