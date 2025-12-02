@@ -4,7 +4,7 @@
 import { useUser, usePWA } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import SplashScreen from '@/components/ui/splash-screen';
 
 export default function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
@@ -51,11 +51,7 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isPWA]);
   
   if (isUserLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   return (
