@@ -221,11 +221,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                           <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
                       </SheetHeader>
                       <SidebarContent isMobile />
-                       <div className="mt-auto border-t p-2 pb-4">
+                       <div className="mt-auto border-t p-4 space-y-2">
                            <Link 
                                 href="/profile"
                                 onClick={() => setSheetOpen(false)}
-                                className="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                className="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             >
                                 <Avatar className="h-10 w-10 border">
                                     <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
@@ -236,6 +236,10 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                                 </div>
                            </Link>
+                           <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start gap-4 text-muted-foreground hover:text-destructive">
+                                <LogOut className="h-5 w-5"/>
+                                <span>Sair</span>
+                            </Button>
                       </div>
                   </SheetContent>
               </Sheet>

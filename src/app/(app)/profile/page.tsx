@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -438,7 +439,21 @@ export default function ProfilePage() {
                 />
 
                 <div className="mt-8 flex flex-col md:flex-row gap-8 pb-16 sm:pb-8">
-                    <nav className="flex flex-row md:flex-col gap-1 w-full md:w-1/4 lg:w-1/5 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                     <nav className="md:hidden">
+                        <Select value={activeTab} onValueChange={(value) => setActiveTab(value as NavItem)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma seção" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {navItems.map(item => (
+                                    <SelectItem key={item.id} value={item.id}>
+                                       {item.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </nav>
+                    <nav className="hidden md:flex md:flex-col gap-1 w-full md:w-1/4 lg:w-1/5">
                         {navItems.map(item => (
                             <NavButton 
                                 key={item.id}
