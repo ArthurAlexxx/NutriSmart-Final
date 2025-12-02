@@ -33,6 +33,7 @@ const navItemsPatient = [
   { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
   { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
   { href: '/live-analysis', label: 'Análise ao Vivo', icon: Camera, id: 'nav-live-analysis', premium: true },
+  { href: '/profile', label: 'Configurações', icon: Settings, id: 'nav-settings', premium: false },
 ];
 
 const navItemsPro = [
@@ -102,12 +103,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   
   const isProUser = effectiveSubscriptionStatus === 'professional';
 
-  useEffect(() => {
-    if (!isUserLoading && user && !isAdmin && !isProUser && pathname.startsWith('/pro')) {
-        router.replace('/dashboard');
-    }
-  }, [isProUser, pathname, router, user, isUserLoading, isAdmin]);
-  
   const handleSignOut = async () => {
     if (!auth) return;
     try {
@@ -135,12 +130,12 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 {navItemsAdmin.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
             </NavSection>
             <Separator className="my-4" />
-            <NavSection title="Páginas Paciente">
-                {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
-            </NavSection>
-            <Separator className="my-4" />
             <NavSection title="Páginas Profissional">
               {navItemsPro.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
+            </NavSection>
+            <Separator className="my-4" />
+            <NavSection title="Páginas Paciente">
+                {navItemsPatient.map(item => <NavLink key={item.href} {...navLinkProps(item)} />)}
             </NavSection>
           </>
         )
@@ -196,12 +191,10 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             </div>
             <SidebarContent />
              <div className="mt-auto border-t p-4">
-                <NavLink
-                    href="/profile"
-                    label="Configurações"
-                    icon={Settings}
-                    pathname={pathname}
-                />
+                <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start gap-4 text-muted-foreground hover:text-destructive">
+                    <LogOut className="h-5 w-5"/>
+                    <span>Sair</span>
+                </Button>
             </div>
         </div>
         <div className="flex flex-col h-screen overflow-hidden">
