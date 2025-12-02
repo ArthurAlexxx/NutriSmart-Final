@@ -251,7 +251,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                           <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
                       </SheetHeader>
                       <SidebarContent isMobile />
-                       <div className="mt-auto border-t p-2">
+                       <div className="mt-auto border-t p-2 pb-4">
                            <Link 
                                 href="/profile"
                                 onClick={() => setSheetOpen(false)}
