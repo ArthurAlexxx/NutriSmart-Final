@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import ProfileSettingsModal from './profile-settings-modal';
-import { InstallPWAButton } from './install-pwa-button';
 
 
 interface DashboardHeaderProps {
@@ -40,7 +39,6 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
   return (
     <>
       <div className="hidden md:flex items-center gap-4">
-          <InstallPWAButton />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button id="user-profile-button" variant="ghost" className="relative h-10 w-10 rounded-full">
