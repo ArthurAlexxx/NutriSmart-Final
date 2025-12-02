@@ -11,15 +11,38 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => (
-  <Link
-    href={href}
-    onClick={onClick}
-    className={cn("transition-colors hover:text-primary text-base", className)}
-  >
-    {children}
-  </Link>
-);
+const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => {
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (href.startsWith('/#')) {
+      e.preventDefault();
+      if (onClick) {
+        onClick();
+      }
+      setTimeout(() => {
+        const id = href.substring(2);
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300); // Delay to allow sheet to close
+    } else {
+      if (onClick) {
+        onClick();
+      }
+    }
+  };
+
+  return (
+    <Link
+      href={href}
+      onClick={handleAnchorClick}
+      className={cn("transition-colors hover:text-primary text-base", className)}
+    >
+      {children}
+    </Link>
+  );
+};
+
 
 const LogoDisplay = () => {
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
