@@ -28,26 +28,26 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
         return; // Stop further execution for this case
     }
     
-    // Define public routes that don't require authentication
     const publicRoutes = [
       '/', '/login', '/register', '/forgot-password', '/pricing',
       '/about', '/careers', '/press', '/terms', '/privacy',
     ];
 
-    // Define auth routes that logged-in users should be redirected away from
     const authRoutes = ['/login', '/register', '/forgot-password'];
     
-    const isPublicRoute = publicRoutes.some(route => pathname === route || (route !== '/' && pathname.startsWith(route)));
+    const isPublicRoute = publicRoutes.includes(pathname);
 
     if (user) {
       // User is logged in
       if (authRoutes.includes(pathname)) {
+        // Redirect away from auth pages if logged in
         const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.replace(targetDashboard);
       }
     } else {
       // User is not logged in
       if (!isPublicRoute) {
+        // If it's not a public route, redirect to login
         router.replace('/login');
       }
     }
