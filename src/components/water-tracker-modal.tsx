@@ -119,7 +119,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm p-0">
         <DialogHeader className='text-center'>
           <DialogTitle className="text-2xl font-bold">Registrar Água</DialogTitle>
           <DialogDescription>
@@ -127,7 +127,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center justify-center text-center py-8 gap-6">
+        <div className="flex flex-col items-center justify-center text-center py-8 gap-6 px-6">
             <WaterBottle progress={progress} />
 
             <p className="text-4xl font-bold text-foreground">
@@ -147,7 +147,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
         </div>
 
         <DialogFooter>
-          <Button type="button" onClick={() => onOpenChange(false)} className='w-full'>
+          <Button type="button" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
             Fechar
           </Button>
         </DialogFooter>

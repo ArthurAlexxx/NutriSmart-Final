@@ -129,7 +129,7 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl flex flex-col p-0 max-h-[90svh]">
-        <DialogHeader className='p-6 pb-4 shrink-0'>
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</DialogTitle>
           <DialogDescription>
             {isEditing ? 'Ajuste os detalhes deste modelo.' : 'Crie um plano alimentar base para reutilizar com seus pacientes.'}
@@ -187,7 +187,7 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
                     </div>
                 </div>
             </div>
-            <DialogFooter className="p-6 pt-6 gap-2 border-t shrink-0 flex-col sm:flex-row">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

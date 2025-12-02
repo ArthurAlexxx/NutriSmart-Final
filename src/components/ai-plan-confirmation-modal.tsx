@@ -1,4 +1,3 @@
-
 // src/components/ai-plan-confirmation-modal.tsx
 'use client';
 
@@ -41,8 +40,8 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 sm:p-6">
-        <DialogHeader className='p-6 pb-4 sm:p-0'>
+      <DialogContent className="sm:max-w-lg p-0">
+        <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full">
                 <BrainCircuit className="h-6 w-6" />
@@ -56,7 +55,7 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
           </div>
         </DialogHeader>
 
-        <div className="py-4 max-h-[60vh] overflow-y-auto px-6 sm:px-0 sm:pr-2 space-y-4">
+        <div className="py-4 max-h-[60vh] overflow-y-auto px-6 space-y-4">
             <h3 className='font-semibold text-foreground'>Seus Objetivos</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InfoItem icon={Weight} label="Peso Atual" value={weight} unit="kg" />
@@ -72,7 +71,7 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
             </p>
         </div>
 
-        <DialogFooter className="!mt-6 gap-2 sm:gap-0 p-6 pt-0 sm:p-0 flex-col sm:flex-row sm:space-x-2">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className='w-full sm:w-auto'>
             Cancelar
           </Button>
@@ -89,4 +88,3 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
     </Dialog>
   );
 }
-

@@ -68,15 +68,15 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader className='p-6 pb-0'>
+      <DialogContent className="max-w-xl flex flex-col p-0 max-h-[90svh]">
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Nova Orientação</DialogTitle>
           <DialogDescription>
             Crie um texto de orientação para reutilizar com seus pacientes (ex: lista de compras, dicas).
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6 pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 space-y-6 pt-4">
             <FormField control={form.control} name="title" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Título da Orientação *</FormLabel>
@@ -91,15 +91,15 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
                     <FormMessage />
                 </FormItem>
             )}/>
-            <DialogFooter className="!mt-8 gap-2 flex-col sm:flex-row">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
-                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Salvar Orientação
-              </Button>
-            </DialogFooter>
-          </form>
+            </form>
         </Form>
+        <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
+            <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Salvar Orientação
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
