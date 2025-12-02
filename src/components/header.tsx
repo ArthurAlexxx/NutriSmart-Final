@@ -1,16 +1,15 @@
 // src/components/header.tsx
 'use client';
 
-import { Menu, Download } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { InstallPWAButton } from './install-pwa-button';
 
 const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => (
   <Link
@@ -63,7 +62,6 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
             <div className='hidden md:flex items-center gap-2'>
-              <InstallPWAButton />
               {user ? (
                  <Button asChild className="rounded-full">
                    <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>

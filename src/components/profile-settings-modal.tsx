@@ -38,7 +38,7 @@ const profileFormSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-type NavItem = 'personal' | 'sharing' | 'subscription';
+type NavItem = 'personal' | 'sharing' | 'subscription' | 'install';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -75,6 +75,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const { canInstall, triggerInstall, isPWA } = usePWA();
   
 
   const profileForm = useForm<ProfileFormValues>({
@@ -257,6 +258,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
+    { id: 'install', label: 'Instalar App', icon: Download, visible: canInstall && !isPWA },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
@@ -420,6 +422,20 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
                                 </CardFooter>
                              </Card>
                          )}
+                    </CardContent>
+                </Card>
+            );
+        case 'install':
+            return (
+                <Card className="w-full shadow-none border-none">
+                    <CardHeader>
+                        <CardTitle>Instalar Aplicativo</CardTitle>
+                         <CardDescription>Instale o Nutrinea no seu dispositivo para uma experiência mais rápida e integrada, como um aplicativo nativo.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center text-center py-10">
+                        <Button size="lg" onClick={triggerInstall}>
+                            <Download className="mr-2 h-5 w-5" /> Instalar no seu Dispositivo
+                        </Button>
                     </CardContent>
                 </Card>
             );
