@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { differenceInDays, differenceInHours } from 'date-fns';
+import { differenceInDays, differenceInHours, format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -132,8 +132,8 @@ export default function ProfilePage() {
                 calorieGoal: userProfile.calorieGoal ?? 2000,
                 proteinGoal: userProfile.proteinGoal ?? 140,
                 waterGoal: userProfile.waterGoal ?? 2000,
-                weight: userProfile.weight ?? NaN,
-                targetWeight: userProfile.targetWeight ?? NaN,
+                weight: userProfile.weight || '',
+                targetWeight: userProfile.targetWeight || '',
                 targetDate: finalDate,
             });
         }
@@ -460,14 +460,14 @@ export default function ProfilePage() {
                                                 <FormField control={goalsForm.control} name="weight" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Peso Atual (kg)</FormLabel>
-                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso atual" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso atual" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value ?? ''} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}/>
                                                 <FormField control={goalsForm.control} name="targetWeight" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Peso Meta (kg)</FormLabel>
-                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso desejado" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso desejado" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value ?? ''} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}/>
