@@ -212,7 +212,7 @@ export default function ChefPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-      <div className="relative h-full flex flex-col p-4 sm:p-6 lg:p-8">
+      <div className="relative h-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
         {isFeatureLocked && <SubscriptionOverlay />}
          <Card className={cn("flex-1 flex flex-col w-full max-w-4xl mx-auto rounded-2xl shadow-lg overflow-hidden border", isFeatureLocked && 'blur-md pointer-events-none')}>
             <ChatView

@@ -1,4 +1,3 @@
-
 // src/app/history/page.tsx
 'use client';
 
@@ -140,60 +139,62 @@ export default function HistoryPage() {
         userProfile={userProfile}
         onProfileUpdate={handleProfileUpdateWithToast}
     >
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-         <PageHeader 
-            icon={HistoryIcon}
-            title="Histórico Nutricional"
-            description="Navegue pelos dias para ver o detalhe de suas refeições."
-        />
-            
-        <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-100">
-            <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
-                <CardTitle>Selecione um Dia</CardTitle>
-                <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-                <HistoryKanbanCalendar
-                    selectedDate={selectedDate}
-                    onDateSelect={setSelectedDate}
-                />
-            </CardContent>
-        </Card>
+      <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-7xl space-y-6 sm:space-y-8">
+            <PageHeader 
+                icon={HistoryIcon}
+                title="Histórico Nutricional"
+                description="Navegue pelos dias para ver o detalhe de suas refeições."
+            />
+                
+            <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-100">
+                <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                    <CardTitle>Selecione um Dia</CardTitle>
+                    <CardDescription>Use o calendário para navegar pelo seu histórico.</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    <HistoryKanbanCalendar
+                        selectedDate={selectedDate}
+                        onDateSelect={setSelectedDate}
+                    />
+                </CardContent>
+            </Card>
 
-        {(loading) && allMealEntries.length === 0 ? (
-            <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-        ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-                <div className="lg:col-span-8 space-y-6 sm:space-y-8">
-                    <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
-                        <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
-                             <CardTitle>Refeições de {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</CardTitle>
-                             <CardDescription>
-                                {dailyData.mealEntries.length} {dailyData.mealEntries.length === 1 ? 'refeição registrada' : 'refeições registradas'} neste dia.
-                             </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-4 sm:p-6">
-                            <ConsumedFoodsList 
-                                mealEntries={dailyData.mealEntries} 
-                                onMealDeleted={handleMealDeleted}
-                                onMealEdit={() => {}}
-                            />
-                        </CardContent>
-                    </Card>
+            {(loading) && allMealEntries.length === 0 ? (
+                <div className="flex items-center justify-center h-64 rounded-xl bg-secondary/30">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+                    <div className="lg:col-span-8 space-y-6 sm:space-y-8">
+                        <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
+                            <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                                <CardTitle>Refeições de {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</CardTitle>
+                                <CardDescription>
+                                    {dailyData.mealEntries.length} {dailyData.mealEntries.length === 1 ? 'refeição registrada' : 'refeições registradas'} neste dia.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-4 sm:p-6">
+                                <ConsumedFoodsList 
+                                    mealEntries={dailyData.mealEntries} 
+                                    onMealDeleted={handleMealDeleted}
+                                    onMealEdit={() => {}}
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:sticky lg:top-24">
-                    <div className="animate-in fade-in-50 duration-500 delay-300">
-                      <SummaryCards totalNutrients={dailyData.totalNutrients} />
-                    </div>
-                    <div className="animate-in fade-in-50 duration-500 delay-400">
-                      <WaterIntakeSummary hydrationEntry={dailyData.hydrationEntry} />
+                    <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:sticky lg:top-24">
+                        <div className="animate-in fade-in-50 duration-500 delay-300">
+                        <SummaryCards totalNutrients={dailyData.totalNutrients} />
+                        </div>
+                        <div className="animate-in fade-in-50 duration-500 delay-400">
+                        <WaterIntakeSummary hydrationEntry={dailyData.hydrationEntry} />
+                        </div>
                     </div>
                 </div>
-            </div>
-            )}
+                )}
+        </div>
       </div>
     </AppLayout>
   );

@@ -318,31 +318,33 @@ export default function AnalysisPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-        <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col gap-8 print-container overflow-x-hidden">
-             <PageHeader 
-                icon={TrendingUp}
-                title="Análise de Desempenho"
-                description="Seu progresso e tendências de consumo ao longo do tempo."
-             />
-            
-            {isDemoUser && (
-                <div className="no-print p-4 border-2 border-dashed rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-secondary/30">
-                    <div className="flex items-center gap-3">
-                        <Database className="h-5 w-5 text-primary" />
-                        <p className="font-semibold text-sm">Painel de Demonstração</p>
+        <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
+            <div className="w-full max-w-7xl flex flex-col gap-8 print-container overflow-x-hidden">
+                <PageHeader 
+                    icon={TrendingUp}
+                    title="Análise de Desempenho"
+                    description="Seu progresso e tendências de consumo ao longo do tempo."
+                />
+                
+                {isDemoUser && (
+                    <div className="no-print p-4 border-2 border-dashed rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-secondary/30">
+                        <div className="flex items-center gap-3">
+                            <Database className="h-5 w-5 text-primary" />
+                            <p className="font-semibold text-sm">Painel de Demonstração</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button onClick={handleSeedData} disabled={isSeeding} size="sm" variant="outline">
+                                {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Gerar Dados Demo'}
+                            </Button>
+                            <Button onClick={handleDeleteData} disabled={isSeeding} size="sm" variant="destructive">
+                                {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                         <Button onClick={handleSeedData} disabled={isSeeding} size="sm" variant="outline">
-                            {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Gerar Dados Demo'}
-                        </Button>
-                        <Button onClick={handleDeleteData} disabled={isSeeding} size="sm" variant="destructive">
-                            {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
-                    </div>
-                </div>
-            )}
-            
-            {mainContent()}
+                )}
+                
+                {mainContent()}
+            </div>
         </div>
     </AppLayout>
   );
