@@ -33,7 +33,6 @@ const navItemsPatient = [
   { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
   { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
   { href: '/live-analysis', label: 'Análise ao Vivo', icon: Camera, id: 'nav-live-analysis', premium: true },
-  { href: '/profile', label: 'Configurações', icon: Settings, id: 'nav-settings', premium: false },
 ];
 
 const navItemsPro = [
