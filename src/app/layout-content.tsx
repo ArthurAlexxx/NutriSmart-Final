@@ -14,7 +14,7 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Do nothing while loading
+      return; // Do nothing while loading, the splash screen will be shown
     }
 
     // PWA-specific routing: bypass landing page
