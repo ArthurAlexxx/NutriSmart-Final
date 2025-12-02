@@ -21,8 +21,10 @@ const lexend = Lexend({
 export const metadata: Metadata = {
   title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
+  manifest: '/manifest.json',
   icons: {
     icon: '/icon.png',
+    apple: '/icon.png',
   },
 };
 
@@ -40,6 +42,21 @@ export default function RootLayout({
             </RootLayoutContent>
         </AppProvider>
         <Toaster />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
