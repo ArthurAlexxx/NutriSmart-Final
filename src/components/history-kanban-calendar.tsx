@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Card } from './ui/card';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface HistoryKanbanCalendarProps {
   selectedDate: Date;
@@ -15,16 +15,25 @@ interface HistoryKanbanCalendarProps {
 }
 
 export default function HistoryKanbanCalendar({ selectedDate, onDateSelect }: HistoryKanbanCalendarProps) {
-  const [displayStartDate, setDisplayStartDate] = useState(subDays(startOfDay(new Date()), 3));
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const daysToShow = isMobile ? 2 : 4;
+  
+  const [displayStartDate, setDisplayStartDate] = useState(subDays(startOfDay(new Date()), daysToShow - 1));
 
-  const daysToDisplay = Array.from({ length: 4 }, (_, i) => addDays(displayStartDate, i));
+  useEffect(() => {
+    // Adjust start date if the screen size changes to avoid weird jumps
+    setDisplayStartDate(subDays(startOfDay(new Date()), daysToShow - 1));
+  }, [daysToShow]);
+
+
+  const daysToDisplay = Array.from({ length: daysToShow }, (_, i) => addDays(displayStartDate, i));
 
   const handlePrev = () => {
-    setDisplayStartDate(subDays(displayStartDate, 4));
+    setDisplayStartDate(subDays(displayStartDate, daysToShow));
   };
 
   const handleNext = () => {
-    const nextDate = addDays(displayStartDate, 4);
+    const nextDate = addDays(displayStartDate, daysToShow);
     if (startOfDay(nextDate) <= startOfDay(new Date())) {
         setDisplayStartDate(nextDate);
     }
