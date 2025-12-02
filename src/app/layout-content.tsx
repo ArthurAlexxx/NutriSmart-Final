@@ -7,8 +7,7 @@ import { useEffect } from 'react';
 import SplashScreen from '@/components/ui/splash-screen';
 
 export default function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
-  const { isPWA } = usePWA();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -28,11 +27,10 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     if (user) {
       // User is LOGGED IN.
       if (authRoutes.includes(pathname)) {
-        // If user is on an auth page (e.g., /login), redirect to the appropriate dashboard.
-        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
-        router.replace(targetDashboard);
+        // If user is on an auth page (e.g., /login), redirect to the dashboard.
+        router.replace('/dashboard');
       }
-      // For any other route, including /profile, do nothing and allow access.
+      // For any other route, allow access.
     } else {
       // User is NOT LOGGED IN.
       if (!isPublicRoute) {
@@ -40,7 +38,7 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
         router.replace('/login');
       }
     }
-  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus]);
+  }, [user, isUserLoading, pathname, router]);
   
   if (isUserLoading) {
     return <SplashScreen />;

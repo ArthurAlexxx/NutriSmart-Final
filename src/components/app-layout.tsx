@@ -54,7 +54,7 @@ const navItemsAdmin = [
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
   const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
-  const isActive = isDashboard ? pathname.startsWith(href) && (pathname === href || !pathname.substring(href.length).includes('/')) : pathname.startsWith(href);
+  const isActive = isDashboard ? pathname === href : pathname.startsWith(href);
 
 
   const linkContent = (
@@ -126,21 +126,22 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
-  const { isUserLoading } = useUser();
+  const { isUserLoading, effectiveSubscriptionStatus, isAdmin } = useUser();
   const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
   
-  const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
   
   useEffect(() => {
-    if (!isUserLoading && user && !isProUser && pathname.startsWith('/pro')) {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+      return;
+    }
+    // This logic ensures that non-pro users are redirected from pro routes.
+    if (!isUserLoading && user && !isProUser && !isAdmin && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
-     if (!isUserLoading && !user) {
-      router.replace('/login');
-    }
-  }, [isProUser, pathname, router, user, isUserLoading]);
+  }, [isProUser, pathname, router, user, isUserLoading, isAdmin]);
   
   const handleSignOut = async () => {
     if (!auth) return;
