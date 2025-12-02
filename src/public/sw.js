@@ -1,16 +1,14 @@
-// public/sw.js
-const CACHE_NAME = 'nutrinea-cache-v16'; // Incremented version
+// sw.js
+
+const CACHE_NAME = 'nutrinea-cache-v17';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/favicon.ico',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  // Adicione aqui outras rotas ou assets estáticos que você quer que funcionem offline
-  // Ex: '/about', '/pricing'
+  '/icon.png',
+  // Adicione outros recursos estáticos importantes aqui
 ];
 
-// Instala o Service Worker
+// Instala o Service Worker e armazena os recursos em cache
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,7 +17,6 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
-  self.skipWaiting();
 });
 
 // Ativa o Service Worker e limpa caches antigos
@@ -30,56 +27,39 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  return self.clients.claim();
 });
 
-// Intercepta as requisições de rede
+// Intercepta as solicitações de rede - Estratégia Network First
 self.addEventListener('fetch', event => {
-  if (event.request.mode === 'navigate') {
-    // Para navegação, sempre tenta a rede primeiro (Stale-While-Revalidate para HTML)
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/');
-      })
-    );
-    return;
-  }
-  
-  // Para outros assets (CSS, JS, imagens), usa a estratégia Cache First
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Se encontrar no cache, retorna
-        if (response) {
-          return response;
-        }
+    fetch(event.request).then(response => {
+      // Verifica se recebemos uma resposta válida
+      if (!response || response.status !== 200 || response.type !== 'basic') {
+        // Se a rede falhar, tenta pegar do cache
+        return caches.match(event.request).then(cacheResponse => {
+            return cacheResponse || response;
+        });
+      }
 
-        // Se não, busca na rede
-        return fetch(event.request).then(
-          response => {
-            // Se a resposta não for válida, retorna ela mesma
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
+      // Clona a resposta. Uma para o navegador, outra para o cache.
+      const responseToCache = response.clone();
 
-            // Clona a resposta para poder guardar no cache e retornar
-            const responseToCache = response.clone();
+      caches.open(CACHE_NAME)
+        .then(cache => {
+          cache.put(event.request, responseToCache);
+        });
 
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-    );
+      return response;
+    }).catch(() => {
+      // A requisição de rede falhou completamente (provavelmente offline)
+      // Tenta encontrar no cache
+      return caches.match(event.request);
+    })
+  );
 });
