@@ -9,14 +9,14 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download, Target, Weight, CalendarIcon, Flame, Droplet, Rocket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
@@ -27,6 +27,11 @@ import { Separator } from '@/components/ui/separator';
 import { usePWA } from '@/context/pwa-context';
 import AppLayout from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
+import { Timestamp, doc, writeBatch, collection, serverTimestamp } from 'firebase/firestore';
+import { getLocalDateString } from '@/lib/date-utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ptBR } from 'date-fns/locale';
 
 const profileFormSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -40,7 +45,17 @@ const profileFormSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-type NavItem = 'personal' | 'sharing' | 'subscription' | 'install';
+const goalsFormSchema = z.object({
+  weight: z.coerce.number().min(1, 'O peso deve ser maior que 0.').optional().or(z.literal(NaN)),
+  targetWeight: z.coerce.number().min(1, 'A meta de peso deve ser maior que 0.').optional().or(z.literal(NaN)),
+  targetDate: z.date().optional(),
+  calorieGoal: z.coerce.number().min(1, 'A meta de calorias deve ser maior que 0.'),
+  proteinGoal: z.coerce.number().min(1, 'A meta de proteínas deve ser maior que 0.'),
+  waterGoal: z.coerce.number().min(1, 'A meta de água deve ser maior que 0.'),
+});
+type GoalsFormValues = z.infer<typeof goalsFormSchema>;
+
+type NavItem = 'personal' | 'goals' | 'sharing' | 'subscription' | 'install';
 
 
 const NavButton = ({ active, onClick, icon: Icon, label, variant = 'ghost' }: { active: boolean, onClick: () => void, icon: React.ElementType, label: string, variant?: 'ghost' | 'destructive' }) => (
@@ -60,11 +75,14 @@ const NavButton = ({ active, onClick, icon: Icon, label, variant = 'ghost' }: { 
 
 export default function ProfilePage() {
     const { toast } = useToast();
-    const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useUser();
+    const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus, isAdmin, firestore } = useUser();
     const auth = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
-    const [activeTab, setActiveTab] = useState<NavItem>('personal');
+    const initialTab = searchParams.get('tab') === 'goals' ? 'goals' : 'personal';
+    const [activeTab, setActiveTab] = useState<NavItem>(initialTab);
+
     const [isCopied, setIsCopied] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,23 +96,58 @@ export default function ProfilePage() {
     const profileForm = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
     });
+
+    const goalsForm = useForm<GoalsFormValues>({
+        resolver: zodResolver(goalsFormSchema),
+    });
     
     const { isSubmitting: isProfileSubmitting, formState: { isDirty: isProfileDirty } } = profileForm;
+    const { isSubmitting: isGoalsSubmitting, formState: { isDirty: isGoalsDirty } } = goalsForm;
+
 
     useEffect(() => {
         if (userProfile) {
-        profileForm.reset({
-            fullName: userProfile.fullName || '',
-            phone: userProfile.phone || '',
-            taxId: userProfile.taxId || '',
-            postalCode: userProfile.postalCode || '',
-            address: userProfile.address || '',
-            addressNumber: userProfile.addressNumber || '',
-            complement: userProfile.complement || '',
-            province: userProfile.province || '',
-        });
+            profileForm.reset({
+                fullName: userProfile.fullName || '',
+                phone: userProfile.phone || '',
+                taxId: userProfile.taxId || '',
+                postalCode: userProfile.postalCode || '',
+                address: userProfile.address || '',
+                addressNumber: userProfile.addressNumber || '',
+                complement: userProfile.complement || '',
+                province: userProfile.province || '',
+            });
+
+            const targetDate = userProfile.targetDate;
+            let finalDate: Date | undefined;
+            if (targetDate) {
+                if (typeof (targetDate as any)?.toDate === 'function') {
+                    finalDate = (targetDate as Timestamp).toDate();
+                } else if (targetDate instanceof Date) {
+                    finalDate = targetDate;
+                }
+            }
+
+             goalsForm.reset({
+                calorieGoal: userProfile.calorieGoal ?? 2000,
+                proteinGoal: userProfile.proteinGoal ?? 140,
+                waterGoal: userProfile.waterGoal ?? 2000,
+                weight: userProfile.weight ?? NaN,
+                targetWeight: userProfile.targetWeight ?? NaN,
+                targetDate: finalDate,
+            });
         }
-    }, [userProfile, profileForm]);
+    }, [userProfile, profileForm, goalsForm]);
+    
+    const watchedCalorieGoal = goalsForm.watch('calorieGoal');
+
+    useEffect(() => {
+        if (watchedCalorieGoal > 0 && goalsForm.formState.dirtyFields.calorieGoal) {
+            const newProteinGoal = Math.round((watchedCalorieGoal * 0.35) / 4);
+            goalsForm.setValue('proteinGoal', newProteinGoal, { shouldDirty: true });
+        }
+    }, [watchedCalorieGoal, goalsForm]);
+
 
     if (!user || !userProfile) {
         return (
@@ -169,6 +222,66 @@ export default function ProfilePage() {
         }
     };
 
+    const onGoalsSubmit = async (data: GoalsFormValues) => {
+        if (!firestore || !isGoalsDirty) {
+            return;
+        }
+
+        try {
+            const batch = writeBatch(firestore);
+            const userRef = doc(firestore, 'users', user.uid);
+            const updatedProfile: Partial<UserProfile> = {};
+            const dirtyFields = goalsForm.formState.dirtyFields;
+
+            if (dirtyFields.calorieGoal) updatedProfile.calorieGoal = data.calorieGoal;
+            if (dirtyFields.proteinGoal) updatedProfile.proteinGoal = data.proteinGoal;
+            if (dirtyFields.waterGoal) updatedProfile.waterGoal = data.waterGoal;
+            if (dirtyFields.weight && data.weight && !isNaN(data.weight)) updatedProfile.weight = data.weight;
+            if (dirtyFields.targetWeight && data.targetWeight && !isNaN(data.targetWeight)) updatedProfile.targetWeight = data.targetWeight;
+            if (dirtyFields.targetDate && data.targetDate) updatedProfile.targetDate = Timestamp.fromDate(data.targetDate);
+            
+            batch.update(userRef, updatedProfile);
+
+            if (dirtyFields.weight && updatedProfile.weight) {
+                const weightLogRef = doc(collection(firestore, 'users', user.uid, 'weight_logs'));
+                const newLog = {
+                    userId: user.uid,
+                    weight: updatedProfile.weight,
+                    date: getLocalDateString(new Date()),
+                    createdAt: serverTimestamp(),
+                };
+                batch.set(weightLogRef, newLog);
+            }
+
+            if (userProfile.patientRoomId && (dirtyFields.weight)) {
+                const roomRef = doc(firestore, 'rooms', userProfile.patientRoomId);
+                const updatedPatientInfo: { [key: string]: any } = {};
+                if (dirtyFields.weight && updatedProfile.weight) {
+                    updatedPatientInfo['patientInfo.weight'] = updatedProfile.weight;
+                }
+                
+                if (Object.keys(updatedPatientInfo).length > 0) {
+                    batch.update(roomRef, updatedPatientInfo);
+                }
+            }
+            await batch.commit();
+            
+            toast({
+                title: 'Metas Salvas',
+                description: 'Suas metas foram atualizadas com sucesso.',
+            });
+
+        } catch (error: any) {
+            console.error("Error updating goals:", error);
+            toast({
+                title: 'Erro ao Salvar Metas',
+                description: error.message || 'Não foi possível atualizar suas metas. Tente novamente.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+
     const handleCopyCode = () => {
         if (!userProfile.dashboardShareCode) return;
         navigator.clipboard.writeText(userProfile.dashboardShareCode);
@@ -242,6 +355,7 @@ export default function ProfilePage() {
 
     const navItems = [
         { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
+        { id: 'goals', label: 'Minhas Metas', icon: Target, visible: true },
         { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
         { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
         { id: 'install', label: 'Instalar App', icon: Download, visible: canInstall && !isPWA },
@@ -323,6 +437,85 @@ export default function ProfilePage() {
                                     <Button type="submit" disabled={isProfileSubmitting || isUploading || (!isProfileDirty && !selectedImage)}>
                                         {(isProfileSubmitting || isUploading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                         Salvar Alterações
+                                    </Button>
+                                </CardFooter>
+                            </form>
+                        </Form>
+                    </Card>
+                );
+            case 'goals':
+                 return (
+                    <Card className="w-full shadow-none border-none">
+                        <Form {...goalsForm}>
+                            <form onSubmit={goalsForm.handleSubmit(onGoalsSubmit)}>
+                                <CardHeader>
+                                    <CardTitle>Ajustar Metas de Saúde</CardTitle>
+                                    <CardDescription>Atualize seu peso e metas diárias para uma experiência mais precisa.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-8">
+                                    <div>
+                                        <h3 className="font-semibold text-foreground mb-4">Metas de Peso</h3>
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <FormField control={goalsForm.control} name="weight" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Peso Atual (kg)</FormLabel>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso atual" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}/>
+                                                <FormField control={goalsForm.control} name="targetWeight" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Peso Meta (kg)</FormLabel>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso desejado" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={isNaN(field.value) ? '' : field.value} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}/>
+                                            </div>
+                                            <FormField control={goalsForm.control} name="targetDate" render={({ field }) => (
+                                                <FormItem className='flex flex-col py-1'><FormLabel>Data para Atingir a Meta</FormLabel>
+                                                <Popover><PopoverTrigger asChild><FormControl>
+                                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>
+                                                        {field.value ? (format(field.value, "PPP", { locale: ptBR })) : (<span>Escolha uma data</span>)}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date() || date < new Date("1900-01-01")} initialFocus/>
+                                                </PopoverContent></Popover><FormMessage /></FormItem>
+                                            )}/>
+                                        </div>
+                                    </div>
+                                     <div>
+                                        <h3 className="font-semibold text-foreground mb-4">Metas Nutricionais Diárias</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                             <FormField control={goalsForm.control} name="calorieGoal" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className='flex items-center gap-1.5'><Flame className='h-4 w-4 text-orange-500'/>Calorias (kcal)</FormLabel>
+                                                    <FormControl><Input type="number" placeholder="Ex: 2200" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                            <FormField control={goalsForm.control} name="proteinGoal" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className='flex items-center gap-1.5'><Rocket className='h-4 w-4 text-blue-500'/>Proteínas (g)</FormLabel>
+                                                    <FormControl><Input type="number" placeholder="Ex: 150" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                            <FormField control={goalsForm.control} name="waterGoal" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className='flex items-center gap-1.5'><Droplet className='h-4 w-4 text-sky-500'/>Água (ml)</FormLabel>
+                                                    <FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                        </div>
+                                     </div>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button type="submit" disabled={isGoalsSubmitting || !isGoalsDirty}>
+                                        {isGoalsSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        Salvar Metas
                                     </Button>
                                 </CardFooter>
                             </form>

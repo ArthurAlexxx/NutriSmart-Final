@@ -26,6 +26,7 @@ import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
 import { PageHeader } from '@/components/page-header';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const db = useFirestore();
@@ -222,8 +223,10 @@ export default function DashboardPage() {
                         <Plus className={cn("h-4 w-4 mr-2 transition-transform", isAddMealFormOpen && "rotate-45")} />
                          {isAddMealFormOpen ? "Fechar" : "Adicionar Refeição"}
                     </Button>
-                    <Button id="adjust-goals-button" onClick={() => setGoalsModalOpen(true)} variant="outline" size="sm" className='flex-1 sm:flex-initial'>
-                        <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
+                    <Button asChild id="adjust-goals-button" variant="outline" size="sm" className='flex-1 sm:flex-initial'>
+                        <Link href="/profile?tab=goals">
+                          <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
+                        </Link>
                     </Button>
                 </div>
             </div>
