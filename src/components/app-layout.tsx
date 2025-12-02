@@ -1,11 +1,11 @@
 // src/components/app-layout.tsx
 'use client';
 
-import React, { useState, useMemo, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Settings2, UserPlus, Shield, CreditCard, Building, Library, X, DollarSign, MoreHorizontal, Lock, AlarmClock, QrCode, Webhook, Send, Camera } from 'lucide-react';
+import { BarChart3, History, Settings, LogOut, Menu, User as UserIcon, ChefHat, Users, LayoutDashboard, BookMarked, Briefcase, Shield, DollarSign, Library, X, Camera, Webhook, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -13,14 +13,10 @@ import type { User } from 'firebase/auth';
 import type { UserProfile } from '@/types/user';
 import DashboardHeader from './dashboard-header';
 import { Separator } from './ui/separator';
-import { Skeleton } from './ui/skeleton';
 import { signOut } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { differenceInDays, differenceInHours } from 'date-fns';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useToast } from '@/hooks/use-toast';
-import { verifyAndFinalizeSubscription } from '@/app/actions/billing-actions';
 import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -49,21 +45,11 @@ const navItemsAdmin = [
     { href: '/admin/users', label: 'Usuários', icon: Users, id: 'nav-admin-users' },
     { href: '/admin/finance', label: 'Financeiro', icon: DollarSign, id: 'nav-admin-finance' },
     { href: '/admin/logs', label: 'Logs', icon: Webhook, id: 'nav-admin-logs' },
-    { href: '/admin/asaas-test', label: 'Teste Asaas', icon: Send, id: 'nav-admin-asaas' },
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
   const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
   const isActive = isDashboard ? pathname === href : pathname.startsWith(href);
-
-
-  const linkContent = (
-    <>
-        <Icon className="h-5 w-5" />
-        {label}
-        {disabled && <Lock className='ml-auto h-4 w-4 text-primary-foreground/50'/>}
-    </>
-  );
 
   return (
     <Link
@@ -78,7 +64,8 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       )}
       aria-disabled={disabled}
     >
-      {linkContent}
+        <Icon className="h-5 w-5" />
+        {label}
     </Link>
   );
 };
@@ -93,14 +80,8 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 );
 
 const LogoDisplay = () => {
-    const [isPwa, setIsPwa] = useState(false);
-    
-    useEffect(() => {
-        setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
-    }, []);
-
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-    const LogoComponent = (
+    return (
         <Image 
             src={logoImage?.imageUrl || ''}
             alt="Nutrinea Logo"
@@ -110,16 +91,6 @@ const LogoDisplay = () => {
             className="h-auto w-auto"
         />
     );
-    
-    if (isPwa) {
-        return <div className="flex items-center gap-2 font-semibold [app-region:drag] h-full w-full">{LogoComponent}</div>;
-    }
-    
-    return (
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-            {LogoComponent}
-        </Link>
-    );
 };
 
 
@@ -128,11 +99,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const router = useRouter();
   const auth = useAuth();
   const { isUserLoading, effectiveSubscriptionStatus, isAdmin } = useUser();
-  const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
   
   const isProUser = effectiveSubscriptionStatus === 'professional';
   
+  // This useEffect handles redirection for users trying to access professional routes.
   useEffect(() => {
     if (!isUserLoading && user && !isAdmin && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
@@ -206,7 +177,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       </div>
     </>
   );
-
+  
+  // This is a guard. While the user/profile is loading, we show a spinner to prevent flicker or premature rendering.
   if (isUserLoading || !userProfile) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
@@ -221,7 +193,9 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
         <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
-              <LogoDisplay />
+              <Link href="/" className="flex items-center gap-2 font-semibold">
+                <LogoDisplay />
+              </Link>
             </div>
             <SidebarContent />
              <div className="mt-auto border-t p-4">
@@ -248,7 +222,9 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetTrigger>
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <LogoDisplay />
+                          <Link href="/" className="flex items-center gap-2 font-semibold">
+                            <LogoDisplay />
+                          </Link>
                            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                               <X className="h-5 w-5" />
                               <span className="sr-only">Close</span>

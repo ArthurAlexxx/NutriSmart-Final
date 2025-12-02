@@ -1,7 +1,7 @@
 // src/app/layout-content.tsx
 'use client'; 
 
-import { useUser, usePWA } from '@/firebase';
+import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import SplashScreen from '@/components/ui/splash-screen';
@@ -12,37 +12,41 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   useEffect(() => {
+    // 1. Wait until authentication state is resolved
     if (isUserLoading) {
-      return; // Wait until the user session is verified, show splash screen.
+      return; 
     }
 
+    // 2. Define public routes that do not require authentication
+    const publicRoutes = ['/', '/pricing', '/about', '/careers', '/press', '/terms', '/privacy'];
     const authRoutes = ['/login', '/register', '/forgot-password'];
-    const publicRoutes = [
-      '/', '/pricing', '/about', '/careers', '/press', '/terms', '/privacy',
-      ...authRoutes
-    ];
+    
+    const isAuthRoute = authRoutes.includes(pathname);
+    const isPublicRoute = publicRoutes.includes(pathname) || isAuthRoute || pathname.startsWith('/checkout');
 
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/checkout');
-
+    // 3. Handle routing logic
     if (user) {
-      // User is LOGGED IN.
-      if (authRoutes.includes(pathname)) {
-        // If user is on an auth page (e.g., /login), redirect to the dashboard.
+      // User is LOGGED IN
+      if (isAuthRoute) {
+        // If user is logged in and tries to access login/register, redirect to dashboard
         router.replace('/dashboard');
       }
-      // For any other route, allow access.
+      // For any other route (including /profile), allow access (do nothing)
     } else {
-      // User is NOT LOGGED IN.
+      // User is NOT LOGGED IN
       if (!isPublicRoute) {
-        // If trying to access a protected route, redirect to login.
+        // If the route is not public, redirect to login
         router.replace('/login');
       }
+      // For public routes, allow access (do nothing)
     }
   }, [user, isUserLoading, pathname, router]);
   
+  // Show splash screen during the initial auth check
   if (isUserLoading) {
     return <SplashScreen />;
   }
 
+  // Render the page content once auth state is resolved
   return <>{children}</>;
 }
