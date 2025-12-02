@@ -93,7 +93,13 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
     </div>
 );
 
-const LogoDisplay = ({ isPwa = false }: { isPwa?: boolean }) => {
+const LogoDisplay = () => {
+    const [isPwa, setIsPwa] = useState(false);
+    
+    useEffect(() => {
+        setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
+    }, []);
+
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
     const LogoComponent = (
         <Image 
@@ -125,13 +131,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
-  const [isPwa, setIsPwa] = useState(false);
-
-  useEffect(() => {
-    // This check only runs on the client side
-    const isPwaMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-    setIsPwa(isPwaMode);
-  }, []);
 
   const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
@@ -227,7 +226,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
         <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
-              <LogoDisplay isPwa={isPwa} />
+              <LogoDisplay />
             </div>
             <SidebarContent />
         </div>
@@ -246,7 +245,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetTrigger>
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <LogoDisplay isPwa={isPwa} />
+                          <LogoDisplay />
                            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                               <X className="h-5 w-5" />
                               <span className="sr-only">Close</span>

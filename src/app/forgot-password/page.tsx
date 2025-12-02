@@ -1,8 +1,7 @@
-
 // src/app/forgot-password/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,8 +23,14 @@ const formSchema = z.object({
 type ForgotPasswordFormValues = z.infer<typeof formSchema>;
 
 const LogoDisplay = () => {
+    const [isPwa, setIsPwa] = useState(false);
+
+    useEffect(() => {
+        setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
+    }, []);
+
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-    return (
+    const LogoComponent = (
         <Image 
             src={logoImage?.imageUrl || ''}
             alt="Nutrinea Logo"
@@ -33,6 +38,16 @@ const LogoDisplay = () => {
             height={40}
             priority
         />
+    );
+
+    if (isPwa) {
+        return <div className="inline-block mb-6">{LogoComponent}</div>;
+    }
+
+    return (
+        <Link href="/" className="inline-block mb-6">
+            {LogoComponent}
+        </Link>
     );
 };
 
@@ -76,9 +91,7 @@ export default function ForgotPasswordPage() {
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-              <LogoDisplay />
-          </Link>
+          <LogoDisplay />
           <h1 className="text-3xl font-bold font-heading">Redefinir Senha</h1>
           <p className="text-muted-foreground mt-2">
               {submitted 

@@ -1,7 +1,7 @@
 // src/app/register/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,16 +32,32 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const LogoDisplay = () => {
-  const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-  return (
-    <Image 
-      src={logoImage?.imageUrl || ''}
-      alt="Nutrinea Logo"
-      width={140}
-      height={35}
-      priority
-    />
-  );
+    const [isPwa, setIsPwa] = useState(false);
+
+    useEffect(() => {
+        setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
+    }, []);
+
+    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const LogoComponent = (
+        <Image 
+            src={logoImage?.imageUrl || ''}
+            alt="Nutrinea Logo"
+            width={140}
+            height={35}
+            priority
+        />
+    );
+
+    if (isPwa) {
+        return <div className="inline-block mb-6">{LogoComponent}</div>;
+    }
+
+    return (
+        <Link href="/" className="inline-block mb-6">
+            {LogoComponent}
+        </Link>
+    );
 };
 
 export default function RegisterPage() {
@@ -129,9 +145,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
             <LogoDisplay />
-          </Link>
           <h1 className="text-3xl font-bold font-heading">
             Crie sua Conta
           </h1>
