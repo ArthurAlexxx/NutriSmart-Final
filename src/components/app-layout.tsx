@@ -17,7 +17,6 @@ import { Skeleton } from './ui/skeleton';
 import { signOut } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import ProfileSettingsModal from './profile-settings-modal';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
@@ -130,8 +129,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const { isUserLoading } = useUser();
   const { toast } = useToast();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
-
+  
   const { effectiveSubscriptionStatus, isAdmin } = useUser();
   const isProUser = effectiveSubscriptionStatus === 'professional';
   
@@ -254,11 +252,9 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                       </SheetHeader>
                       <SidebarContent isMobile />
                        <div className="mt-auto border-t p-2">
-                           <button 
-                                onClick={() => {
-                                  setProfileModalOpen(true);
-                                  setSheetOpen(false);
-                                }}
+                           <Link 
+                                href="/profile"
+                                onClick={() => setSheetOpen(false)}
                                 className="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             >
                                 <Avatar className="h-10 w-10 border">
@@ -269,7 +265,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                     <p className="font-semibold text-sm truncate">{userProfile?.fullName}</p>
                                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                                 </div>
-                           </button>
+                           </Link>
                       </div>
                   </SheetContent>
               </Sheet>
@@ -293,14 +289,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
           </main>
         </div>
       </div>
-      {userProfile && user && (
-         <ProfileSettingsModal
-            isOpen={isProfileModalOpen}
-            onOpenChange={setProfileModalOpen}
-            userProfile={userProfile}
-            userId={user.uid}
-         />
-      )}
     </>
   );
 }

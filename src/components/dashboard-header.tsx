@@ -11,8 +11,8 @@ import { type UserProfile } from '@/types/user';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import ProfileSettingsModal from './profile-settings-modal';
 import { InstallPWAButton } from './install-pwa-button';
+import Link from 'next/link';
 
 
 interface DashboardHeaderProps {
@@ -23,8 +23,7 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({ user, userProfile }: DashboardHeaderProps) {
   const router = useRouter();
   const auth = useAuth();
-  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
-
+  
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -58,9 +57,11 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
                     <p className='text-xs font-normal text-muted-foreground'>{userEmail}</p>
                 </DropdownMenuLabel>
               <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
+                <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configurações</span>
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialog>
@@ -94,15 +95,6 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
             </DropdownMenuContent>
           </DropdownMenu>
       </div>
-      
-      {userProfile && user && (
-         <ProfileSettingsModal
-            isOpen={isProfileModalOpen}
-            onOpenChange={setProfileModalOpen}
-            userProfile={userProfile}
-            userId={user.uid}
-         />
-      )}
     </>
   );
 }
