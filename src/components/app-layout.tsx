@@ -224,20 +224,20 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   return (
     <>
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
-        <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
+        <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print [app-region:drag]">
             <div className="flex h-20 items-center border-b px-6">
               <LogoDisplay />
             </div>
             <SidebarContent />
         </div>
         <div className="flex flex-col h-screen overflow-hidden">
-          <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print">
+          <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
               <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
                       <Button
                           variant="outline"
                           size="icon"
-                          className="shrink-0 md:hidden"
+                          className="shrink-0 md:hidden [app-region:no-drag]"
                       >
                           <Menu className="h-5 w-5" />
                           <span className="sr-only">Toggle navigation menu</span>
@@ -274,11 +274,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetContent>
               </Sheet>
               
-              <div className="w-full flex-1 md:hidden">
+              <div className="w-full flex-1 md:hidden [app-region:no-drag]">
                 {/* This div is to push the profile button to the right on mobile */}
               </div>
 
-              <div className='hidden md:flex flex-1 justify-end'>
+              <div className='hidden md:flex flex-1 justify-end [app-region:no-drag]'>
                 <DashboardHeader
                     user={user}
                     userProfile={userProfile}
