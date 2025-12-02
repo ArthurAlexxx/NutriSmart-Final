@@ -76,6 +76,12 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Force reactivity to PWA context
+  const [showInstallButton, setShowInstallButton] = useState(canInstall);
+  useEffect(() => {
+    setShowInstallButton(canInstall);
+  }, [canInstall]);
 
 
   const profileForm = useForm<ProfileFormValues>({
@@ -258,7 +264,7 @@ export default function ProfileSettingsModal({ isOpen, onOpenChange, userProfile
     { id: 'personal', label: 'Dados Pessoais', icon: UserIcon, visible: true },
     { id: 'sharing', label: 'Compartilhamento', icon: Share2, visible: !isProfessionalUser && !isAdmin },
     { id: 'subscription', label: 'Assinatura', icon: CreditCard, visible: !isAdmin },
-    { id: 'install', label: 'Instalar Aplicativo', icon: Download, visible: canInstall },
+    { id: 'install', label: 'Instalar Aplicativo', icon: Download, visible: showInstallButton },
   ].filter(item => item.visible);
   
   const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
