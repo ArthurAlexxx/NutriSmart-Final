@@ -10,7 +10,6 @@ import { Loader2, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SubscriptionOverlay from '@/components/subscription-overlay';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import OrientationLock from '@/components/orientation-lock';
 import { Card, CardContent } from '@/components/ui/card';
 
 function DesktopWarning() {
@@ -33,15 +32,10 @@ function DesktopWarning() {
 export default function LiveAnalysisPage() {
   const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();
-  const isLandscape = useMediaQuery('(orientation: landscape)');
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const isFeatureLocked = effectiveSubscriptionStatus === 'free';
   
-  if (isLandscape && !isDesktop) {
-    return <OrientationLock />;
-  }
-
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
        <div className="relative h-full w-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-black">

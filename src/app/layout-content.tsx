@@ -5,7 +5,6 @@ import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import InstallPWAButton from '@/components/install-pwa-button';
 
 export default function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
@@ -49,7 +48,6 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   return (
     <>
       {children}
-      <InstallPWAButton />
     </>
   );
 }

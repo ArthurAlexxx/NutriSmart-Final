@@ -1,3 +1,4 @@
+
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
@@ -23,9 +24,7 @@ export const metadata: Metadata = {
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
   icons: {
     icon: '/icon.png',
-    apple: '/icon.png',
   },
-   manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -35,12 +34,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
-      <head>
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#72A159" />
-      </head>
       <body className='h-full'>
         <AppProvider>
             <RootLayoutContent>
@@ -48,19 +41,6 @@ export default function RootLayout({
             </RootLayoutContent>
         </AppProvider>
         <Toaster />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').then(registration => {
-                    console.log('SW registered: ', registration);
-                  }).catch(err => console.log('SW registration failed: ', err));
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );
