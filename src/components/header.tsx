@@ -10,7 +10,6 @@ import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import InstallPWAButton from './install-pwa-button';
 
 const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => (
   <Link
