@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
 import { PageHeader } from '@/components/page-header';
 import Link from 'next/link';
+import GoalsModal from '@/components/goals-modal';
 
 export default function DashboardPage() {
   const db = useFirestore();
@@ -39,6 +40,8 @@ export default function DashboardPage() {
   
   const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
   const [isAddMealFormOpen, setAddMealFormOpen] = useState(false);
+  const [isGoalsModalOpen, setGoalsModalOpen] = useState(false);
+
 
   useEffect(() => {
     if (!user || !db) return;
@@ -221,10 +224,8 @@ export default function DashboardPage() {
                         <Plus className={cn("h-4 w-4 mr-2 transition-transform", isAddMealFormOpen && "rotate-45")} />
                          {isAddMealFormOpen ? "Fechar" : "Adicionar Refeição"}
                     </Button>
-                    <Button asChild id="adjust-goals-button" variant="outline" size="sm" className='flex-1 sm:flex-initial'>
-                        <Link href="/profile?tab=goals">
-                          <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
-                        </Link>
+                    <Button id="adjust-goals-button" onClick={() => setGoalsModalOpen(true)} variant="outline" size="sm" className='flex-1 sm:flex-initial'>
+                        <Settings className="mr-2 h-4 w-4" /> Ajustar Metas
                     </Button>
                 </div>
             </div>
@@ -239,6 +240,13 @@ export default function DashboardPage() {
                         </CollapsibleContent>
                      </Collapsible>
                     
+                    {!hasLoggedWeightToday && (
+                        <WeightReminderCard 
+                            currentWeight={userProfile?.weight}
+                            onWeightSubmit={handleWeightUpdate}
+                        />
+                     )}
+
                     <Card className="shadow-lg rounded-2xl w-full">
                         <CardHeader>
                             <CardTitle>Refeições de Hoje</CardTitle>
@@ -253,12 +261,6 @@ export default function DashboardPage() {
                     </Card>
                 </div>
                 <div className="lg:col-span-1 space-y-8">
-                     {!hasLoggedWeightToday && (
-                        <WeightReminderCard 
-                            currentWeight={userProfile?.weight}
-                            onWeightSubmit={handleWeightUpdate}
-                        />
-                     )}
                      <div id="summary-cards">
                         <SummaryCards
                             totalNutrients={totalNutrients}
@@ -283,6 +285,14 @@ export default function DashboardPage() {
                 onOpenChange={() => setEditingMeal(null)}
                 mealEntry={editingMeal}
                 onMealUpdate={handleMealUpdate}
+            />
+        )}
+        {userProfile && (
+            <GoalsModal
+                isOpen={isGoalsModalOpen}
+                onOpenChange={setGoalsModalOpen}
+                userProfile={userProfile}
+                onProfileUpdate={handleProfileUpdateWithToast}
             />
         )}
     </AppLayout>
