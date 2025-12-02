@@ -107,6 +107,7 @@ const LogoDisplay = () => {
             width={140}
             height={35}
             priority
+            className="h-auto w-auto"
         />
     );
     
@@ -133,12 +134,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const isProUser = effectiveSubscriptionStatus === 'professional';
   
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.replace('/login');
-      return;
-    }
-    // This logic ensures that non-pro users are redirected from pro routes.
-    if (!isUserLoading && user && !isProUser && !isAdmin && pathname.startsWith('/pro')) {
+    if (!isUserLoading && user && !isAdmin && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
     }
   }, [isProUser, pathname, router, user, isUserLoading, isAdmin]);
