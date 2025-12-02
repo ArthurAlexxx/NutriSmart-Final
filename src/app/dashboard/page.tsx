@@ -209,9 +209,9 @@ export default function DashboardPage() {
     >
       <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-7xl flex flex-col gap-8">
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left animate-fade-in'>
+            <div className='flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
-                    <h2 className='text-3xl font-bold font-heading flex items-center gap-3'>
+                    <h2 className='text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start'>
                         <LayoutDashboard className='h-8 w-8 text-primary'/>
                         Seu Diário
                     </h2>

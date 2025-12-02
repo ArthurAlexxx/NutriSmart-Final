@@ -1,4 +1,3 @@
-
 // src/components/chat-view.tsx
 'use client';
 
