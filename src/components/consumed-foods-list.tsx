@@ -165,7 +165,7 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
                   
                   <div className="mb-4">
                     <p className="text-sm text-muted-foreground">
-                        {entry.mealData.alimentos.map(f => `${f.portion}${f.unit} de ${f.name}`).join(', ')}
+                        {entry.mealData.alimentos[0].name}
                     </p>
                   </div>
 

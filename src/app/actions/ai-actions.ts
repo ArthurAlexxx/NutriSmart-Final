@@ -236,9 +236,9 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
 
     REGRAS DE ANÁLISE:
     1.  **IDENTIFICAÇÃO DETALHADA**: Identifique CADA alimento visível na imagem. Para cada um, estime a quantidade em gramas (g). Agrupe itens similares (ex: 'Folhas verdes').
-    2.  **CÁLCULO NUTRICIONAL**: Calcule os totais de **calorias (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. Os valores devem ser números.
+    2.  **CÁLCULO NUTRICIONAL**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. Os valores devem ser números.
     3.  **DESCRIÇÃO**: Crie uma descrição geral da refeição em uma única frase (campo 'description').
-    4.  **AVALIAÇÃO DE SAUDABILIDADE**: Dê uma nota de 0 a 10 para o quão saudável a refeição é (campo 'rating'). Considere o equilíbrio de macronutrientes, a presença de vegetais, e o método de preparo aparente.
+    4.  **AVALIAÇÃO DE SAUDABILIDADE**: Dê uma nota de 0 a 10 para o quão saudável a refeição é (campo 'rating'). O valor deve ser um número. Considere o equilíbrio de macronutrientes, a presença de vegetais, e o método de preparo aparente.
     5.  **JUSTIFICATIVA DA NOTA**: Forneça uma justificativa curta (1-2 frases) para a nota que você deu (campo 'ratingJustification').
     6.  **LISTA DE ALIMENTOS**: Crie uma lista dos alimentos identificados com suas quantidades estimadas (campo 'identifiedFoods').
     7.  **SE NÃO FOR COMIDA**: Se a imagem claramente não contiver comida, retorne um JSON com valores numéricos zerados, a 'description' como "Nenhum alimento identificado." e o array 'identifiedFoods' vazio.
