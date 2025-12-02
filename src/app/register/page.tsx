@@ -12,10 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { UserProfile } from '@/types/user';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -64,8 +62,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
-  const { isUserLoading } = useUser();
   
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -79,26 +75,14 @@ export default function RegisterPage() {
 
   const handleRegister = async (data: RegisterFormValues) => {
     setLoading(true);
-    if (!auth || !firestore) {
-      toast({ title: "Erro de inicialização", description: "Serviços indisponíveis. Tente novamente mais tarde.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
 
     try {
+      await setPersistence(auth, browserLocalPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
+      await updateProfile(userCredential.user, { displayName: data.fullName });
       
-      await updateProfile(user, { displayName: data.fullName });
-
-      // The onSnapshot listener in FirebaseProvider will handle profile creation.
-      // This simplifies the logic here significantly.
-      
-      toast({
-        title: "Bem-vindo(a)! 🎉",
-        description: "Sua conta foi criada com sucesso.",
-      });
-      // The redirection is handled by RootLayoutContent
+      // A notificação e o redirecionamento são tratados pelo listener de autenticação
+      // no RootLayoutContent.
       
     } catch (error: any) {
       setLoading(false);
@@ -119,16 +103,12 @@ export default function RegisterPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    if (!auth) {
-      toast({ title: "Erro de inicialização", description: "Serviço de autenticação indisponível.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
 
     const provider = new GoogleAuthProvider();
     try {
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
+      // O onAuthStateChanged listener e RootLayoutContent irão lidar com a criação de perfil e redirecionamento.
     } catch (error: any) {
       setLoading(false);
       console.error("Google Sign-In Error", error);
@@ -140,6 +120,14 @@ export default function RegisterPage() {
     }
   };
   
+   if (loading) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+              <Loader2 className="h-16 w-16 animate-spin text-primary" />
+          </div>
+      );
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
@@ -155,8 +143,8 @@ export default function RegisterPage() {
         </div>
         
         <div className='space-y-4'>
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || isUserLoading}>
-            {isUserLoading && loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4"/>}
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4"/>}
             Continuar com Google
           </Button>
 
@@ -206,8 +194,8 @@ export default function RegisterPage() {
                 </FormItem>
               )}/>
 
-              <Button type="submit" className="w-full !mt-6" disabled={loading || isUserLoading}>
-                {(loading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full !mt-6" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Criar Conta
               </Button>
 

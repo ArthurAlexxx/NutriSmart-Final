@@ -70,12 +70,10 @@ export default function LoginPage() {
     try {
       await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-          title: "Login bem-sucedido!",
-          description: "Redirecionando para o seu painel...",
-      });
-      // The redirection is handled by RootLayoutContent
+      // A notificação de sucesso foi removida.
+      // O redirecionamento é tratado pelo RootLayoutContent.
     } catch (error: any) {
+      setLoading(false);
       let description = "Ocorreu um erro desconhecido. Por favor, tente novamente.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = "E-mail ou senha inválidos.";
@@ -89,9 +87,9 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-    } finally {
-        setLoading(false);
     }
+    // Não alteramos o loading para false em caso de sucesso, pois o redirecionamento
+    // ocorrerá e desmontará este componente.
   };
 
   const handleGoogleSignIn = async () => {
@@ -108,11 +106,18 @@ export default function LoginPage() {
         description: error.message || 'Não foi possível fazer login com Google. Tente novamente.',
         variant: "destructive",
       });
-    } finally {
-        setLoading(false);
+      setLoading(false); // Reset loading state on error
     }
   };
   
+  if (loading) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+              <Loader2 className="h-16 w-16 animate-spin text-primary" />
+          </div>
+      );
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
