@@ -1,9 +1,12 @@
+
 // src/app/history/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, query, where, onSnapshot, doc, deleteDoc, Unsubscribe, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
