@@ -29,19 +29,15 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     }
     
     // Define public routes that don't require authentication
-    const isPublicRoute = [
+    const publicRoutes = [
       '/', '/login', '/register', '/forgot-password', '/pricing',
       '/about', '/careers', '/press', '/terms', '/privacy',
-    ].some(route => pathname === route || (route !== '/' && pathname.startsWith(route + '/')));
-    
-    // Define routes that are part of the authenticated app experience
-    const isProtectedRoute = [
-        '/dashboard', '/analysis', '/plan', '/chef', '/history',
-        '/live-analysis', '/pro', '/admin', '/profile'
-    ].some(route => pathname.startsWith(route));
+    ];
 
-    // Routes related to authentication
+    // Define auth routes that logged-in users should be redirected away from
     const authRoutes = ['/login', '/register', '/forgot-password'];
+    
+    const isPublicRoute = publicRoutes.some(route => pathname === route || (route !== '/' && pathname.startsWith(route)));
 
     if (user) {
       // User is logged in
