@@ -75,7 +75,7 @@ const NavButton = ({ active, onClick, icon: Icon, label, variant = 'ghost' }: { 
 
 export default function ProfilePage() {
     const { toast } = useToast();
-    const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus, isAdmin, firestore } = useUser();
+    const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus, isAdmin } = useUser();
     const auth = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
