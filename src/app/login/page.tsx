@@ -11,17 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   email: z.string().email('E-mail inválido.'),
   password: z.string().min(1, 'A senha é obrigatória.'),
-  rememberMe: z.boolean().default(false).optional(),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -49,15 +47,13 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      rememberMe: true,
     },
   });
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
     try {
-      const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
-      await setPersistence(auth, persistence);
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
           title: "Login bem-sucedido!",
@@ -87,7 +83,6 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      // For Google sign-in, we can default to local persistence for a better UX
       await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
@@ -159,25 +154,10 @@ export default function LoginPage() {
                     </FormItem>
                     )}
                 />
-                 <div className="flex items-center justify-between">
-                    <FormField
-                      control={form.control}
-                      name="rememberMe"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <Label className="font-normal" htmlFor="rememberMe">Lembrar-me</Label>
-                        </FormItem>
-                      )}
-                    />
+                 <div className="flex items-center justify-end">
                      <Link
                         href="/forgot-password"
-                        className="text-xs font-semibold text-primary hover:underline"
+                        className="text-sm font-semibold text-primary hover:underline"
                     >
                         Esqueceu a senha?
                     </Link>
