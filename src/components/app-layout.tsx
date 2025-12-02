@@ -227,6 +227,14 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
               <LogoDisplay />
             </div>
             <SidebarContent />
+             <div className="mt-auto border-t p-4">
+                <NavLink
+                    href="/profile"
+                    label="Configurações"
+                    icon={Settings}
+                    pathname={pathname}
+                />
+            </div>
         </div>
         <div className="flex flex-col h-screen overflow-hidden">
           <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
