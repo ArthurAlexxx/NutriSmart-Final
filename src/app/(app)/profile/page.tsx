@@ -81,6 +81,27 @@ export default function ProfilePage() {
 
     const { isSubmitting: isProfileSubmitting, formState: { isDirty: isProfileDirty } } = profileForm;
 
+    const expiryDate = useMemo(() => {
+        if (!userProfile?.subscriptionExpiresAt) return null;
+        return (userProfile.subscriptionExpiresAt as any).toDate();
+    }, [userProfile]);
+
+    const countdown = useMemo(() => {
+        if (!expiryDate || expiryDate < new Date()) return null;
+
+        const now = new Date();
+        const daysLeft = differenceInDays(expiryDate, now);
+        const hoursLeft = differenceInHours(expiryDate, now) % 24;
+
+        if (daysLeft > 0) {
+        return `${daysLeft}d ${hoursLeft}h restantes`;
+        }
+        if (hoursLeft > 0) {
+        return `${hoursLeft}h restantes`;
+        }
+        return 'Expirando em breve';
+    }, [expiryDate]);
+
 
     useEffect(() => {
         if (userProfile) {
@@ -201,28 +222,6 @@ export default function ProfilePage() {
             setIsCancelling(false);
         }
     };
-
-
-    const expiryDate = useMemo(() => {
-        if (!userProfile?.subscriptionExpiresAt) return null;
-        return (userProfile.subscriptionExpiresAt as any).toDate();
-    }, [userProfile]);
-
-    const countdown = useMemo(() => {
-        if (!expiryDate || expiryDate < new Date()) return null;
-
-        const now = new Date();
-        const daysLeft = differenceInDays(expiryDate, now);
-        const hoursLeft = differenceInHours(expiryDate, now) % 24;
-
-        if (daysLeft > 0) {
-        return `${daysLeft}d ${hoursLeft}h restantes`;
-        }
-        if (hoursLeft > 0) {
-        return `${hoursLeft}h restantes`;
-        }
-        return 'Expirando em breve';
-    }, [expiryDate]);
     
     const isProfessionalUser = effectiveSubscriptionStatus === 'professional';
 
