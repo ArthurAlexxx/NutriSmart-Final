@@ -36,50 +36,48 @@ export default function HistoryKanbanCalendar({ selectedDate, onDateSelect }: Hi
   }
 
   return (
-    <Card className="shadow-lg rounded-2xl p-4 w-full">
-        <div className="flex items-center justify-between">
-            <Button variant="outline" size="icon" onClick={handlePrev}>
-                <ChevronLeft className="h-5 w-5" />
-            </Button>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mx-2 flex-1">
-                {daysToDisplay.map((day, index) => {
-                    const isSelected = isEqual(startOfDay(day), startOfDay(selectedDate));
-                    
-                    return (
-                        <Button
-                            key={index}
-                            variant={isSelected ? 'default' : 'outline'}
-                            className={cn(
-                                "flex flex-col h-20 rounded-lg text-center transition-all duration-200",
-                                isToday(day) && !isSelected && "border-primary/50 text-primary"
-                            )}
-                            onClick={() => onDateSelect(day)}
-                            disabled={day > new Date()}
-                        >
-                            <span className="text-sm capitalize font-normal">
-                                {format(day, 'EEE', { locale: ptBR })}
-                            </span>
-                            <span className="text-3xl font-bold">
-                                {format(day, 'dd', { locale: ptBR })}
-                            </span>
-                            <span className="text-xs capitalize font-normal -mt-1">
-                                {format(day, 'MMM', { locale: ptBR })}
-                            </span>
-                        </Button>
-                    )
-                })}
-            </div>
-
-            <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={handleNext} 
-                disabled={isNextDisabled()}
-            >
-                <ChevronRight className="h-5 w-5" />
-            </Button>
+    <div className="flex items-center justify-between">
+        <Button variant="outline" size="icon" onClick={handlePrev}>
+            <ChevronLeft className="h-5 w-5" />
+        </Button>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mx-2 flex-1">
+            {daysToDisplay.map((day, index) => {
+                const isSelected = isEqual(startOfDay(day), startOfDay(selectedDate));
+                
+                return (
+                    <Button
+                        key={index}
+                        variant={isSelected ? 'default' : 'outline'}
+                        className={cn(
+                            "flex flex-col h-20 rounded-lg text-center transition-all duration-200",
+                            isToday(day) && !isSelected && "border-primary/50 text-primary"
+                        )}
+                        onClick={() => onDateSelect(day)}
+                        disabled={day > new Date()}
+                    >
+                        <span className="text-sm capitalize font-normal">
+                            {format(day, 'EEE', { locale: ptBR })}
+                        </span>
+                        <span className="text-3xl font-bold">
+                            {format(day, 'dd', { locale: ptBR })}
+                        </span>
+                        <span className="text-xs capitalize font-normal -mt-1">
+                            {format(day, 'MMM', { locale: ptBR })}
+                        </span>
+                    </Button>
+                )
+            })}
         </div>
-    </Card>
+
+        <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleNext} 
+            disabled={isNextDisabled()}
+        >
+            <ChevronRight className="h-5 w-5" />
+        </Button>
+    </div>
   );
 }

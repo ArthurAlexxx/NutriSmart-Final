@@ -166,7 +166,7 @@ export default function HistoryPage() {
                 <div className="lg:col-span-8 space-y-6 sm:space-y-8">
                     <Card className="shadow-lg rounded-2xl border-border/50 overflow-hidden animate-in fade-in-50 duration-500 delay-200">
                         <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
-                             <CardTitle>Refeições de {getLocalDateString(selectedDate)}</CardTitle>
+                             <CardTitle>Refeições de {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</CardTitle>
                              <CardDescription>
                                 {dailyData.mealEntries.length} {dailyData.mealEntries.length === 1 ? 'refeição registrada' : 'refeições registradas'} neste dia.
                              </CardDescription>

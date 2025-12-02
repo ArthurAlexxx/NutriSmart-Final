@@ -1,84 +1,77 @@
 // public/sw.js
-
 const CACHE_NAME = 'nutrinea-cache-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  // Adicione aqui outros recursos estáticos que você sempre quer disponíveis offline
-  // Ex: '/images/logo.png', '/styles/main.css'
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
-// Evento de Instalação: Ocorre quando o Service Worker é instalado pela primeira vez.
+// Evento de instalação: abre o cache e adiciona os arquivos principais.
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Cache aberto. Adicionando URLs ao cache inicial.');
+        console.log('Cache aberto');
         return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        console.log('Service Worker: Instalação concluída. Pulando a espera para ativar imediatamente.');
-        return self.skipWaiting(); // Força a ativação do novo Service Worker
       })
   );
 });
 
-// Evento de Ativação: Ocorre após a instalação. É aqui que limpamos caches antigos.
+// Evento de ativação: limpa caches antigos.
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Ativando...');
+  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Deletando cache antigo:', cacheName);
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deletando cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => {
-        console.log('Service Worker: Ativação concluída. Clientes controlados.');
-        return self.clients.claim(); // Torna o Service Worker ativo o controlador da página imediatamente.
     })
   );
 });
 
 
-// Evento Fetch: Intercepta todas as requisições de rede.
-// Estratégia: Network First (Tenta a rede primeiro, se falhar, usa o cache)
+// Evento de fetch: implementa a estratégia "Network First".
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições que não são GET (ex: POST, PUT)
+  // Ignora requisições que não são GET (como POST, etc.)
   if (event.request.method !== 'GET') {
     return;
   }
-
-  // Ignora requisições do Firebase, para não interferir com a comunicação em tempo real.
-  if (event.request.url.includes('firestore.googleapis.com') || event.request.url.includes('firebaseinstallations.googleapis.com')) {
-    return;
-  }
-
+  
   event.respondWith(
-    // 1. Tenta buscar o recurso na rede.
     fetch(event.request)
       .then((networkResponse) => {
-        // Se a requisição de rede for bem-sucedida, clonamos a resposta.
-        // A original vai para o navegador, e a clone vai para o cache.
-        const responseClone = networkResponse.clone();
+        // Se a resposta da rede for bem-sucedida, clona, armazena no cache e retorna.
+        const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME)
           .then((cache) => {
-            // Atualiza o cache com a nova versão da rede.
-            cache.put(event.request, responseClone);
+            cache.put(event.request, responseToCache);
           });
         return networkResponse;
       })
       .catch(() => {
-        // 2. Se a rede falhar (usuário offline), tenta encontrar no cache.
+        // Se a rede falhar, tenta buscar do cache.
         return caches.match(event.request)
           .then((cachedResponse) => {
-            // Se encontrar no cache, retorna a resposta cacheada.
-            // Se não encontrar, a promessa é rejeitada e o navegador mostrará o erro padrão de offline.
-            return cachedResponse;
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Se não estiver no cache, retorna uma resposta de erro genérica (ou uma página offline padrão)
+            // Para APIs, é importante retornar um erro para que a aplicação possa tratá-lo.
+            if (event.request.url.includes('/api/')) {
+                 return new Response(JSON.stringify({ error: 'Offline' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 503 // Service Unavailable
+                });
+            }
+            // Para outras requisições (páginas), você pode retornar uma página offline.
+            // Por simplicidade, vamos apenas deixar falhar para que o navegador mostre sua página de erro offline.
+            return Response.error();
           });
       })
   );
