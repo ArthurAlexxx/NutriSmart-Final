@@ -16,11 +16,6 @@ import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleA
 import { useAuth, useUser } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Cadastro',
-};
 
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
