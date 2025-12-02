@@ -492,12 +492,21 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                                         <SelectTrigger><SelectValue placeholder="Selecione um modelo..." /></SelectTrigger>
                                         <SelectContent>{planTemplates.map(template => (<SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>))}</SelectContent>
                                     </Select>
-                                     <AlertDialog><AlertDialogTrigger asChild>
-                                        <Button type="button" className="w-full" disabled={!selectedTemplate || isFeatureLocked}><Download className="mr-2 h-4 w-4" /> Carregar Modelo</Button>
-                                     </AlertDialogTrigger><AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Confirmar Ação</AlertDialogTitle><AlertDialogDescription>Isso substituirá as refeições atuais não salvas pelas informações do modelo selecionado. As metas não serão alteradas. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => {if(selectedTemplate) {const template = planTemplates.find(t=>t.id===selectedTemplate); if(template) {form.setValue('meals', template.meals, {shouldDirty: true}); toast({title: "Modelo Aplicado!", description: `As refeições do modelo "${template.name}" foram carregadas.`});}}}}>Continuar</AlertDialogAction></AlertDialogFooter>
-                                     </AlertDialogContent></AlertDialog>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button type="button" className="w-full" disabled={!selectedTemplate || isFeatureLocked}><Download className="mr-2 h-4 w-4" /> Carregar Modelo</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar Ação</AlertDialogTitle>
+                                                <AlertDialogDescription>Isso substituirá as refeições atuais não salvas pelas informações do modelo selecionado. As metas não serão alteradas. Deseja continuar?</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleApplyTemplate}>Continuar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                     </AlertDialog>
                                 </CardContent>
                              </Card>
                          )}
