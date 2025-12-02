@@ -460,14 +460,14 @@ export default function ProfilePage() {
                                                 <FormField control={goalsForm.control} name="weight" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Peso Atual (kg)</FormLabel>
-                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso atual" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value ?? ''} /></FormControl>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso atual" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value || ''} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}/>
                                                 <FormField control={goalsForm.control} name="targetWeight" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Peso Meta (kg)</FormLabel>
-                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso desejado" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value ?? ''} /></FormControl>
+                                                        <FormControl><Input type="number" step="0.1" placeholder="Seu peso desejado" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} value={field.value || ''} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}/>
