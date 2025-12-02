@@ -1,75 +1,84 @@
 // public/sw.js
-const CACHE_NAME = 'nutrinea-cache-v1';
+
+const CACHE_NAME = 'nutrinea-cache-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/icon.png',
-  '/offline.html' // Uma página de fallback offline
+  // Adicione aqui outros recursos estáticos que você sempre quer disponíveis offline
+  // Ex: '/images/logo.png', '/styles/main.css'
 ];
 
-// 1. Instalação: Adiciona os arquivos principais ao cache.
-self.addEventListener('install', event => {
+// Evento de Instalação: Ocorre quando o Service Worker é instalado pela primeira vez.
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
+      .then((cache) => {
+        console.log('Service Worker: Cache aberto. Adicionando URLs ao cache inicial.');
         return cache.addAll(urlsToCache);
+      })
+      .then(() => {
+        console.log('Service Worker: Instalação concluída. Pulando a espera para ativar imediatamente.');
+        return self.skipWaiting(); // Força a ativação do novo Service Worker
       })
   );
 });
 
-// 2. Ativação: Limpa caches antigos para garantir que a versão mais recente seja usada.
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+// Evento de Ativação: Ocorre após a instalação. É aqui que limpamos caches antigos.
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Ativando...');
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: Deletando cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+        console.log('Service Worker: Ativação concluída. Clientes controlados.');
+        return self.clients.claim(); // Torna o Service Worker ativo o controlador da página imediatamente.
     })
   );
 });
 
-// 3. Fetch (NOVA ADIÇÃO CRÍTICA): Intercepta as requisições de rede.
-// Isso é necessário para que o Chrome considere o app "instalável".
-self.addEventListener('fetch', event => {
-  // Estratégia: Network First (Tenta a rede, se falhar, usa o cache)
+
+// Evento Fetch: Intercepta todas as requisições de rede.
+// Estratégia: Network First (Tenta a rede primeiro, se falhar, usa o cache)
+self.addEventListener('fetch', (event) => {
+  // Ignora requisições que não são GET (ex: POST, PUT)
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Ignora requisições do Firebase, para não interferir com a comunicação em tempo real.
+  if (event.request.url.includes('firestore.googleapis.com') || event.request.url.includes('firebaseinstallations.googleapis.com')) {
+    return;
+  }
+
   event.respondWith(
+    // 1. Tenta buscar o recurso na rede.
     fetch(event.request)
-      .then(networkResponse => {
-        // Se a requisição para a rede foi bem-sucedida,
-        // clona a resposta e a armazena no cache para uso offline futuro.
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-        }
+      .then((networkResponse) => {
+        // Se a requisição de rede for bem-sucedida, clonamos a resposta.
+        // A original vai para o navegador, e a clone vai para o cache.
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME)
+          .then((cache) => {
+            // Atualiza o cache com a nova versão da rede.
+            cache.put(event.request, responseClone);
+          });
         return networkResponse;
       })
       .catch(() => {
-        // Se a requisição de rede falhar (ex: offline),
-        // tenta encontrar uma resposta no cache.
+        // 2. Se a rede falhar (usuário offline), tenta encontrar no cache.
         return caches.match(event.request)
-          .then(cachedResponse => {
-            // Se encontrarmos no cache, retornamos a resposta cacheada.
-            // Se não, para requisições de navegação, retorna a página de fallback.
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            if (event.request.mode === 'navigate') {
-              return caches.match('/offline.html');
-            }
-            // Para outros tipos de requisição (imagens, etc.), apenas falha.
-            return new Response("Network error and not in cache", {
-              status: 408,
-              headers: { 'Content-Type': 'text/plain' }
-            });
+          .then((cachedResponse) => {
+            // Se encontrar no cache, retorna a resposta cacheada.
+            // Se não encontrar, a promessa é rejeitada e o navegador mostrará o erro padrão de offline.
+            return cachedResponse;
           });
       })
   );
