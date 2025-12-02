@@ -14,41 +14,40 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Do nothing while loading, the splash screen will be shown
+      return; // Wait until the user session is verified
     }
 
     const publicRoutes = [
       '/', '/login', '/register', '/forgot-password', '/pricing',
       '/about', '/careers', '/press', '/terms', '/privacy',
     ];
-    // This now includes the base /checkout page. Dynamic checkout routes are implicitly allowed.
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/checkout');
-
     const authRoutes = ['/login', '/register', '/forgot-password'];
     
-    // PWA-specific logic: if it's a PWA and on the root, redirect immediately.
-    if (isPWA && pathname === '/') {
-        if (user) {
-            const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
-            router.replace(targetDashboard);
-        } else {
-            router.replace('/login');
-        }
-        return; // Stop further execution for this specific PWA case
-    }
+    // Check if the current route is considered public
+    const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/checkout');
 
     if (user) {
-      // User is logged in
-      // If they are on an auth page, redirect them to their dashboard
+      // User is LOGGED IN
+      
+      // If PWA is on root, redirect to dashboard
+      if (isPWA && pathname === '/') {
+        const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
+        router.replace(targetDashboard);
+        return;
+      }
+
+      // If user is on an auth page, redirect to dashboard
       if (authRoutes.includes(pathname)) {
         const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
         router.replace(targetDashboard);
+        return;
       }
     } else {
-      // User is not logged in
-      // If they are trying to access a non-public route, redirect to login
+      // User is NOT LOGGED IN
+      // If trying to access a protected route, redirect to login
       if (!isPublicRoute) {
         router.replace('/login');
+        return;
       }
     }
   }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isPWA]);
@@ -57,9 +56,5 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     return <SplashScreen />;
   }
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
