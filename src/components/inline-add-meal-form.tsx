@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Trash2, Loader2, Camera, AlertTriangle, Lock, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getNutritionalInfoFromPhoto } from '@/app/actions/meal-actions';
+import { getNutritionalInfoFromPhoto, getNutritionalInfoFromText } from '@/app/actions/meal-actions';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, limit, arrayUnion } from 'firebase/firestore';
 import type { MealData, MealEntry } from '@/types/meal';
@@ -89,27 +89,24 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
 
   const handleManualSubmit = async (data: ManualMealFormValues) => {
     setIsProcessing(true);
-    setProcessingStep('Registrando refeição...');
+    setProcessingStep('Analisando refeição...');
     setProgress(50);
     
     try {
-      // Manual entry doesn't call an AI action for totals anymore.
-      // We can create a dummy totals object or leave it for later enhancement.
+      const result = await getNutritionalInfoFromText(data.foods, data.mealType);
+      
+      if (result.error || !result.totals) {
+        throw new Error(result.error || 'A IA não retornou uma análise válida.');
+      }
+
       const mealData: MealData = {
         alimentos: data.foods.map(f => ({ 
             name: f.name, 
             portion: f.portion, 
             unit: f.unit, 
-            // Nutrient values are not calculated on manual add for simplicity now.
-            calorias: 0, 
-            proteinas: 0, 
-            carboidratos: 0, 
-            gorduras: 0, 
-            fibras: 0 
+            calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 
         })),
-        // Totals would be calculated server-side or by another mechanism if needed.
-        // For now, we set them to 0.
-        totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
+        totais: result.totals,
       };
       
       setProgress(100);
