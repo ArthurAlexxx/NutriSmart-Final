@@ -112,7 +112,7 @@ const LogoDisplay = () => {
     );
     
     if (isPwa) {
-        return <div className="flex items-center gap-2 font-semibold">{LogoComponent}</div>;
+        return <div className="flex items-center gap-2 font-semibold [app-region:drag] h-full w-full">{LogoComponent}</div>;
     }
     
     return (
@@ -224,7 +224,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   return (
     <>
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
-        <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print [app-region:drag]">
+        <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
               <LogoDisplay />
             </div>
