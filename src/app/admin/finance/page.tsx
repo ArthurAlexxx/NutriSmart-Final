@@ -114,7 +114,7 @@ export default function AdminFinancePage() {
 
   return (
     <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-8 pb-16 sm:pb-8">
         <PageHeader 
           icon={DollarSign}
           title="Painel Financeiro"

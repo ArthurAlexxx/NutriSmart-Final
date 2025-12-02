@@ -318,7 +318,7 @@ export default function AnalysisPage() {
         onProfileUpdate={onProfileUpdate}
     >
         <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
-            <div className="w-full max-w-7xl flex flex-col gap-8 print-container overflow-x-hidden">
+            <div className="w-full max-w-7xl flex flex-col gap-8 print-container overflow-x-hidden pb-16 sm:pb-8">
                 <PageHeader 
                     icon={TrendingUp}
                     title="Análise de Desempenho"

@@ -176,7 +176,7 @@ export default function RoomDetailPage() {
       userProfile={userProfile}
       onProfileUpdate={onProfileUpdate}
     >
-      <div className="p-4 sm:p-6 lg:p-8 flex flex-col h-full">
+      <div className="p-4 sm:p-6 lg:p-8 flex flex-col h-full pb-16 sm:pb-8">
         <div className="flex items-center justify-between gap-4 mb-8 animate-fade-in">
           <div className='flex items-center gap-4'>
             <Button asChild variant="outline" size="icon">

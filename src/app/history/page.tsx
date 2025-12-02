@@ -140,7 +140,7 @@ export default function HistoryPage() {
         onProfileUpdate={handleProfileUpdateWithToast}
     >
       <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-7xl space-y-6 sm:space-y-8">
+        <div className="w-full max-w-7xl space-y-6 sm:space-y-8 pb-16 sm:pb-8">
             <PageHeader 
                 icon={HistoryIcon}
                 title="Histórico Nutricional"

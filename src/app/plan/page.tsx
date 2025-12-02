@@ -194,7 +194,7 @@ export default function PlanPage() {
         onProfileUpdate={onProfileUpdate}
     >
       <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-7xl relative">
+        <div className="w-full max-w-7xl relative pb-16 sm:pb-8">
             {isFeatureLocked && <SubscriptionOverlay />}
             <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
                 <Tabs defaultValue={isUnderProfessionalCare ? "pro-plan" : "my-plan"} className="w-full">

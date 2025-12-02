@@ -96,7 +96,7 @@ export default function ProPatientsPage() {
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
     >
-       <div className="p-4 sm:p-6 lg:p-8">
+       <div className="p-4 sm:p-6 lg:p-8 pb-16 sm:pb-8">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 animate-fade-in text-center sm:text-left gap-4">
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start">

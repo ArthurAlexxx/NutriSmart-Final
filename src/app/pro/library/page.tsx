@@ -172,7 +172,7 @@ export default function LibraryPage() {
 
     return (
         <AppLayout user={user} userProfile={userProfile} onProfileUpdate={onProfileUpdate}>
-             <div className='p-4 sm:p-6 lg:p-8'>
+             <div className='p-4 sm:p-6 lg:p-8 pb-16 sm:pb-8'>
              <Tabs defaultValue="templates" className="w-full">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-8 text-center sm:text-left gap-4">
                     <div className="flex-1">

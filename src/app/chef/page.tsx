@@ -213,7 +213,7 @@ export default function ChefPage() {
     >
       <div className="relative h-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
         {isFeatureLocked && <SubscriptionOverlay />}
-         <Card className={cn("flex-1 flex flex-col w-full max-w-4xl mx-auto rounded-2xl shadow-lg overflow-hidden border", isFeatureLocked && 'blur-md pointer-events-none')}>
+         <Card className={cn("flex-1 flex flex-col w-full max-w-4xl mx-auto rounded-2xl shadow-lg overflow-hidden border pb-16 sm:pb-0", isFeatureLocked && 'blur-md pointer-events-none')}>
             <ChatView
                 messages={messages}
                 isResponding={isResponding}

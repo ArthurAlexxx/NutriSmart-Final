@@ -41,7 +41,7 @@ export default function LiveAnalysisPage() {
        <div className="relative h-full w-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-black">
         {isDesktop && <DesktopWarning />}
         {isFeatureLocked && <SubscriptionOverlay />}
-        <div className={cn("relative w-full h-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl", isFeatureLocked && 'blur-md pointer-events-none')}>
+        <div className={cn("relative w-full h-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl pb-16 sm:pb-0", isFeatureLocked && 'blur-md pointer-events-none')}>
             <LiveAnalysisView />
         </div>
       </div>

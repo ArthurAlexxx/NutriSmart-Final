@@ -25,6 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
+import { PageHeader } from '@/components/page-header';
 
 export default function DashboardPage() {
   const db = useFirestore();
@@ -207,7 +208,7 @@ export default function DashboardPage() {
         onProfileUpdate={handleProfileUpdateWithToast}
     >
       <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-7xl flex flex-col gap-8">
+        <div className="w-full max-w-7xl flex flex-col gap-8 pb-16 sm:pb-8">
             <div className='flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
                     <h2 className='text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start'>

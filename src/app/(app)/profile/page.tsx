@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { type UserProfile } from '@/types/user';
+import type { UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -439,7 +439,7 @@ export default function ProfilePage() {
                     description="Gerencie suas informações pessoais, assinatura e preferências."
                 />
 
-                <div className="mt-8 flex flex-col md:flex-row gap-8">
+                <div className="mt-8 flex flex-col md:flex-row gap-8 pb-16 sm:pb-8">
                     <nav className="flex flex-row md:flex-col gap-1 w-full md:w-1/4 lg:w-1/5 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
                         {navItems.map(item => (
                             <NavButton 
