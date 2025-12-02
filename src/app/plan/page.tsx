@@ -243,20 +243,18 @@ export default function PlanPage() {
                                   </CardContent>
                                 </Card>
                                 
-                                <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} className="bg-card rounded-2xl border p-4 shadow-sm">
-                                    <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" className="w-full justify-between hover:bg-transparent h-auto text-left p-0">
-                                            <div className="flex items-center gap-3">
-                                                <History className='h-6 w-6 text-primary flex-shrink-0'/>
-                                                <div className='flex-1'>
-                                                    <h3 className='text-lg font-semibold'>Histórico de Planos</h3>
-                                                    <p className='text-sm text-muted-foreground font-normal'>Veja e restaure seus planos gerados anteriormente.</p>
-                                                </div>
+                                <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} className="bg-card rounded-2xl border shadow-sm">
+                                    <CollapsibleTrigger className="flex w-full items-center justify-between text-left p-4 hover:bg-secondary/50 rounded-t-2xl data-[state=open]:rounded-b-none">
+                                        <div className="flex items-center gap-3">
+                                            <History className='h-6 w-6 text-primary flex-shrink-0'/>
+                                            <div className="flex-1">
+                                                <h3 className='text-lg font-semibold'>Histórico de Planos</h3>
+                                                <p className='text-sm text-muted-foreground font-normal'>Veja e restaure seus planos gerados anteriormente.</p>
                                             </div>
-                                            <ChevronsUpDown className={cn("h-5 w-5 transition-transform text-muted-foreground ml-2", isHistoryOpen && 'rotate-180')}/>
-                                        </Button>
+                                        </div>
+                                        <ChevronsUpDown className={cn("h-5 w-5 transition-transform text-muted-foreground ml-2", isHistoryOpen && 'rotate-180')}/>
                                     </CollapsibleTrigger>
-                                  <CollapsibleContent className="pt-8">
+                                  <CollapsibleContent className="pt-4 p-4 border-t">
                                       {planHistory && planHistory.length > 0 ? (
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                               {planHistory.map(plan => (
