@@ -24,8 +24,14 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/icons/icon-512x512.png',
-    apple: '/icons/icon-512x512.png',
+    apple: '/icons/apple-touch-icon.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Nutrinea',
+  },
+  themeColor: '#72A159',
 };
 
 export default function RootLayout({
@@ -35,6 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className='h-full'>
         <AppProvider>
             <RootLayoutContent>

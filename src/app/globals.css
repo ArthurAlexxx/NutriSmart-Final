@@ -97,6 +97,14 @@
   .password-strength-bar {
       transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
   }
+  /* Prevent zoom on input focus on iOS */
+  @media screen and (-webkit-min-device-pixel-ratio:0) and (max-width: 768px) {
+    select,
+    textarea,
+    input {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {
