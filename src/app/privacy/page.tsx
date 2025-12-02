@@ -2,6 +2,11 @@
 // src/app/privacy/page.tsx
 import Header from '@/components/header';
 import Footer from '@/components/footer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidade',
+};
 
 export default function PrivacyPage() {
     return (

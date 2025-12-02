@@ -26,7 +26,6 @@ import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
 import WeightReminderCard from '@/components/weight-reminder-card';
 
-
 export default function DashboardPage() {
   const db = useFirestore();
   const { user, userProfile, onProfileUpdate } = useUser();

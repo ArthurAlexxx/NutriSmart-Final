@@ -199,7 +199,7 @@ export default function PlanPage() {
             <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
                 <Tabs defaultValue={isUnderProfessionalCare ? "pro-plan" : "my-plan"} className="w-full">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 animate-fade-in text-center sm:text-left">
-                    <div className="flex-1">
+                    <div className="flex-1 text-center sm:text-left">
                         <h2 className='text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start'>
                            <BookMarked className='h-8 w-8 text-primary'/>
                             Meu Plano Alimentar

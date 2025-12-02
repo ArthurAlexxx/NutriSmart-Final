@@ -5,6 +5,11 @@ import Footer from '@/components/footer';
 import { Mail, Download, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Imprensa',
+};
 
 const pressKitItems = [
     { title: 'Logotipo (PNG, SVG)', description: 'Versões em alta resolução do nosso logotipo.' },

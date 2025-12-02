@@ -6,6 +6,11 @@ import { ArrowRight, Leaf, Target, Users } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Sobre Nós',
+};
 
 const values = [
     {

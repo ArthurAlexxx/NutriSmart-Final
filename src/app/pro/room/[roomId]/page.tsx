@@ -15,14 +15,13 @@ import { Loader2, ArrowLeft, Trash2, User } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import PlanEditor from '@/components/pro/plan-editor';
+import PlanEditor from '@/app/pro/plan-editor';
 import PatientDailyLog from '@/components/pro/patient-daily-log';
 import { ChatRoom } from '@/components/chat-room';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useAuth, useUser, useFirestore } from '@/firebase';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-
 
 export default function RoomDetailPage() {
   const { user, userProfile, isUserLoading, onProfileUpdate, effectiveSubscriptionStatus } = useUser();

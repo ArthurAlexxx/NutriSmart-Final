@@ -15,6 +15,11 @@ import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPer
 import { useAuth } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Login',
+};
 
 const formSchema = z.object({
   email: z.string().email('E-mail inválido.'),

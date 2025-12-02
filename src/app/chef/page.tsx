@@ -20,7 +20,6 @@ import SubscriptionOverlay from '@/components/subscription-overlay';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 
-
 export default function ChefPage() {
   const { user, userProfile, onProfileUpdate, effectiveSubscriptionStatus } = useUser();
   const router = useRouter();

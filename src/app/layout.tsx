@@ -19,7 +19,10 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'Nutrinea | Nutrição Inteligente, Vida Saudável',
+  title: {
+    default: 'Nutrinea',
+    template: 'Nutrinea | %s',
+  },
   description: 'Sua plataforma de nutrição com Inteligência Artificial para planos alimentares, análise de refeições e acompanhamento de metas.',
   manifest: '/manifest.json',
   icons: {

@@ -4,6 +4,11 @@
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Pricing as PricingSection } from '@/components/ui/pricing';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Preços',
+};
 
 export default function PricingPage() {
     return (

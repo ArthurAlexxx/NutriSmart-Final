@@ -15,6 +15,11 @@ import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Redefinir Senha',
+};
 
 const formSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),

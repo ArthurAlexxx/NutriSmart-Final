@@ -25,7 +25,6 @@ import { generateAnalysisInsightsAction } from '@/app/actions/ai-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-header';
 
-
 type Period = 7 | 15 | 30;
 const DEMO_USER_ID = 'z9Ru4QiC4Kf5Okf257OruaazvyF2';
 

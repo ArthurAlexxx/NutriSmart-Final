@@ -2,6 +2,11 @@
 // src/app/terms/page.tsx
 import Header from '@/components/header';
 import Footer from '@/components/footer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Termos de Serviço',
+};
 
 export default function TermsPage() {
     return (

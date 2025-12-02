@@ -5,6 +5,11 @@ import Footer from '@/components/footer';
 import { Mail, Sparkles, BrainCircuit, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Carreiras',
+};
 
 const benefits = [
     {
