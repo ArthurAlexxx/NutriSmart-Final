@@ -48,8 +48,7 @@ const navItemsAdmin = [
 ];
 
 const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = false }: { id?: string; href: string; label: string; icon: React.ElementType; pathname: string; onClick?: () => void; disabled?: boolean; }) => {
-  const isDashboard = href === '/dashboard' || href === '/pro/dashboard' || href === '/admin';
-  const isActive = isDashboard ? pathname === href : pathname.startsWith(href);
+  const isActive = pathname.startsWith(href) && (href !== '/dashboard' || pathname === href);
 
   return (
     <Link
@@ -88,7 +87,7 @@ const LogoDisplay = () => {
             width={140}
             height={35}
             priority
-            className="h-auto w-auto"
+            style={{ height: 'auto' }}
         />
     );
 };
@@ -102,8 +101,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   const [isSheetOpen, setSheetOpen] = useState(false);
   
   const isProUser = effectiveSubscriptionStatus === 'professional';
-  
-  // This useEffect handles redirection for users trying to access professional routes.
+
   useEffect(() => {
     if (!isUserLoading && user && !isAdmin && !isProUser && pathname.startsWith('/pro')) {
         router.replace('/dashboard');
@@ -178,7 +176,6 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     </>
   );
   
-  // This is a guard. While the user/profile is loading, we show a spinner to prevent flicker or premature rendering.
   if (isUserLoading || !userProfile) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
