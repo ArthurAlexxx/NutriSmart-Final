@@ -20,7 +20,6 @@ import WaterTrackerCard from '@/components/water-tracker-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import SummaryCards from '@/components/summary-cards';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
-import GoalsSettingsModal from '@/components/settings-modal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import InlineAddMealForm from '@/components/inline-add-meal-form';
 import { cn } from '@/lib/utils';
@@ -39,7 +38,6 @@ export default function DashboardPage() {
   const { toast } = useToast();
   
   const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
-  const [isGoalsModalOpen, setGoalsModalOpen] = useState(false);
   const [isAddMealFormOpen, setAddMealFormOpen] = useState(false);
 
   useEffect(() => {
@@ -287,17 +285,6 @@ export default function DashboardPage() {
                 onMealUpdate={handleMealUpdate}
             />
         )}
-        {user && userProfile &&
-          <>
-             <GoalsSettingsModal
-                isOpen={isGoalsModalOpen}
-                onOpenChange={setGoalsModalOpen}
-                userProfile={userProfile}
-                userId={user.uid}
-                onProfileUpdate={onProfileUpdate}
-            />
-          </>
-        }
     </AppLayout>
   );
 }
