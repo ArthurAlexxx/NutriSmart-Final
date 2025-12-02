@@ -34,7 +34,6 @@ const navItemsPatient = [
   { href: '/chef', label: 'Chef Virtual', icon: ChefHat, id: 'nav-chef', premium: true },
   { href: '/history', label: 'Meu Histórico', icon: History, id: 'nav-history', premium: false },
   { href: '/live-analysis', label: 'Análise ao Vivo', icon: Camera, id: 'nav-live-analysis', premium: true },
-  { href: '/profile', label: 'Configurações', icon: Settings, id: 'nav-settings', premium: false },
 ];
 
 const navItemsPro = [
@@ -241,7 +240,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
                                     <DropdownMenuItem asChild>
-                                        <Link href="/profile">
+                                        <Link href="/profile" onClick={() => setSheetOpen(false)}>
                                             <Settings className="mr-2 h-4 w-4" />
                                             <span>Configurações</span>
                                         </Link>
