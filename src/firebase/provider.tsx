@@ -1,14 +1,13 @@
 // src/firebase/provider.tsx
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, onSnapshot, updateDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 import type { UserProfile } from '@/types/user';
-import { addDays } from 'date-fns';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -58,7 +57,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   auth,
 }) => {
   const router = useRouter();
-  const pathname = usePathname();
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
     userProfile: null,
@@ -66,25 +64,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
-  const previousSubscriptionStatus = useRef<string | undefined>(undefined);
-
   // Effect to handle redirection after a successful payment
   useEffect(() => {
     const profile = userAuthState.userProfile;
     if (!profile || userAuthState.isUserLoading) return;
 
-    const currentStatus = profile.subscriptionStatus || 'free';
-    const previousStatus = previousSubscriptionStatus.current;
-    
-    // Check if a payment flow was initiated and the status has positively changed
-    if (pathname.startsWith('/checkout') && previousStatus === 'free' && (currentStatus === 'premium' || currentStatus === 'professional')) {
+    const paymentInitiated = sessionStorage.getItem('payment_initiated') === 'true';
+    if (paymentInitiated && profile.subscriptionStatus !== 'free') {
+        sessionStorage.removeItem('payment_initiated');
         router.push('/checkout/success');
     }
-    
-    // Update the previous status for the next render
-    previousSubscriptionStatus.current = currentStatus;
-
-  }, [userAuthState.userProfile, userAuthState.isUserLoading, router, pathname]);
+  }, [userAuthState.userProfile, userAuthState.isUserLoading, router]);
 
 
   // Effect to subscribe to Firebase auth state changes

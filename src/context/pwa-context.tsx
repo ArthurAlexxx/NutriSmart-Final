@@ -28,14 +28,17 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallpwa-context);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Don't show prompt if app is already installed
-      // @ts-ignore
-      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+      if (isStandalone) {
         return;
       }
-      setIsInstallPromptVisible(true);
+      
+      const lastDismissed = sessionStorage.getItem('pwa-prompt-dismissed');
+      if (!lastDismissed) {
+        setIsInstallPromptVisible(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -62,6 +65,8 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const hideInstallPrompt = useCallback(() => {
       setIsInstallPromptVisible(false);
+      // We use sessionStorage to remember the dismissal only for the current browser tab session.
+      sessionStorage.setItem('pwa-prompt-dismissed', 'true');
   }, []);
 
   const value = {

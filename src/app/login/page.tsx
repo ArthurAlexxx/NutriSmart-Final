@@ -87,7 +87,8 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await setPersistence(auth, browserLocalPersistence); // Always remember Google users
+      // For Google sign-in, we can default to local persistence for a better UX
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
     } catch (error: any) {
