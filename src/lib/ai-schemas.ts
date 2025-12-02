@@ -61,19 +61,26 @@ const MealPlanItemSchema = z.object({
   items: z.string().describe("Descrição dos alimentos e quantidades para a refeição."),
 });
 
+const DailyPlanSchema = z.object({
+  day: z.string().describe("O dia do plano, ex: 'Dia 1', 'Dia 2'."),
+  date: z.string().describe("A data do plano no formato YYYY-MM-DD."),
+  meals: z.array(MealPlanItemSchema).describe("Lista de refeições para este dia."),
+});
+
 export const GeneratedPlan = z.object({
+  name: z.string().describe("Nome geral do plano, ex: 'Plano de 7 Dias para Perda de Peso'."),
   calorieGoal: z.coerce.number().describe("A meta de calorias diária recalculada para o plano."),
   proteinGoal: z.coerce.number().describe("A meta de proteínas diária recalculada para o plano."),
   hydrationGoal: z.coerce.number().describe("A meta de hidratação diária recalculada para o plano."),
-  meals: z.array(MealPlanItemSchema).describe("Uma lista de refeições para um dia, totalizando 5 a 6 refeições (incluindo lanches)."),
+  dailyPlans: z.array(DailyPlanSchema).describe("Um array de planos diários, um para cada dia solicitado."),
 });
 
 export type GeneratedPlan = z.infer<typeof GeneratedPlan>;
 
 export const GeneratePlanInputSchema = z.object({
+    durationInDays: z.number().min(1).max(7),
     weight: z.number().optional(),
     targetWeight: z.number().optional(),
-    targetDate: z.string().optional(),
     height: z.number().optional(),
     age: z.number().optional(),
     gender: z.enum(['male', 'female']).optional(),

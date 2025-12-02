@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -19,7 +20,7 @@ import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Ti
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import AIPlanConfirmationModal from '@/components/ai-plan-confirmation-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -249,36 +250,8 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
   };
   
   const handleRemoveMeal = async (index: number) => {
-    if (!firestore) return;
-
-    const mealToRemove = { ...fields[index] };
-    remove(index); // Optimistic UI update
-
-    const currentPlan = form.getValues();
-    const newMeals = currentPlan.meals.filter((_, i) => i !== index);
-
-    const dataToUpdate = {
-        ...currentPlan,
-        meals: newMeals,
-    };
-    
-    try {
-        if (isProfessional && room) {
-            const roomRef = doc(firestore, 'rooms', room.id);
-            await updateDoc(roomRef, { activePlan: dataToUpdate });
-        } else if (!isProfessional && userProfile) {
-            const planRef = doc(firestore, 'users', userProfile.id, 'plans', 'active');
-            await setDoc(planRef, dataToUpdate);
-        }
-        toast({
-            title: "Refeição Removida",
-            description: "A refeição foi removida do seu plano.",
-        });
-    } catch (error) {
-        append(mealToRemove, { shouldFocus: false }); // Revert on error
-        toast({ title: "Erro", description: "Não foi possível remover a refeição.", variant: 'destructive' });
-    }
-};
+    remove(index);
+  };
 
   const handleClearPlan = async () => {
     if (!isProfessional || !room || !firestore) return;
@@ -338,23 +311,27 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     
     try {
         const formValues = form.getValues();
+        const today = new Date();
+        const targetDate = formValues.targetDate || today;
+        const duration = differenceInDays(targetDate, today) + 1;
+        const durationInDays = Math.max(1, Math.min(duration, 7)); // Min 1, Max 7
         
         const payload = {
+            durationInDays,
             weight: formValues.weight,
             targetWeight: formValues.targetWeight,
-            targetDate: formValues.targetDate ? formValues.targetDate.toISOString().split('T')[0] : undefined,
-            // We no longer pass manual goals to the AI
         };
 
         const generatedPlan = await generateMealPlanAction(payload);
         
-        // Use the goals returned by the AI to update the form
+        const allMeals = generatedPlan.dailyPlans.flatMap(daily => daily.meals);
+
         const finalData = {
             ...form.getValues(), // keep weight, targetWeight, etc.
             calorieGoal: generatedPlan.calorieGoal,
             proteinGoal: generatedPlan.proteinGoal,
             hydrationGoal: generatedPlan.hydrationGoal,
-            meals: generatedPlan.meals,
+            meals: allMeals,
         };
 
         // Validate the final combined data
@@ -365,7 +342,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
             
             toast({
                 title: "Plano Gerado e Salvo!",
-                description: "O novo plano foi criado e salvo.",
+                description: `O novo plano de ${durationInDays} dia(s) foi criado e salvo.`,
             });
         } else {
              console.error("Zod validation error:", validationResult.error);
@@ -520,12 +497,21 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
                                         <SelectTrigger><SelectValue placeholder="Selecione um modelo..." /></SelectTrigger>
                                         <SelectContent>{planTemplates.map(template => (<SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>))}</SelectContent>
                                     </Select>
-                                     <AlertDialog><AlertDialogTrigger asChild>
-                                        <Button type="button" className="w-full" disabled={!selectedTemplate || isFeatureLocked}><Download className="mr-2 h-4 w-4" /> Carregar Modelo</Button>
-                                     </AlertDialogTrigger><AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Confirmar Ação</AlertDialogTitle><AlertDialogDescription>Isso substituirá as refeições atuais não salvas pelas informações do modelo selecionado. As metas não serão alteradas. Deseja continuar?</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => {if(selectedTemplate) {const template = planTemplates.find(t=>t.id===selectedTemplate); if(template) {form.setValue('meals', template.meals, {shouldDirty: true}); toast({title: "Modelo Aplicado!", description: `As refeições do modelo "${template.name}" foram carregadas.`});}}}}>Continuar</AlertDialogAction></AlertDialogFooter>
-                                     </AlertDialogContent></AlertDialog>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button type="button" className="w-full" disabled={!selectedTemplate || isFeatureLocked}><Download className="mr-2 h-4 w-4" /> Carregar Modelo</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Confirmar Ação</AlertDialogTitle>
+                                                <AlertDialogDescription>Isso substituirá as refeições atuais não salvas pelas informações do modelo selecionado. As metas não serão alteradas. Deseja continuar?</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleApplyTemplate}>Continuar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                     </AlertDialog>
                                 </CardContent>
                              </Card>
                          )}

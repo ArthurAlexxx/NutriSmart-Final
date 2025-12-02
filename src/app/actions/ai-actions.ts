@@ -153,54 +153,75 @@ export async function generateRecipeAction(userInput: string, history: MessageHi
 }
 
 /**
- * Gera um plano alimentar para um dia usando a API da OpenAI.
- * @param input - Os dados do usuário (metas, peso, etc.).
- * @returns Um objeto de plano alimentar validado.
+ * Gera um plano alimentar de múltiplos dias usando a API da OpenAI.
+ * @param input - Os dados do usuário (metas, duração, etc.).
+ * @returns Um objeto de plano alimentar validado para vários dias.
  */
 export async function generateMealPlanAction(input: GeneratePlanInput): Promise<GeneratedPlan> {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('O serviço de IA não está configurado no servidor.');
     }
     const prompt = `
-    VOCÊ É UM NUTRICIONISTA ESPECIALISTA em software e sua única função é gerar um plano alimentar diário em formato JSON.
+    VOCÊ É UM NUTRICIONISTA ESPECIALISTA em software e sua única função é gerar um plano alimentar em formato JSON para ${input.durationInDays} dia(s).
 
-    OBJETIVO: Criar um plano alimentar seguro, realista e eficaz com base nos dados do usuário.
+    OBJETIVO: Criar um plano alimentar seguro, realista e eficaz com base nos dados do usuário para a duração solicitada.
 
-    DADOS DO USUÁRIO PARA O PLANO:
+    DADOS DO USUÁRIO:
+    - Duração do Plano: ${input.durationInDays} dia(s)
     - Peso Atual: ${input.weight || 'Não informado'} kg
     - Altura: ${input.height || 'Não informada'} cm
     - Idade: ${input.age || 'Não informada'} anos
     - Gênero: ${input.gender || 'Não informado'}
     - Meta de Peso: ${input.targetWeight || 'Não informada'} kg
-    - Data para Atingir a Meta: ${input.targetDate || 'Não informada'}
     - Nível de Atividade: ${input.activityLevel || 'moderado'}
     - Restrições Alimentares: ${input.dietaryRestrictions?.join(', ') || 'Nenhuma'}
     - Alergias: ${input.allergies?.join(', ') || 'Nenhuma'}
     - Preferências/Aversões: ${input.preferences || 'Nenhuma'}
 
     REGRAS DE PROCESSAMENTO (SIGA ESTRITAMENTE):
-    1.  **Cálculo de Metas:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Se houver meta de peso, crie um déficit/superávit calórico seguro para atingir a meta na data estipulada. Se não houver meta, crie um plano de manutenção.
-    2.  **Definição dos Totais:** Sua resposta JSON **DEVE** incluir os campos \`calorieGoal\`, \`proteinGoal\`, e \`hydrationGoal\` com os totais calculados para o plano gerado. A meta de proteína deve ser aproximadamente 35% do total de calorias. A meta de hidratação deve ser 2500ml.
-    3.  **Criação do Plano:** Crie um plano alimentar com 5 a 6 refeições (incluindo lanches). A soma dos nutrientes das refeições deve ser próxima às metas totais calculadas.
-    4.  **Alimentos Comuns no Brasil:** Utilize alimentos comuns na mesa brasileira (arroz branco, feijão, peito de frango, carne moída, pão francês, batata, frutas como banana e maçã). Respeite TODAS as restrições e alergias.
+    1.  **Cálculo de Metas Diárias:** Primeiro, calcule as necessidades calóricas diárias (TMB + Nível de Atividade). Se houver meta de peso, crie um déficit/superávit calórico seguro. Esta será a base para cada dia.
+    2.  **Definição dos Totais:** Sua resposta JSON **DEVE** incluir os campos \`calorieGoal\`, \`proteinGoal\`, e \`hydrationGoal\` com os totais DIÁRIOS médios calculados para o plano. A meta de proteína deve ser aproximadamente 35% do total de calorias. A meta de hidratação deve ser 2500ml.
+    3.  **Criação do Plano de Vários Dias:**
+        *   Crie um plano para cada um dos ${input.durationInDays} dias. O resultado deve ser um array 'dailyPlans'.
+        *   Para cada dia, defina a data no formato YYYY-MM-DD, começando por hoje.
+        *   Para cada dia, crie 5 refeições (Café da Manhã, Lanche da Manhã, Almoço, Lanche da Tarde, Jantar).
+        *   **VARIE AS REFEIÇÕES!** Não repita os mesmos pratos todos os dias, mas reutilize ingredientes para ser realista.
+    4.  **Alimentos Comuns no Brasil:** Utilize alimentos comuns na mesa brasileira (arroz, feijão, peito de frango, ovos, pão, frutas como banana e mamão). Respeite TODAS as restrições e alergias.
     5.  **Quantidades Precisas:** Forneça quantidades precisas e realistas para cada item (ex: "120g de peito de frango grelhado", "80g de arroz integral", "1 concha de feijão").
     
     REGRAS DE SAÍDA (CRÍTICO):
     - Sua resposta DEVE SER APENAS o objeto JSON final, sem nenhum texto antes ou depois.
     - O JSON deve ser estritamente validado pelo schema abaixo.
 
-    EXEMPLO DE SAÍDA JSON VÁLIDA:
+    EXEMPLO DE SAÍDA JSON VÁLIDA PARA 2 DIAS:
     {
-      "calorieGoal": 1985,
-      "proteinGoal": 155,
+      "name": "Plano de 2 Dias para Manutenção de Peso",
+      "calorieGoal": 2100,
+      "proteinGoal": 180,
       "hydrationGoal": 2500,
-      "meals": [
-        { "name": "Café da Manhã", "time": "07:30", "items": "- 3 ovos mexidos com tomate e orégano\\n- 1 fatia de pão integral (40g)\\n- 1/2 abacate (60g)" },
-        { "name": "Lanche da Manhã", "time": "10:30", "items": "- 1 maçã média (150g)\\n- 20g de amêndoas" },
-        { "name": "Almoço", "time": "13:00", "items": "- 150g de peito de frango grelhado\\n- 100g de arroz branco\\n- 1 concha de feijão preto\\n- Salada de folhas verdes à vontade com azeite" },
-        { "name": "Lanche da Tarde", "time": "16:30", "items": "- 1 pote de iogurte natural desnatado (170g)\\n- 1 colher de sopa de mel (15g)" },
-        { "name": "Jantar", "time": "19:30", "items": "- 120g de filé de tilápia assado\\n- 150g de batata doce cozida\\n- Brócolis no vapor à vontade" },
-        { "name": "Ceia", "time": "22:00", "items": "- 1 xícara de chá de camomila sem açúcar" }
+      "dailyPlans": [
+        {
+          "day": "Dia 1",
+          "date": "2024-07-29",
+          "meals": [
+            { "name": "Café da Manhã", "time": "07:30", "items": "- 3 ovos mexidos com tomate e orégano\\n- 1 fatia de pão integral (40g)\\n- 1/2 mamão papaya" },
+            { "name": "Lanche da Manhã", "time": "10:30", "items": "- 1 maçã média (150g)\\n- 20g de amêndoas" },
+            { "name": "Almoço", "time": "13:00", "items": "- 150g de peito de frango grelhado\\n- 100g de arroz branco\\n- 1 concha de feijão preto\\n- Salada de folhas verdes à vontade com azeite" },
+            { "name": "Lanche da Tarde", "time": "16:30", "items": "- 1 pote de iogurte natural desnatado (170g) com 1 colher de mel" },
+            { "name": "Jantar", "time": "19:30", "items": "- 120g de filé de tilápia assado\\n- 150g de batata doce cozida\\n- Brócolis no vapor à vontade" }
+          ]
+        },
+        {
+          "day": "Dia 2",
+          "date": "2024-07-30",
+          "meals": [
+            { "name": "Café da Manhã", "time": "07:30", "items": "- Shake de Whey Protein (30g) com banana e aveia (20g)" },
+            { "name": "Lanche da Manhã", "time": "10:30", "items": "- 1 pera" },
+            { "name": "Almoço", "time": "13:00", "items": "- 150g de carne moída refogada (patinho)\\n- 100g de macarrão integral\\n- Molho de tomate caseiro" },
+            { "name": "Lanche da Tarde", "time": "16:30", "items": "- 2 ovos cozidos" },
+            { "name": "Jantar", "time": "19:30", "items": "- Omelete com 3 ovos, queijo branco e legumes picados" }
+          ]
+        }
       ]
     }
 
@@ -214,7 +235,7 @@ export async function generateMealPlanAction(input: GeneratePlanInput): Promise<
           { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.4,
+      temperature: 0.5,
     });
 
     const resultText = response.choices[0].message.content;
@@ -575,5 +596,3 @@ export async function analyzeFoodInFrameAction(input: FrameAnalysisInput): Promi
     throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar o frame.");
   }
 }
-
-    
