@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Poppins, Lexend } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -34,8 +34,12 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Nutrinea',
   },
-  themeColor: '#72A159',
 };
+
+export const viewport: Viewport = {
+  themeColor: '#FFFFFF',
+};
+
 
 export default function RootLayout({
   children,
@@ -44,10 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
-      <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      </head>
+      <head />
       <body className='h-full'>
         <AppProvider>
             <RootLayoutContent>
