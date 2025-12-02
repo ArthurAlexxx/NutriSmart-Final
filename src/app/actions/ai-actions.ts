@@ -30,33 +30,51 @@ NÃO ESCREVA NADA FORA DO JSON.
 NÃO ESCREVA TEXTO ANTES OU DEPOIS.
 `;
 
+interface MessageHistory {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 /**
- * Gera uma receita usando a API da OpenAI.
- * @param userInput - A string de entrada do usuário com ingredientes, tipo de prato, porções ou calorias.
+ * Gera uma receita usando a API da OpenAI, considerando o histórico da conversa.
+ * @param userInput - A string de entrada do usuário.
+ * @param history - Um array das últimas mensagens para dar contexto à IA.
  * @returns Um objeto de receita validado.
  */
-export async function generateRecipeAction(userInput: string): Promise<Recipe> {
+export async function generateRecipeAction(userInput: string, history: MessageHistory[]): Promise<Recipe> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('O serviço de IA não está configurado no servidor.');
   }
+  
+  // Limita o histórico para as últimas 10 mensagens para manter o prompt conciso
+  const recentHistory = history.slice(-10);
+  
+  const formattedHistory = recentHistory.map(msg => `${msg.role === 'user' ? 'Usuário' : 'Chef'}: ${msg.content}`).join('\n');
+
   const prompt = `
     INSTRUÇÕES MESTRE:
-    Você é um Chef de Cozinha especialista e está criando uma receita para um livro digital. Sua resposta deve ser extremamente detalhada, clara e útil.
+    Você é um Chef de Cozinha especialista e está conversando com um usuário. Sua resposta deve ser detalhada, clara e útil.
 
-    1.  **ANÁLISE DA SOLICITAÇÃO:**
-        *   Analise o pedido do usuário: "${userInput}".
-        *   Identifique os ingredientes principais, o número de porções desejado (ex: "para 2 pessoas"), metas calóricas (ex: "com 500 calorias") e qualquer outra preferência (ex: "low-carb", "vegetariano").
+    1.  **ANÁLISE DO CONTEXTO:**
+        *   Analise o histórico da conversa para entender o contexto. O usuário está pedindo uma nova receita, modificando a anterior ou fazendo uma pergunta?
+        *   Histórico da Conversa:
+            ${formattedHistory ? formattedHistory : "Nenhum histórico."}
+        *   **Use este histórico como fonte primária de contexto!** Se o usuário disser "e sem cebola?", você deve entender a qual receita ele se refere e modificá-la.
+
+    2.  **ANÁLISE DA SOLICITAÇÃO ATUAL:**
+        *   Analise o pedido atual do usuário: "${userInput}".
+        *   Combine-o com o contexto do histórico. Identifique ingredientes, porções, calorias, ou modificações.
         *   Adapte TODA a receita (quantidades, ingredientes, etc.) para atender a essas especificações.
 
-    2.  **CRIAÇÃO DA RECEITA (SEJA DETALHISTA):**
+    3.  **CRIAÇÃO DA RECEITA (SEJA DETALHISTA):**
         *   **Título:** Crie um nome atraente e descritivo.
-        *   **Descrição:** Escreva uma descrição curta e convidativa que desperte o interesse em preparar o prato.
-        *   **Ingredientes:** Liste TODOS os ingredientes com quantidades PRECISAS (ex: "200g de peito de frango", "1/2 cebola média picada", "1 colher de sopa de azeite de oliva extra virgem"). Não use descrições vagas como "um pouco de".
-        *   **Modo de Preparo:** Forneça um passo a passo NUMERADO e DETALHADO. Em vez de "Tempere o frango", escreva algo como "1. Seque os filés de frango com papel toalha e tempere ambos os lados com sal, pimenta do reino e páprica doce.".
+        *   **Descrição:** Escreva uma descrição curta e convidativa.
+        *   **Ingredientes:** Liste TODOS os ingredientes com quantidades PRECISAS (ex: "200g de peito de frango").
+        *   **Modo de Preparo:** Forneça um passo a passo NUMERADO e DETALHADO.
         *   **Informações Nutricionais:** Estime os valores totais POR PORÇÃO para calorias (kcal), proteínas (g), carboidratos (g) e gorduras (g).
-        *   **Dicas do Chef (Opcional, mas recomendado):** Adicione 1 ou 2 dicas úteis, como sugestões de acompanhamento, variações de ingredientes ou técnicas para melhorar o prato. Você pode adicionar isso no final da lista de instruções.
+        *   **Dicas do Chef (Opcional):** Adicione 1 ou 2 dicas úteis.
 
-    3.  **REGRAS DE SAÍDA:**
+    4.  **REGRAS DE SAÍDA:**
         *   Se o pedido do usuário não parecer ser sobre comida, sua resposta JSON deve conter apenas um campo: \`{"error": "A solicitação não parece ser sobre comida."}\`.
         *   Sua resposta final deve ser **APENAS O OBJETO JSON COMPLETO**. Não inclua nenhum texto antes ou depois do JSON.
 
@@ -557,3 +575,5 @@ export async function analyzeFoodInFrameAction(input: FrameAnalysisInput): Promi
     throw new Error(error.message || "Houve um problema ao se comunicar com a IA para analisar o frame.");
   }
 }
+
+    

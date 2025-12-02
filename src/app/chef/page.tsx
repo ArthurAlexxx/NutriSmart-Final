@@ -129,7 +129,12 @@ export default function ChefPage() {
       saveMessage(userMessage);
 
       try {
-        const recipeResult: Recipe = await generateRecipeAction(input);
+        // Prepare history for the AI action
+        const history = messages
+          .filter(m => m.id !== '1') // Exclude initial default message
+          .map(m => ({ role: m.role, content: m.content }));
+          
+        const recipeResult: Recipe = await generateRecipeAction(input, history);
         
         const assistantMessage: Omit<Message, 'id' | 'createdAt'> = {
             role: 'assistant' as const,
@@ -234,3 +239,5 @@ export default function ChefPage() {
     </AppLayout>
   );
 }
+
+    
