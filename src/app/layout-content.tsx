@@ -1,13 +1,14 @@
 
 'use client'; 
 
-import { useUser } from '@/firebase';
+import { useUser, usePWA } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export default function RootLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading, effectiveSubscriptionStatus } = useUser();
+  const { isPWA } = usePWA();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -15,6 +16,18 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     if (isUserLoading) {
       return; // Do nothing while loading
     }
+
+    // PWA-specific routing: bypass landing page
+    if (isPWA && pathname === '/') {
+        if (user) {
+            const targetDashboard = effectiveSubscriptionStatus === 'professional' ? '/pro/patients' : '/dashboard';
+            router.replace(targetDashboard);
+        } else {
+            router.replace('/login');
+        }
+        return; // Stop further execution for this case
+    }
+    
 
     const isPublicRoute = [
       '/', '/login', '/register', '/forgot-password', '/pricing',
@@ -35,7 +48,7 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
         router.replace('/login');
       }
     }
-  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus]);
+  }, [user, isUserLoading, pathname, router, effectiveSubscriptionStatus, isPWA]);
   
   if (isUserLoading) {
     return (
