@@ -244,10 +244,10 @@ export default function PlanPage() {
                                 
                                 <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} className="bg-card rounded-2xl border p-4 shadow-sm">
                                   <CollapsibleTrigger asChild>
-                                      <Button variant="ghost" className="w-full justify-between hover:bg-transparent">
-                                          <div className='text-left flex items-center gap-3'>
+                                      <Button variant="ghost" className="w-full justify-between hover:bg-transparent h-auto">
+                                          <div className='flex items-center gap-3'>
                                               <History className='h-6 w-6 text-primary'/>
-                                              <div>
+                                              <div className='text-left flex-1'>
                                                   <h3 className='text-lg font-semibold'>Histórico de Planos</h3>
                                                   <p className='text-sm text-muted-foreground font-normal'>Veja e restaure seus planos gerados anteriormente.</p>
                                               </div>
