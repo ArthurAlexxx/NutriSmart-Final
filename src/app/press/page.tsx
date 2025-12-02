@@ -38,7 +38,7 @@ export default function PressPage() {
                 <section className="py-20 lg:py-24">
                     <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
                         {/* Contato */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 text-center md:text-left">
                             <h2 className="text-3xl font-bold font-heading">Contato de Mídia</h2>
                             <p className="text-muted-foreground text-lg">
                                 Para todas as perguntas da imprensa, entrevistas ou outras solicitações de mídia, entre em contato com nossa equipe de comunicação.
@@ -46,7 +46,7 @@ export default function PressPage() {
                             <Card>
                                 <CardContent className="p-6">
                                     <p className="font-semibold">Equipe de Comunicação</p>
-                                    <a href="mailto:imprensa@nutrinea.com" className="text-primary text-lg font-medium flex items-center gap-2 mt-2 hover:underline">
+                                    <a href="mailto:imprensa@nutrinea.com" className="text-primary text-lg font-medium flex items-center justify-center md:justify-start gap-2 mt-2 hover:underline">
                                         <Mail className="h-5 w-5" />
                                         imprensa@nutrinea.com
                                     </a>
@@ -55,7 +55,7 @@ export default function PressPage() {
                         </div>
 
                         {/* Press Kit */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 text-center md:text-left">
                              <h2 className="text-3xl font-bold font-heading">Recursos da Marca</h2>
                              <p className="text-muted-foreground text-lg">
                                 Faça o download do nosso kit de imprensa completo, que inclui logotipos, imagens do produto e guia da marca.
