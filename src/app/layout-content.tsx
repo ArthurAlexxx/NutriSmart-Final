@@ -42,7 +42,8 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
     }
   }, [user, isUserLoading, pathname, router]);
   
-  // Show splash screen during the initial auth check
+  // Show splash screen during the initial auth check.
+  // This prevents the "flicker" of the login page on initial load for authenticated users.
   if (isUserLoading) {
     return <SplashScreen />;
   }
@@ -50,5 +51,3 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   // Render the page content once auth state is resolved
   return <>{children}</>;
 }
-
-    
