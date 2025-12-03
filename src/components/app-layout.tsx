@@ -18,6 +18,7 @@ import { useAuth, useUser, usePWA } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
+import { motion, PanInfo } from 'framer-motion';
 
 interface AppLayoutProps {
   user: User | null;
@@ -190,6 +191,13 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     );
   }
 
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    // Open sidebar on swipe right from left edge
+    if (info.offset.x > 100 && info.velocity.x > 200 && Math.abs(info.point.x - info.offset.x) < 50) {
+      setSheetOpen(true);
+    }
+  };
+
   return (
     <>
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
@@ -205,7 +213,13 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                 </Button>
             </div>
         </div>
-        <div className="flex flex-col h-screen overflow-hidden">
+        <motion.div 
+            className="flex flex-col h-screen overflow-hidden"
+            onDragEnd={handleDragEnd}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0.05, right: 0 }}
+        >
           <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
               <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
                   <SheetTrigger asChild>
@@ -221,9 +235,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
                           <LogoDisplay />
-                           <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                              <X className="h-5 w-5" />
-                              <span className="sr-only">Close</span>
+                           <SheetClose asChild>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <X className="h-5 w-5" />
+                                <span className="sr-only">Close</span>
+                              </Button>
                           </SheetClose>
                           <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
                       </SheetHeader>
@@ -244,7 +260,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                         </div>
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="bottom" className="rounded-t-2xl">
+                                <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
                                     <SheetHeader className="text-left">
                                         <SheetTitle>
                                             <p className='font-semibold'>{userProfile?.fullName}</p>
@@ -288,7 +304,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
           )}>
             {children}
           </main>
-        </div>
+        </motion.div>
       </div>
     </>
   );
