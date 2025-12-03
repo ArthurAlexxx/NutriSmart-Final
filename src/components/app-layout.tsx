@@ -14,7 +14,7 @@ import type { UserProfile } from '@/types/user';
 import DashboardHeader from './dashboard-header';
 import { Separator } from './ui/separator';
 import { signOut } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, usePWA } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
@@ -80,8 +80,9 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 );
 
 const LogoDisplay = () => {
+    const { isPWA } = usePWA();
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-    return (
+    const LogoComponent = (
         <Image 
             src={logoImage?.imageUrl || ''}
             alt="Nutrinea Logo"
@@ -90,6 +91,16 @@ const LogoDisplay = () => {
             priority
             style={{ height: 'auto' }}
         />
+    );
+
+    if (isPWA) {
+        return <div className="flex items-center gap-2 font-semibold">{LogoComponent}</div>;
+    }
+
+    return (
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+            {LogoComponent}
+        </Link>
     );
 };
 
@@ -185,9 +196,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       <div className={"grid h-screen w-full md:grid-cols-[260px_1fr]"}>
         <div className="hidden border-r bg-sidebar-background md:flex md:flex-col no-print">
             <div className="flex h-20 items-center border-b px-6">
-              <Link href="/" className="flex items-center gap-2 font-semibold">
-                <LogoDisplay />
-              </Link>
+              <LogoDisplay />
             </div>
             <SidebarContent />
              <div className="mt-auto border-t p-4">
@@ -212,9 +221,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetTrigger>
                   <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
                       <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                            <LogoDisplay />
-                          </Link>
+                          <LogoDisplay />
                            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
                               <X className="h-5 w-5" />
                               <span className="sr-only">Close</span>

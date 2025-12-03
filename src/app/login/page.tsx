@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, usePWA } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -24,12 +24,7 @@ const formSchema = z.object({
 type LoginFormValues = z.infer<typeof formSchema>;
 
 const LogoDisplay = () => {
-    const [isPwa, setIsPwa] = useState(false);
-
-    useEffect(() => {
-        setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
-    }, []);
-
+    const { isPWA } = usePWA();
     const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
     const LogoComponent = (
         <Image 
@@ -41,7 +36,7 @@ const LogoDisplay = () => {
         />
     );
 
-    if (isPwa) {
+    if (isPWA) {
         return <div className="inline-block mb-6">{LogoComponent}</div>;
     }
 
