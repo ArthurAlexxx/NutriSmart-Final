@@ -8,13 +8,14 @@ import { analyzeFoodInFrameAction } from '@/app/actions/ai-actions';
 import { saveAnalyzedMealAction } from '@/app/actions/meal-actions';
 import type { FrameAnalysisOutput } from '@/lib/ai-schemas';
 import { Button } from './ui/button';
-import { CameraOff, Zap, Flame, Rocket, Donut, Save, AlertTriangle } from 'lucide-react';
+import { CameraOff, Zap, Flame, Rocket, Donut, Save, AlertTriangle, XCircle } from 'lucide-react';
 import { FaBreadSlice } from 'react-icons/fa';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 interface Totals {
@@ -51,7 +52,6 @@ export default function LiveAnalysisView() {
   const { user } = useUser();
 
   const getCameraPermission = useCallback(async () => {
-    if (hasCameraPermission) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       setHasCameraPermission(true);
@@ -67,12 +67,12 @@ export default function LiveAnalysisView() {
         description: 'Por favor, autorize o acesso à câmera para usar esta funcionalidade.',
       });
     }
-  }, [toast, hasCameraPermission]);
-
+  }, [toast]);
+  
   useEffect(() => {
     getCameraPermission();
 
-    // Cleanup function
+    // Cleanup function to stop camera stream when component unmounts
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -80,6 +80,7 @@ export default function LiveAnalysisView() {
       }
     };
   }, [getCameraPermission]);
+
 
   const captureAndAnalyze = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !hasCameraPermission) return;
