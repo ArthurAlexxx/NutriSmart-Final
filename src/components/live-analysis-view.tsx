@@ -71,6 +71,14 @@ export default function LiveAnalysisView() {
 
   useEffect(() => {
     getCameraPermission();
+
+    // Cleanup function
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [getCameraPermission]);
 
   const captureAndAnalyze = useCallback(async () => {
