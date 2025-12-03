@@ -1,3 +1,4 @@
+
 // src/components/header.tsx
 'use client';
 
@@ -93,13 +94,13 @@ export default function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="container my-3 mx-auto"
+            className="container my-3 mx-auto px-4 sm:px-6 lg:px-8"
           >
-            <div className="mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
+            <div className="relative mx-auto flex h-16 w-auto items-center justify-between rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
                 <Link href="/" className="flex items-center gap-2">
                     <LogoDisplay />
                 </Link>
-                <nav className="hidden items-center gap-6 md:flex">
+                <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-6 md:flex">
                     {navLinks}
                 </nav>
                 <div className="flex items-center gap-2">
