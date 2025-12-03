@@ -166,12 +166,8 @@
         --success-border: hsl(var(--border));
         --success-text: hsl(var(--primary));
 
-        --destructive-bg: transparent;
-        --destructive-border: transparent;
-        --destructive-text: hsl(var(--destructive));
-        
         --error-bg: hsl(var(--background));
-        --error-border: hsl(var(--border));
+        --error-border: hsl(var(--destructive));
         --error-text: hsl(var(--destructive));
     }
 }
