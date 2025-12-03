@@ -65,7 +65,7 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className='rounded-t-2xl'>
+      <SheetContent side="bottom" className='rounded-t-2xl' onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-left'>
           <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
           <SheetDescription>

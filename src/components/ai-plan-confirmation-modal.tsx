@@ -39,7 +39,7 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
   
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl">
+      <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-left'>
             <SheetTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-6 w-6" />Confirmar Dados para a IA</SheetTitle>
             <SheetDescription>

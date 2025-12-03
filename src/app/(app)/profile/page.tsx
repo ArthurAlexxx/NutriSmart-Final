@@ -420,7 +420,7 @@ export default function ProfilePage() {
                                     <Menu className="h-4 w-4" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-2xl">
+                            <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
                                 <SheetHeader className="text-left">
                                     <SheetTitle>Navegação</SheetTitle>
                                 </SheetHeader>

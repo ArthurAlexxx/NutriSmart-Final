@@ -85,7 +85,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl">
+      <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-left'>
           <SheetTitle className="text-2xl font-bold">Editar Refeição</SheetTitle>
           <SheetDescription>

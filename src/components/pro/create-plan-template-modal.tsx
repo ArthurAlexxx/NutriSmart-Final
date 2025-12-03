@@ -129,7 +129,7 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col">
+      <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</SheetTitle>
           <SheetDescription>

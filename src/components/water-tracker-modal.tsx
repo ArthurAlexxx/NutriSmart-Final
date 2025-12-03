@@ -115,7 +115,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="sm:max-w-sm p-0 rounded-t-2xl">
+      <SheetContent side="bottom" className="sm:max-w-sm p-0 rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-center p-6'>
           <SheetTitle className="text-2xl font-bold">Registrar Água</SheetTitle>
           <SheetDescription>

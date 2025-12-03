@@ -68,7 +68,7 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
+      <SheetContent side="right" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold">Nova Orientação</SheetTitle>
           <SheetDescription>
