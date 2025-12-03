@@ -18,7 +18,6 @@ import { useAuth, useUser, usePWA } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface AppLayoutProps {
   user: User | null;
@@ -230,8 +229,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                       </SheetHeader>
                       <SidebarContent isMobile />
                        <div className="mt-auto border-t p-4">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                           <Sheet>
+                                <SheetTrigger asChild>
                                     <Button variant="ghost" className="w-full justify-start h-auto p-2">
                                          <div className="flex w-full cursor-pointer items-center gap-3">
                                             <Avatar className="h-10 w-10 border">
@@ -244,21 +243,30 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                             </div>
                                         </div>
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/profile" onClick={() => setSheetOpen(false)}>
-                                            <Settings className="mr-2 h-4 w-4" />
-                                            <span>Configurações</span>
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50/80">
-                                        <LogOut className="mr-2 h-4 w-4" />
-                                        <span>Sair</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="rounded-t-2xl">
+                                    <SheetHeader className="text-left">
+                                        <SheetTitle>
+                                            <p className='font-semibold'>{userProfile?.fullName}</p>
+                                            <p className='text-sm font-normal text-muted-foreground'>{user?.email}</p>
+                                        </SheetTitle>
+                                    </SheetHeader>
+                                    <div className="grid gap-2 py-4">
+                                        <SheetClose asChild>
+                                            <Link href="/profile">
+                                                <Button variant="outline" className="w-full justify-start gap-2">
+                                                    <Settings className="h-4 w-4" />
+                                                    <span>Configurações</span>
+                                                </Button>
+                                            </Link>
+                                        </SheetClose>
+                                        <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-2'>
+                                            <LogOut className="h-4 w-4" />
+                                            <span>Sair</span>
+                                        </Button>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
                       </div>
                   </SheetContent>
               </Sheet>
