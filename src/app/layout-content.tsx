@@ -50,3 +50,5 @@ export default function RootLayoutContent({ children }: { children: React.ReactN
   // Render the page content once auth state is resolved
   return <>{children}</>;
 }
+
+    
