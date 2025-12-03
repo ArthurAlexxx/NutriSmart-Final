@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuth, usePWA } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -102,7 +102,7 @@ export default function RegisterPage() {
     const provider = new GoogleAuthProvider();
     try {
       await setPersistence(auth, browserLocalPersistence);
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
       // O onAuthStateChanged listener e RootLayoutContent irão lidar com a criação de perfil e redirecionamento.
     } catch (error: any) {
       setLoading(false);
