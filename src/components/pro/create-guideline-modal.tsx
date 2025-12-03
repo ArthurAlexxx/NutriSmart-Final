@@ -68,7 +68,7 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl flex flex-col p-0 max-h-[90svh]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Nova Orientação</DialogTitle>
           <DialogDescription>
@@ -76,7 +76,7 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 space-y-6 pt-4">
+          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
             <FormField control={form.control} name="title" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Título da Orientação *</FormLabel>
