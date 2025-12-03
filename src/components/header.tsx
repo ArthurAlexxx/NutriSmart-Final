@@ -89,13 +89,13 @@ export default function Header() {
       <AnimatePresence>
         {isScrolled ? (
           <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="container my-3"
+            className="container my-3 mx-auto"
           >
-            <div className="flex h-16 items-center justify-between px-6 rounded-2xl bg-background/80 backdrop-blur-lg border shadow-lg">
+            <div className="mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
                 <Link href="/" className="flex items-center gap-2">
                     <LogoDisplay />
                 </Link>
