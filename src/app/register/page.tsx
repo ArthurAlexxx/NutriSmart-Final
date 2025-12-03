@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, usePWA } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -72,7 +72,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await setPersistence(auth, browserLocalPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.fullName });
       
@@ -101,7 +100,7 @@ export default function RegisterPage() {
 
     const provider = new GoogleAuthProvider();
     try {
-      await setPersistence(auth, browserLocalPersistence);
+      // No longer calling setPersistence here to avoid race conditions
       await signInWithRedirect(auth, provider);
       // O onAuthStateChanged listener e RootLayoutContent irão lidar com a criação de perfil e redirecionamento.
     } catch (error: any) {

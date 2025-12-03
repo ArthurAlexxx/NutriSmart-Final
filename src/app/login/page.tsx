@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { useAuth, usePWA } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -63,7 +63,6 @@ export default function LoginPage() {
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
     try {
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, values.email, values.password);
       // A notificação de sucesso foi removida.
       // O redirecionamento é tratado pelo RootLayoutContent.
@@ -91,7 +90,7 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await setPersistence(auth, browserLocalPersistence);
+      // No longer calling setPersistence here to avoid race conditions
       await signInWithRedirect(auth, provider);
       // The onAuthStateChanged listener and RootLayoutContent will handle profile creation and redirection.
     } catch (error: any) {

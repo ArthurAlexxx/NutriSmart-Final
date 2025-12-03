@@ -3,14 +3,14 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download, Target, Weight, CalendarIcon, Flame, Droplet, Rocket } from 'lucide-react';
+import { Loader2, Save, User as UserIcon, Share2, CreditCard, Copy, LogOut, AlarmClock, XCircle, ShieldAlert, PauseCircle, Trash2, Mail, Camera, Download, Target, Weight, CalendarIcon, Flame, Droplet, Rocket, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/user';
 import { useAuth, useUser } from '@/firebase';
@@ -73,6 +73,7 @@ export default function ProfilePage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const { canInstall, isPWA } = usePWA();
+    const [isSheetOpen, setSheetOpen] = useState(false);
     
 
     const profileForm = useForm<ProfileFormValues>({
@@ -233,6 +234,11 @@ export default function ProfilePage() {
     ].filter(item => item.visible);
     
     const currentAvatarSrc = imagePreview || userProfile?.photoURL || '';
+
+    const handleNavClick = (tab: NavItem) => {
+        setActiveTab(tab);
+        setSheetOpen(false); // Fecha o sheet ao selecionar um item
+    }
 
     const renderContent = () => {
         switch(activeTab) {
@@ -406,20 +412,32 @@ export default function ProfilePage() {
                 />
 
                 <div className="mt-8 flex flex-col md:flex-row gap-8 pb-16 sm:pb-8">
-                     <nav className="md:hidden">
-                        <Select value={activeTab} onValueChange={(value) => setActiveTab(value as NavItem)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione uma seção" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {navItems.map(item => (
-                                    <SelectItem key={item.id} value={item.id}>
-                                       {item.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </nav>
+                     <div className="md:hidden">
+                        <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" className='w-full justify-between'>
+                                    <span>{navItems.find(item => item.id === activeTab)?.label}</span>
+                                    <Menu className="h-4 w-4" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="bottom" className="rounded-t-2xl">
+                                <SheetHeader className="text-left">
+                                    <SheetTitle>Navegação</SheetTitle>
+                                </SheetHeader>
+                                <div className="grid gap-2 py-4">
+                                     {navItems.map(item => (
+                                        <NavButton 
+                                            key={item.id}
+                                            active={activeTab === item.id}
+                                            onClick={() => handleNavClick(item.id as NavItem)}
+                                            icon={item.icon}
+                                            label={item.label}
+                                        />
+                                    ))}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                     <nav className="hidden md:flex md:flex-col gap-1 w-full md:w-1/4 lg:w-1/5">
                         {navItems.map(item => (
                             <NavButton 
