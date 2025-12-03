@@ -153,3 +153,25 @@
     page-break-inside: avoid;
   }
 }
+
+@media (max-width: 640px) {
+    [data-sonner-toaster][data-theme='light'],
+    [data-sonner-toaster][data-theme='dark'],
+    [data-sonner-toaster][data-theme='system'] {
+        --normal-bg: hsl(var(--background));
+        --normal-border: hsl(var(--border));
+        --normal-text: hsl(var(--foreground));
+        
+        --success-bg: hsl(var(--background));
+        --success-border: hsl(var(--border));
+        --success-text: hsl(var(--primary));
+
+        --destructive-bg: transparent;
+        --destructive-border: transparent;
+        --destructive-text: hsl(var(--destructive));
+        
+        --error-bg: hsl(var(--background));
+        --error-border: hsl(var(--border));
+        --error-text: hsl(var(--destructive));
+    }
+}
