@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -58,16 +58,14 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
             carboidratos: data.carboidratos,
             gorduras: data.gorduras,
         },
-        // We mark the meal as manually edited
         alimentos: [{
             ...mealEntry.mealData.alimentos[0],
             nome: `(Editado) ${mealEntry.mealData.alimentos.map(f => f.nome).join(', ')}`.substring(0, 100),
-            porcao: 1,
-            unidade: 'porção'
+            portion: 1,
+            unit: 'porção'
         }]
       },
     };
-    // Clear other foods if editing totals, to avoid confusion
     if (updatedMeal.mealData.alimentos.length > 1) {
        updatedMeal.mealData.alimentos = [updatedMeal.mealData.alimentos[0]];
     }
@@ -86,16 +84,16 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Editar Refeição</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetHeader className='text-left'>
+          <SheetTitle className="text-2xl font-bold">Editar Refeição</SheetTitle>
+          <SheetDescription>
             Ajuste os totais para: <span className='font-semibold text-foreground'>{getMealTypeName(mealEntry.mealType)}</span>.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                 control={form.control}
@@ -153,7 +151,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                 )}
                 />
             </div>
-            <DialogFooter className="!mt-8 gap-2 sm:gap-0 sm:space-x-2">
+            <SheetFooter className="!mt-8 gap-2 sm:gap-0 sm:space-x-2 flex-col sm:flex-row">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
                 Cancelar
               </Button>
@@ -165,10 +163,10 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                   )}
                 Salvar
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

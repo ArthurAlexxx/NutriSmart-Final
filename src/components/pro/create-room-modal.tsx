@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,6 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
           throw new Error('Este paciente já está sendo acompanhado por um profissional.');
         }
         
-        // Build patientInfo object, only including defined values.
         const patientInfo: PatientInfo = {
             name: patientData.fullName,
             email: patientData.email,
@@ -120,14 +119,14 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Adicionar Paciente</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold">Adicionar Paciente</SheetTitle>
+          <SheetDescription>
             Insira o nome da sala e o código de compartilhamento do paciente.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
             <FormField control={form.control} name="roomName" render={({ field }) => (
@@ -144,16 +143,16 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
                     <FormMessage />
                 </FormItem>
             )}/>
-            <DialogFooter className="!mt-8">
+            <SheetFooter className="!mt-8">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting}>
                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Criar Sala
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

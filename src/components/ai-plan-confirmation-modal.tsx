@@ -1,8 +1,7 @@
 // src/components/ai-plan-confirmation-modal.tsx
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, BrainCircuit, Weight, Target, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
@@ -39,23 +38,16 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
   const { weight, targetWeight, targetDate } = data;
   
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full">
-                <BrainCircuit className="h-6 w-6" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-bold">Confirmar Dados para a IA</DialogTitle>
-              <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetHeader className='text-left'>
+            <SheetTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-6 w-6" />Confirmar Dados para a IA</SheetTitle>
+            <SheetDescription>
                 A IA usará seus objetivos de peso para calcular as metas e criar um plano. Revise os dados abaixo.
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+            </SheetDescription>
+        </SheetHeader>
 
-        <div className="py-4 max-h-[60vh] overflow-y-auto px-6 space-y-4">
+        <div className="py-6 space-y-4">
             <h3 className='font-semibold text-foreground'>Seus Objetivos</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InfoItem icon={Weight} label="Peso Atual" value={weight} unit="kg" />
@@ -71,7 +63,7 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
             </p>
         </div>
 
-        <DialogFooter>
+        <SheetFooter className='flex-col sm:flex-row gap-2'>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className='w-full sm:w-auto'>
             Cancelar
           </Button>
@@ -83,8 +75,8 @@ export default function AIPlanConfirmationModal({ isOpen, onOpenChange, onConfir
             )}
             Gerar Plano com IA
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

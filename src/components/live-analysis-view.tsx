@@ -1,4 +1,3 @@
-
 // src/components/live-analysis-view.tsx
 'use client';
 
@@ -94,7 +93,6 @@ export default function LiveAnalysisView() {
     } catch (error: any) {
       console.error("Frame analysis failed:", error);
       setLastError(error.message || 'A análise falhou. Tente novamente.');
-      // Don't toast on every error to avoid spamming the user
     } finally {
       setIsAnalyzing(false);
     }

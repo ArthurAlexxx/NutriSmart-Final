@@ -1,7 +1,7 @@
 // src/components/pwa-install-modal.tsx
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Download, Smartphone, Star } from 'lucide-react';
 import { usePWA } from '@/context/pwa-context';
@@ -28,17 +28,17 @@ export default function PWAInstallModal({ isOpen, onOpenChange }: PWAInstallModa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetHeader>
           <div className="flex justify-center mb-4">
              {logoImage && <Image src={logoImage.imageUrl} alt="Nutrinea Logo" width={140} height={35} />}
           </div>
-          <DialogTitle className="text-center text-2xl font-bold">Instale o Nutrinea</DialogTitle>
-          <DialogDescription className="text-center">
+          <SheetTitle className="text-center text-2xl font-bold">Instale o Nutrinea</SheetTitle>
+          <SheetDescription className="text-center">
             Tenha a melhor experiência adicionando nosso aplicativo à sua tela inicial.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="py-4">
             <ul className="space-y-3">
                 {benefits.map((benefit, index) => (
@@ -51,15 +51,15 @@ export default function PWAInstallModal({ isOpen, onOpenChange }: PWAInstallModa
                 ))}
             </ul>
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <SheetFooter className="gap-2 flex-col sm:flex-row">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Agora não
           </Button>
-          <Button type="button" onClick={handleInstall}>
+          <Button type="button" onClick={handleInstall} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" /> Instalar Aplicativo
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

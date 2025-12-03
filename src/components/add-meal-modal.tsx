@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,6 @@ import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { MealData, MealEntry, Totals } from '@/types/meal';
 import AddMealForm from './add-meal-form';
-import { getNutritionalInfo } from '@/app/actions/meal-actions';
 
 interface AddMealModalProps {
   isOpen: boolean;
@@ -78,26 +77,26 @@ export default function AddMealModal({ isOpen, onOpenChange, userId }: AddMealMo
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4 shrink-0">
-          <DialogTitle className="text-2xl font-bold">Adicionar Nova Refeição</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-xl flex flex-col p-0">
+        <SheetHeader className="p-6 pb-4 shrink-0">
+          <SheetTitle className="text-2xl font-bold">Adicionar Nova Refeição</SheetTitle>
+          <SheetDescription>
             Descreva os alimentos da sua refeição para obter a análise nutricional.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className='flex-1 overflow-y-auto px-6'>
             <AddMealForm 
                 onTotalsChange={(totals) => setCurrentTotals(totals)}
                 onFoodsChange={(foods) => setCurrentFoods(foods)}
                 onMealTypeChange={(mealType) => setCurrentMealType(mealType)}
-                isPreviewMode={false} // Modo real, com chamada à API
+                isPreviewMode={false}
                 userId={userId}
             />
         </div>
         
-        <DialogFooter className="p-6 pt-4 border-t shrink-0 gap-2 flex-col sm:flex-row">
+        <SheetFooter className="p-6 pt-4 border-t shrink-0 gap-2 flex-col sm:flex-row">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
             Cancelar
           </Button>
@@ -105,8 +104,8 @@ export default function AddMealModal({ isOpen, onOpenChange, userId }: AddMealMo
             {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
             Adicionar Refeição
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

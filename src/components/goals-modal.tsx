@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,14 +64,14 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Ajustar Metas Nutricionais</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className='rounded-t-2xl'>
+        <SheetHeader className='text-left'>
+          <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
+          <SheetDescription>
             Defina suas metas diárias de calorias, proteínas e hidratação. A meta de proteína será sugerida com base nas calorias.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 pt-4">
             <FormField
@@ -113,11 +113,11 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
                 </FormItem>
               )}
             />
-            <DialogFooter className='!mt-8'>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <SheetFooter className='!mt-8 flex-col sm:flex-row gap-2'>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting || !isDirty}>
+              <Button type="submit" disabled={isSubmitting || !isDirty} className='w-full sm:w-auto'>
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -125,10 +125,10 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
                 )}
                 Salvar Metas
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

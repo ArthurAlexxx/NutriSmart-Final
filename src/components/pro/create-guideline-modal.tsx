@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -67,40 +67,42 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Nova Orientação</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold">Nova Orientação</SheetTitle>
+          <SheetDescription>
             Crie um texto de orientação para reutilizar com seus pacientes (ex: lista de compras, dicas).
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
-          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-            <FormField control={form.control} name="title" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Título da Orientação *</FormLabel>
-                    <FormControl><Input placeholder="Ex: Lista de Compras Low-Carb" {...field} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <FormField control={form.control} name="content" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Conteúdo *</FormLabel>
-                    <FormControl><Textarea placeholder="Liste os itens, dicas, etc." {...field} rows={8} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            </form>
+          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 h-full flex flex-col">
+            <div className="flex-1 space-y-6">
+                <FormField control={form.control} name="title" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Título da Orientação *</FormLabel>
+                        <FormControl><Input placeholder="Ex: Lista de Compras Low-Carb" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+                <FormField control={form.control} name="content" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Conteúdo *</FormLabel>
+                        <FormControl><Textarea placeholder="Liste os itens, dicas, etc." {...field} rows={12} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+            </div>
+            <SheetFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
+                <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Salvar Orientação
+                </Button>
+            </SheetFooter>
+          </form>
         </Form>
-        <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
-            <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Salvar Orientação
-            </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

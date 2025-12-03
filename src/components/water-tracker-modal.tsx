@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from './ui/button';
 import { Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,20 +32,18 @@ const WaterBottle = ({ progress }: { progress: number }) => {
 
     return (
         <div className="relative w-32 h-52">
-            {/* Bottle Shape SVG */}
             <svg width="128" height="208" viewBox="0 0 128 208" fill="none" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 z-10">
                  <path d="M34.5 1H93.5V13H106.5V23H112.5V207H15.5V23H21.5V13H34.5Z" fill="hsl(var(--muted))" stroke="hsl(var(--border))" strokeWidth="2"/>
                 <path d="M34.5 5H93.5" stroke="hsl(var(--border))" strokeOpacity="0.5" strokeWidth="1"/>
                  <rect x="100.5" y="1" width="6" height="12" fill="hsl(var(--muted) / 0.5)" />
             </svg>
 
-            {/* Water Fill */}
             <motion.div
                 className="absolute bottom-0 left-0 w-full bg-blue-400"
                 style={{
                     maskImage: 'url(\'data:image/svg+xml;utf8,<svg width="128" height="208" viewBox="0 0 128 208" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 207V23H21.5V13H34.5V1H93.5V13H106.5V23H112.5V207H15.5Z" fill="black"/></svg>\')',
                     maskSize: '100% 100%',
-                    borderBottomLeftRadius: '0.75rem', // Corresponds to rounded-lg
+                    borderBottomLeftRadius: '0.75rem',
                     borderBottomRightRadius: '0.75rem',
                 }}
                 initial={{ height: 0 }}
@@ -53,7 +51,6 @@ const WaterBottle = ({ progress }: { progress: number }) => {
                 transition={{ duration: 0.7, ease: "easeOut" }}
             />
 
-            {/* Overflow Animation */}
             <AnimatePresence>
                 {isOverflowing && (
                     <>
@@ -98,7 +95,6 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
     setLocalIntake(clampedIntake);
     debouncedUpdate(clampedIntake);
 
-    // Trigger confetti when goal is met
     if (clampedIntake >= waterGoal && !hasFiredConfetti.current) {
         confetti({
             particleCount: 100,
@@ -118,14 +114,14 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
   const progress = waterGoal > 0 ? (localIntake / waterGoal) * 100 : 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm p-0">
-        <DialogHeader className='text-center'>
-          <DialogTitle className="text-2xl font-bold">Registrar Água</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="sm:max-w-sm p-0 rounded-t-2xl">
+        <SheetHeader className='text-center p-6'>
+          <SheetTitle className="text-2xl font-bold">Registrar Água</SheetTitle>
+          <SheetDescription>
             Acompanhe sua meta diária de hidratação. Cada toque adiciona 250ml.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="flex flex-col items-center justify-center text-center py-8 gap-6 px-6">
             <WaterBottle progress={progress} />
@@ -146,12 +142,12 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
             </div>
         </div>
 
-        <DialogFooter>
-          <Button type="button" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
+        <SheetFooter className="p-6">
+          <Button type="button" onClick={() => onOpenChange(false)} className='w-full'>
             Fechar
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

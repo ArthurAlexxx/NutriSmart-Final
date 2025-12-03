@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { PlanTemplate } from '@/types/library';
+import { ScrollArea } from '../ui/scroll-area';
 
 const mealPlanItemSchema = z.object({
   id: z.string().optional(),
@@ -127,17 +128,17 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl flex flex-col p-0 max-h-[90svh]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</DialogTitle>
-          <DialogDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col">
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</SheetTitle>
+          <SheetDescription>
             {isEditing ? 'Ajuste os detalhes deste modelo.' : 'Crie um plano alimentar base para reutilizar com seus pacientes.'}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto px-6">
+            <ScrollArea className="flex-1 -mr-6 pr-6">
                 <div className="space-y-6 pt-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Nome do Modelo *</FormLabel><FormControl><Input placeholder="Ex: Plano de Emagrecimento (2000 kcal)" {...field} /></FormControl><FormMessage /></FormItem>
@@ -186,17 +187,17 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
                         </div>
                     </div>
                 </div>
-            </div>
-            <DialogFooter>
+            </ScrollArea>
+            <SheetFooter className='pt-6 border-t'>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Salvar Modelo
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
