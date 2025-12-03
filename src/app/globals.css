@@ -155,19 +155,18 @@
 }
 
 @media (max-width: 640px) {
-    [data-sonner-toaster][data-theme='light'],
-    [data-sonner-toaster][data-theme='dark'],
-    [data-sonner-toaster][data-theme='system'] {
-        --normal-bg: hsl(var(--background));
-        --normal-border: hsl(var(--border));
-        --normal-text: hsl(var(--foreground));
-        
-        --success-bg: hsl(var(--background));
-        --success-border: hsl(var(--border));
-        --success-text: hsl(var(--primary));
+    [data-sonner-toaster] [data-variant="destructive"] {
+        background-color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        color: hsl(var(--destructive)) !important;
+    }
+    
+    [data-sonner-toaster] [data-variant="destructive"] [data-title] {
+        color: hsl(var(--destructive)) !important;
+    }
 
-        --error-bg: hsl(var(--background));
-        --error-border: hsl(var(--destructive));
-        --error-text: hsl(var(--destructive));
+    [data-sonner-toaster] [data-variant="destructive"] [data-description] {
+        color: hsl(var(--destructive) / 0.8) !important;
     }
 }
