@@ -258,12 +258,12 @@ export default function DashboardPage() {
                         />
                      )}
 
-                    <Card className="shadow-lg rounded-2xl w-full">
+                    <Card className="shadow-lg rounded-2xl w-full flex flex-col h-[700px] md:h-auto">
                         <CardHeader>
                             <CardTitle>Refeições de Hoje</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <ScrollArea className="max-h-[600px] pr-4">
+                        <CardContent className="flex-1 overflow-hidden">
+                            <ScrollArea className="h-full pr-4 -mr-4">
                                 <ConsumedFoodsList 
                                     mealEntries={todayMeals} 
                                     onMealDeleted={handleMealDeleted}
