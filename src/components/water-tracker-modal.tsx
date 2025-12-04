@@ -116,8 +116,8 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="sm:max-w-sm p-0 rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className='text-center p-6'>
-          <SheetTitle className="text-2xl font-bold">Registrar Água</SheetTitle>
+        <SheetHeader>
+          <SheetTitle>Registrar Água</SheetTitle>
           <SheetDescription>
             Acompanhe sua meta diária de hidratação. Cada toque adiciona 250ml.
           </SheetDescription>
@@ -142,7 +142,7 @@ export default function WaterTrackerModal({ isOpen, onOpenChange, waterIntake, w
             </div>
         </div>
 
-        <SheetFooter className="p-6">
+        <SheetFooter>
           <Button type="button" onClick={() => onOpenChange(false)} className='w-full'>
             Fechar
           </Button>

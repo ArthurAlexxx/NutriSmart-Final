@@ -122,7 +122,7 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
-          <SheetTitle className="text-2xl font-bold">Adicionar Paciente</SheetTitle>
+          <SheetTitle>Adicionar Paciente</SheetTitle>
           <SheetDescription>
             Insira o nome da sala e o código de compartilhamento do paciente.
           </SheetDescription>

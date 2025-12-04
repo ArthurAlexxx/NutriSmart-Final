@@ -67,69 +67,71 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "sm:max-w-md" : "rounded-t-2xl"} onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className='text-left'>
+      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "sm:max-w-md p-0" : "rounded-t-2xl p-0"} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetHeader>
           <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
           <SheetDescription>
             Defina suas metas diárias de calorias, proteínas e hidratação. A meta de proteína será sugerida com base nas calorias.
           </SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 pt-4">
-            <FormField
-              control={form.control}
-              name="calorieGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='flex items-center gap-2'><Flame className='h-5 w-5 text-orange-500'/> Meta de Calorias (kcal)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="proteinGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='flex items-center gap-2'><Rocket className='h-5 w-5 text-blue-500'/> Meta de Proteínas (g)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="waterGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='flex items-center gap-2'><Droplet className='h-5 w-5 text-sky-500'/> Meta de Água (ml)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <SheetFooter className='!mt-8 flex-col sm:flex-row gap-2'>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting || !isDirty} className='w-full sm:w-auto'>
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
+        <div className="flex-1 overflow-y-auto px-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 pt-4">
+              <FormField
+                control={form.control}
+                name="calorieGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='flex items-center gap-2'><Flame className='h-5 w-5 text-orange-500'/> Meta de Calorias (kcal)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                Salvar Metas
-              </Button>
-            </SheetFooter>
-          </form>
-        </Form>
+              />
+              <FormField
+                control={form.control}
+                name="proteinGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='flex items-center gap-2'><Rocket className='h-5 w-5 text-blue-500'/> Meta de Proteínas (g)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="waterGoal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='flex items-center gap-2'><Droplet className='h-5 w-5 text-sky-500'/> Meta de Água (ml)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </div>
+        <SheetFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
+            Cancelar
+          </Button>
+          <Button type="submit" form="goals-form" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting || !isDirty} className='w-full sm:w-auto'>
+            {isSubmitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Salvar Metas
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

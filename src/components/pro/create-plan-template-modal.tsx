@@ -129,74 +129,74 @@ export default function CreatePlanTemplateModal({ isOpen, onOpenChange, userId, 
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
-          <SheetTitle className="text-2xl font-bold">{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</SheetTitle>
+          <SheetTitle>{isEditing ? 'Editar' : 'Novo'} Modelo de Plano</SheetTitle>
           <SheetDescription>
             {isEditing ? 'Ajuste os detalhes deste modelo.' : 'Crie um plano alimentar base para reutilizar com seus pacientes.'}
           </SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 -mr-6 pr-6">
-                <div className="space-y-6 pt-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Nome do Modelo *</FormLabel><FormControl><Input placeholder="Ex: Plano de Emagrecimento (2000 kcal)" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="description" render={({ field }) => (
-                        <FormItem><FormLabel>Descrição (Opcional)</FormLabel><FormControl><Textarea placeholder="Descreva o objetivo deste plano" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <FormField control={form.control} name="calorieGoal" render={({ field }) => (
-                            <FormItem><FormLabel className="flex items-center gap-2"><Flame className="h-4 w-4" /> Calorias *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="proteinGoal" render={({ field }) => (
-                            <FormItem><FormLabel className="flex items-center gap-2"><Rocket className="h-4 w-4" /> Proteínas *</FormLabel><FormControl><Input type="number" placeholder="Ex: 140" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
-                            <FormItem><FormLabel className="flex items-center gap-2"><Droplet className="h-4 w-4" /> Hidratação (ml) *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2500" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                    </div>
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold">Refeições *</h3>
-                            <Button type="button" variant="outline" size="sm" onClick={() => append(defaultMealValues)}><Plus className="mr-2 h-4 w-4" /> Nova Refeição</Button>
-                        </div>
-                        <div className="space-y-4">
-                            {fields.map((field, index) => (
-                                <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name={`meals.${index}.name`} render={({ field }) => (
-                                            <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl><SelectContent>{mealTypeOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                                        )}/>
-                                        <FormField control={form.control} name={`meals.${index}.time`} render={({ field }) => (
-                                            <FormItem><FormLabel>Horário</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )}/>
-                                    </div>
-                                    <FormField control={form.control} name={`meals.${index}.items`} render={({ field }) => (
-                                        <FormItem><FormLabel>Itens da Refeição</FormLabel><FormControl><Textarea placeholder="Ex: 2 ovos, 1 fatia de pão integral..." {...field} rows={3} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    {fields.length > 1 && (
-                                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(index)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-                            <FormMessage>{form.formState.errors.meals?.root?.message || form.formState.errors.meals?.message}</FormMessage>
-                        </div>
-                    </div>
-                </div>
-            </ScrollArea>
-            <SheetFooter className='pt-6 border-t'>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
-                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Salvar Modelo
-              </Button>
-            </SheetFooter>
-          </form>
-        </Form>
+        <div className="flex-1 overflow-y-auto px-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} id="plan-template-form" className="flex-1 flex flex-col min-h-0">
+                  <div className="space-y-6 pt-4">
+                      <FormField control={form.control} name="name" render={({ field }) => (
+                          <FormItem><FormLabel>Nome do Modelo *</FormLabel><FormControl><Input placeholder="Ex: Plano de Emagrecimento (2000 kcal)" {...field} /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                      <FormField control={form.control} name="description" render={({ field }) => (
+                          <FormItem><FormLabel>Descrição (Opcional)</FormLabel><FormControl><Textarea placeholder="Descreva o objetivo deste plano" {...field} /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <FormField control={form.control} name="calorieGoal" render={({ field }) => (
+                              <FormItem><FormLabel className="flex items-center gap-2"><Flame className="h-4 w-4" /> Calorias *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2000" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={form.control} name="proteinGoal" render={({ field }) => (
+                              <FormItem><FormLabel className="flex items-center gap-2"><Rocket className="h-4 w-4" /> Proteínas *</FormLabel><FormControl><Input type="number" placeholder="Ex: 140" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={form.control} name="hydrationGoal" render={({ field }) => (
+                              <FormItem><FormLabel className="flex items-center gap-2"><Droplet className="h-4 w-4" /> Hidratação (ml) *</FormLabel><FormControl><Input type="number" placeholder="Ex: 2500" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                      </div>
+                      <div>
+                          <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-semibold">Refeições *</h3>
+                              <Button type="button" variant="outline" size="sm" onClick={() => append(defaultMealValues)}><Plus className="mr-2 h-4 w-4" /> Nova Refeição</Button>
+                          </div>
+                          <div className="space-y-4">
+                              {fields.map((field, index) => (
+                                  <div key={field.id} className="rounded-2xl border p-4 space-y-4 relative bg-secondary/30">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                          <FormField control={form.control} name={`meals.${index}.name`} render={({ field }) => (
+                                              <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl><SelectContent>{mealTypeOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                                          )}/>
+                                          <FormField control={form.control} name={`meals.${index}.time`} render={({ field }) => (
+                                              <FormItem><FormLabel>Horário</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
+                                          )}/>
+                                      </div>
+                                      <FormField control={form.control} name={`meals.${index}.items`} render={({ field }) => (
+                                          <FormItem><FormLabel>Itens da Refeição</FormLabel><FormControl><Textarea placeholder="Ex: 2 ovos, 1 fatia de pão integral..." {...field} rows={3} /></FormControl><FormMessage /></FormItem>
+                                      )}/>
+                                      {fields.length > 1 && (
+                                          <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => remove(index)}>
+                                              <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                      )}
+                                  </div>
+                              ))}
+                              <FormMessage>{form.formState.errors.meals?.root?.message || form.formState.errors.meals?.message}</FormMessage>
+                          </div>
+                      </div>
+                  </div>
+            </form>
+          </Form>
+        </div>
+        <SheetFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
+          <Button type="submit" form="plan-template-form" disabled={isSubmitting} className='w-full sm:w-auto'>
+             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Salvar Modelo
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

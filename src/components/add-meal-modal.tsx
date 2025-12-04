@@ -79,8 +79,8 @@ export default function AddMealModal({ isOpen, onOpenChange, userId }: AddMealMo
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl flex flex-col p-0">
-        <SheetHeader className="p-6 pb-4 shrink-0">
-          <SheetTitle className="text-2xl font-bold">Adicionar Nova Refeição</SheetTitle>
+        <SheetHeader>
+          <SheetTitle>Adicionar Nova Refeição</SheetTitle>
           <SheetDescription>
             Descreva os alimentos da sua refeição para obter a análise nutricional.
           </SheetDescription>
@@ -96,7 +96,7 @@ export default function AddMealModal({ isOpen, onOpenChange, userId }: AddMealMo
             />
         </div>
         
-        <SheetFooter className="p-6 pt-4 border-t shrink-0 gap-2 flex-col sm:flex-row">
+        <SheetFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
             Cancelar
           </Button>

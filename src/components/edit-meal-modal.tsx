@@ -62,7 +62,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
         },
         alimentos: [{
             ...mealEntry.mealData.alimentos[0],
-            name: `(Editado) ${mealEntry.mealData.alimentos.map(f => f.nome).join(', ')}`.substring(0, 100),
+            name: `(Editado) ${mealEntry.mealData.alimentos.map(f => f.name).join(', ')}`.substring(0, 100),
             portion: 1,
             unit: 'porção'
         }]
@@ -87,87 +87,89 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "" : "rounded-t-2xl"} onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className='text-left'>
-          <SheetTitle className="text-2xl font-bold">Editar Refeição</SheetTitle>
+      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "sm:max-w-md p-0" : "rounded-t-2xl p-0"} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetHeader>
+          <SheetTitle>Editar Refeição</SheetTitle>
           <SheetDescription>
             Ajuste os totais para: <span className='font-semibold text-foreground'>{getMealTypeName(mealEntry.mealType)}</span>.
           </SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="calorias"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="font-semibold">Calorias (kcal)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 500" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                
-                <FormField
-                control={form.control}
-                name="proteinas"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="font-semibold">Proteínas (g)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 30" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
-                <FormField
-                control={form.control}
-                name="carboidratos"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="font-semibold">Carboidratos (g)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 55" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
-                <FormField
-                control={form.control}
-                name="gorduras"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="font-semibold">Gorduras (g)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 20" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            <SheetFooter className='!mt-8 gap-2 sm:gap-0 sm:space-x-2 flex-col sm:flex-row'>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
-                 {isSubmitting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
+        <div className='flex-1 overflow-y-auto px-6'>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} id="edit-meal-form" className="space-y-6 pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                  control={form.control}
+                  name="calorias"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel className="font-semibold">Calorias (kcal)</FormLabel>
+                      <FormControl>
+                          <Input type="number" step="0.01" placeholder="Ex: 500" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
                   )}
-                Salvar
-              </Button>
-            </SheetFooter>
-          </form>
-        </Form>
+                  />
+                  
+                  <FormField
+                  control={form.control}
+                  name="proteinas"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel className="font-semibold">Proteínas (g)</FormLabel>
+                      <FormControl>
+                          <Input type="number" step="0.01" placeholder="Ex: 30" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
+
+                  <FormField
+                  control={form.control}
+                  name="carboidratos"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel className="font-semibold">Carboidratos (g)</FormLabel>
+                      <FormControl>
+                          <Input type="number" step="0.01" placeholder="Ex: 55" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
+
+                  <FormField
+                  control={form.control}
+                  name="gorduras"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel className="font-semibold">Gorduras (g)</FormLabel>
+                      <FormControl>
+                          <Input type="number" step="0.01" placeholder="Ex: 20" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
+              </div>
+            </form>
+          </Form>
+        </div>
+        <SheetFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
+            Cancelar
+          </Button>
+          <Button type="submit" form="edit-meal-form" disabled={isSubmitting} className='w-full sm:w-auto'>
+             {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+            Salvar
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

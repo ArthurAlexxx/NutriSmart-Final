@@ -29,17 +29,17 @@ export default function PWAInstallModal({ isOpen, onOpenChange }: PWAInstallModa
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl">
+      <SheetContent side="bottom" className="rounded-t-2xl p-0">
         <SheetHeader>
           <div className="flex justify-center mb-4">
              {logoImage && <Image src={logoImage.imageUrl} alt="Nutrinea Logo" width={140} height={35} />}
           </div>
-          <SheetTitle className="text-center text-2xl font-bold">Instale o Nutrinea</SheetTitle>
-          <SheetDescription className="text-center">
+          <SheetTitle>Instale o Nutrinea</SheetTitle>
+          <SheetDescription>
             Tenha a melhor experiência adicionando nosso aplicativo à sua tela inicial.
           </SheetDescription>
         </SheetHeader>
-        <div className="py-4">
+        <div className="py-4 px-6">
             <ul className="space-y-3">
                 {benefits.map((benefit, index) => (
                     <li key={index} className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export default function PWAInstallModal({ isOpen, onOpenChange }: PWAInstallModa
                 ))}
             </ul>
         </div>
-        <SheetFooter className="gap-2 flex-col sm:flex-row">
+        <SheetFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Agora não
           </Button>

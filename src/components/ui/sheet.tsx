@@ -7,6 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { ScrollArea } from "./scroll-area"
 
 const Sheet = SheetPrimitive.Root
 
@@ -67,7 +68,11 @@ const SheetContent = React.forwardRef<
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >
-      {children}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full px-6">
+          {children}
+        </ScrollArea>
+      </div>
       {closeButton && (
         <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
           <X className="h-4 w-4" />
@@ -85,7 +90,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left p-6 shrink-0",
+      "flex flex-col space-y-1.5 text-center sm:text-left px-6 py-6 shrink-0",
       className
     )}
     {...props}
@@ -99,7 +104,7 @@ const SheetFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 mt-auto shrink-0 bg-background border-t",
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 px-6 py-4 mt-auto shrink-0 bg-background border-t",
       className
     )}
     {...props}
