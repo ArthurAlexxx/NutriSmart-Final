@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useScroll } from '@/hooks/use-scroll';
+import { ThemeToggle } from './ui/theme-toggle';
 
 const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => {
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -62,18 +64,9 @@ const LogoDisplay = () => {
 
 export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const { user, effectiveSubscriptionStatus } = useUser();
+  const scrolled = useScroll(10);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   const navLinkStyle = "font-medium text-muted-foreground";
 
@@ -86,87 +79,95 @@ export default function Header() {
   );
 
   return (
-    <header className='fixed top-0 w-full z-50 transition-all duration-300'>
-      <AnimatePresence>
-        {isScrolled ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="container my-3 mx-auto px-4 sm:px-6 lg:px-8"
-          >
-            <div className="relative mx-auto flex h-16 w-auto items-center justify-between rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
-                <Link href="/" className="flex items-center gap-2">
-                    <LogoDisplay />
-                </Link>
-                <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-6 md:flex">
-                    {navLinks}
-                </nav>
-                <div className="flex items-center gap-2">
-                    <div className='hidden md:flex items-center gap-2'>
-                       {user ? (
-                         <Button asChild size="sm">
-                           <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
-                        </Button>
-                      ) : (
-                        <>
-                           <Button asChild variant="ghost" size="sm">
-                               <Link href="/login">Login</Link>
-                           </Button>
-                           <Button asChild size="sm">
-                               <Link href="/register">Cadastre-se</Link>
-                           </Button>
-                        </>
-                      )}
+    <header className={cn(
+        "top-0 w-full z-50 transition-all duration-300",
+        scrolled ? "sticky" : "relative"
+    )}>
+        {/* Scrolled State */}
+        <AnimatePresence>
+            {scrolled && (
+                 <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="container my-3 mx-auto px-4 sm:px-6 lg:px-8"
+                >
+                    <div className="mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
+                        <Link href="/" className="flex items-center gap-2">
+                            <LogoDisplay />
+                        </Link>
+                        <nav className="hidden items-center gap-6 md:flex">
+                            {navLinks}
+                        </nav>
+                        <div className="flex items-center gap-2">
+                            <div className='hidden md:flex items-center gap-2'>
+                               <ThemeToggle />
+                               {user ? (
+                                 <Button asChild size="sm">
+                                   <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
+                                </Button>
+                              ) : (
+                                <>
+                                   <Button asChild variant="ghost" size="sm">
+                                       <Link href="/login">Login</Link>
+                                   </Button>
+                                   <Button asChild size="sm">
+                                       <Link href="/register">Cadastre-se</Link>
+                                   </Button>
+                                </>
+                              )}
+                            </div>
+                             <div className="md:hidden">
+                                <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                                  <SheetTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <Menu className="h-6 w-6" />
+                                      <span className="sr-only">Menu de Navegação</span>
+                                    </Button>
+                                  </SheetTrigger>
+                                  <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                                     <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
+                                         <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
+                                            <LogoDisplay />
+                                          </Link>
+                                           <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                                              <X className="h-5 w-5" />
+                                              <span className="sr-only">Close</span>
+                                          </SheetClose>
+                                          <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                                      </SheetHeader>
+                                    <nav className="flex flex-col flex-1 p-6 gap-6">
+                                      {navLinks}
+                                    </nav>
+                                     <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
+                                          <ThemeToggle />
+                                          {user ? (
+                                             <Button asChild size="lg">
+                                                <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
+                                             </Button>
+                                          ) : (
+                                            <>
+                                               <Button asChild size="lg">
+                                                  <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
+                                               </Button>
+                                               <Button asChild variant="secondary" size="lg">
+                                                  <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
+                                               </Button>
+                                            </>
+                                           )}
+                                       </div>
+                                  </SheetContent>
+                                </Sheet>
+                            </div>
+                        </div>
                     </div>
-                    <div className="md:hidden">
-                        {/* Mobile menu remains the same */}
-                         <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                          <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Menu className="h-6 w-6" />
-                              <span className="sr-only">Menu de Navegação</span>
-                            </Button>
-                          </SheetTrigger>
-                          <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                             <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                                 <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                                    <LogoDisplay />
-                                  </Link>
-                                   <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                                      <X className="h-5 w-5" />
-                                      <span className="sr-only">Close</span>
-                                  </SheetClose>
-                                  <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
-                              </SheetHeader>
-                            <nav className="flex flex-col flex-1 p-6 gap-6">
-                              {navLinks}
-                            </nav>
-                             <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
-                                  {user ? (
-                                     <Button asChild size="lg">
-                                        <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
-                                     </Button>
-                                  ) : (
-                                    <>
-                                       <Button asChild size="lg">
-                                          <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
-                                       </Button>
-                                       <Button asChild variant="secondary" size="lg">
-                                          <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
-                                       </Button>
-                                    </>
-                                   )}
-                               </div>
-                          </SheetContent>
-                        </Sheet>
-                    </div>
-                </div>
-            </div>
-          </motion.div>
-        ) : (
-           <div className="container flex h-20 items-center justify-between border-b border-transparent">
+                 </motion.div>
+            )}
+        </AnimatePresence>
+        
+        {/* Top State */}
+        <div className={cn("container flex h-20 items-center justify-between border-b border-transparent", scrolled && "hidden")}>
              <Link href="/" className="flex items-center gap-2">
                 <LogoDisplay />
             </Link>
@@ -177,6 +178,7 @@ export default function Header() {
 
             <div className="flex items-center gap-2">
                 <div className='hidden md:flex items-center gap-2'>
+                  <ThemeToggle />
                   {user ? (
                      <Button asChild className="rounded-full">
                        <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
@@ -216,6 +218,7 @@ export default function Header() {
                       {navLinks}
                     </nav>
                      <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
+                          <ThemeToggle />
                           {user ? (
                              <Button asChild size="lg">
                                 <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
@@ -235,9 +238,7 @@ export default function Header() {
                 </Sheet>
               </div>
             </div>
-           </div>
-        )}
-      </AnimatePresence>
+        </div>
     </header>
   );
 }

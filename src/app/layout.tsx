@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import RootLayoutContent from './layout-content';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -50,15 +51,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`}>
+    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`} suppressHydrationWarning>
       <head />
       <body className='h-full'>
-        <AppProvider>
-            <RootLayoutContent>
-                {children}
-            </RootLayoutContent>
-        </AppProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AppProvider>
+              <RootLayoutContent>
+                  {children}
+              </RootLayoutContent>
+          </AppProvider>
+          <Toaster />
+        </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -78,5 +86,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
