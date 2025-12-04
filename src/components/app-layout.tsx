@@ -79,7 +79,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
-        !disabled && "hover:bg-accent/50 hover:text-primary",
+        !disabled && "hover:bg-accent hover:text-primary",
         isActive && !disabled && "bg-primary/10 font-semibold text-primary",
         disabled && "cursor-not-allowed opacity-60"
       )}
@@ -208,10 +208,12 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
         {renderNavLinks(isMobile, false)}
       </div>
       <div className='p-4 mt-auto border-t'>
-         <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-4'>
-            <LogOut className="h-5 w-5" />
-            <span>Sair</span>
-        </Button>
+         <SheetClose asChild>
+            <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-4'>
+                <LogOut className="h-5 w-5" />
+                <span>Sair</span>
+            </Button>
+         </SheetClose>
       </div>
     </>
   );
@@ -232,59 +234,51 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   };
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:flex md:flex-col no-print">
-         <div className="flex h-header items-center border-b px-6">
-            <LogoDisplay />
-         </div>
-        <SidebarContent />
-      </div>
-      <div className="flex flex-col">
-        <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
-            <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                <SheetTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 md:hidden [app-region:no-drag]"
-                    >
-                        <Menu className="h-5 w-5" />
-                        <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                    <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
-                        <LogoDisplay />
-                        <SheetClose asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full">
-                                <X className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
-                            </Button>
-                        </SheetClose>
-                        <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
-                    </SheetHeader>
-                    <SidebarContent isMobile />
-                </SheetContent>
-            </Sheet>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
+          <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                  <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 [app-region:no-drag]"
+                  >
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">Toggle navigation menu</span>
+                  </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                  <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
+                      <LogoDisplay />
+                      <SheetClose asChild>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                              <X className="h-5 w-5" />
+                              <span className="sr-only">Close</span>
+                          </Button>
+                      </SheetClose>
+                      <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                  </SheetHeader>
+                  <SidebarContent isMobile />
+              </SheetContent>
+          </Sheet>
 
-            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 [app-region:no-drag]">
-                <div className="ml-auto flex-1 sm:flex-initial">
-                    {/* Pode adicionar um search bar aqui no futuro */}
-                </div>
-                <ThemeToggle />
-                <DashboardHeader
-                    user={user}
-                    userProfile={userProfile}
-                />
-            </div>
-        </header>
-        <main className={cn(
-          "relative flex flex-1 flex-col gap-4 bg-muted/40 print:bg-white print:p-0", 
-          pathname.startsWith('/chef') || pathname.startsWith('/live-analysis') ? 'overflow-hidden' : 'overflow-y-auto'
-        )}>
-          {children}
-        </main>
-      </div>
+          <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 [app-region:no-drag]">
+              <div className="ml-auto flex-1 sm:flex-initial">
+                  {/* Pode adicionar um search bar aqui no futuro */}
+              </div>
+              <ThemeToggle />
+              <DashboardHeader
+                  user={user}
+                  userProfile={userProfile}
+              />
+          </div>
+      </header>
+      <main className={cn(
+        "relative flex flex-1 flex-col gap-4 bg-muted/40 print:bg-white print:p-0", 
+        pathname.startsWith('/chef') || pathname.startsWith('/live-analysis') ? 'overflow-hidden' : 'overflow-y-auto'
+      )}>
+        {children}
+      </main>
     </div>
   );
 }
