@@ -60,13 +60,14 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           href={disabled ? '#' : href}
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
-            "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-            !disabled && "hover:bg-accent/50",
-            isActive && !disabled && "bg-primary/10 text-primary",
+            "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            !disabled && "hover:bg-accent/80 hover:text-accent-foreground",
+            isActive && !disabled && "bg-primary/10 text-primary font-semibold",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
         >
+          <Icon className="h-4 w-4" />
           {label}
       </Link>
       )
@@ -163,9 +164,11 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     const adminLinks = navItemsAdmin.map(item => <NavLink key={item.href} {...navLinkProps(item)} />);
     
     if (isHorizontal) {
-        if(isAdmin) return <>{adminLinks}{proLinks}{patientLinks}</>;
-        if(isProUser) return <>{proLinks}{patientLinks}</>;
-        return <>{patientLinks}</>;
+        let links = [];
+        if(isAdmin) links = [...adminLinks, ...proLinks, ...patientLinks];
+        else if(isProUser) links = [...proLinks, ...patientLinks];
+        else links = [...patientLinks];
+        return <>{links}</>
     }
     
     if (isAdmin) {
@@ -236,33 +239,44 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
-          <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                  <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 [app-region:no-drag]"
-                  >
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle navigation menu</span>
-                  </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                  <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
-                      <LogoDisplay />
-                      <SheetClose asChild>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                              <X className="h-5 w-5" />
-                              <span className="sr-only">Close</span>
-                          </Button>
-                      </SheetClose>
-                      <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
-                  </SheetHeader>
-                  <SidebarContent isMobile />
-              </SheetContent>
-          </Sheet>
+          <div className="md:hidden">
+            <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 [app-region:no-drag]"
+                    >
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                    <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
+                        <LogoDisplay />
+                        <SheetClose asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                                <X className="h-5 w-5" />
+                                <span className="sr-only">Close</span>
+                            </Button>
+                        </SheetClose>
+                        <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                    </SheetHeader>
+                    <SidebarContent isMobile />
+                </SheetContent>
+            </Sheet>
+          </div>
+          
+          <div className="hidden md:flex items-center">
+             <LogoDisplay />
+          </div>
 
-          <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 [app-region:no-drag]">
+          <nav className="hidden md:flex items-center gap-1 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-sm">
+            {renderNavLinks(false, true)}
+          </nav>
+
+
+          <div className="flex w-full items-center gap-4 md:ml-auto md:w-auto md:flex-initial [app-region:no-drag]">
               <div className="ml-auto flex-1 sm:flex-initial">
                   {/* Pode adicionar um search bar aqui no futuro */}
               </div>
