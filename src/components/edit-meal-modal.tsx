@@ -11,7 +11,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Save } from 'lucide-react';
 import { type MealEntry } from '@/types/meal';
-import { useMediaQuery } from '@/hooks/use-media-query';
 
 const formSchema = z.object({
   calorias: z.coerce.number().min(0, 'As calorias não podem ser negativas.'),
@@ -30,7 +29,6 @@ interface EditMealModalProps {
 }
 
 export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealUpdate }: EditMealModalProps) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
   const form = useForm<EditMealFormValues>({
     resolver: zodResolver(formSchema),
   });
@@ -87,89 +85,89 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "sm:max-w-md p-0" : "rounded-t-2xl p-0"} onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader>
-          <SheetTitle>Editar Refeição</SheetTitle>
-          <SheetDescription>
-            Ajuste os totais para: <span className='font-semibold text-foreground'>{getMealTypeName(mealEntry.mealType)}</span>.
-          </SheetDescription>
-        </SheetHeader>
-        <div className='flex-1 overflow-y-auto px-6'>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} id="edit-meal-form" className="space-y-6 pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                  control={form.control}
-                  name="calorias"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel className="font-semibold">Calorias (kcal)</FormLabel>
-                      <FormControl>
-                          <Input type="number" step="0.01" placeholder="Ex: 500" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
-                  
-                  <FormField
-                  control={form.control}
-                  name="proteinas"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel className="font-semibold">Proteínas (g)</FormLabel>
-                      <FormControl>
-                          <Input type="number" step="0.01" placeholder="Ex: 30" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
+      <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <form onSubmit={form.handleSubmit(onSubmit)} id="edit-meal-form" className="flex flex-col h-full">
+            <SheetHeader className="p-6 pb-4">
+              <SheetTitle>Editar Refeição</SheetTitle>
+              <SheetDescription>
+                Ajuste os totais para: <span className='font-semibold text-foreground'>{getMealTypeName(mealEntry.mealType)}</span>.
+              </SheetDescription>
+            </SheetHeader>
+            <div className='flex-1 overflow-y-auto px-6'>
+              <div className="space-y-6 pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                      control={form.control}
+                      name="calorias"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="font-semibold">Calorias (kcal)</FormLabel>
+                          <FormControl>
+                              <Input type="number" step="0.01" placeholder="Ex: 500" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      
+                      <FormField
+                      control={form.control}
+                      name="proteinas"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="font-semibold">Proteínas (g)</FormLabel>
+                          <FormControl>
+                              <Input type="number" step="0.01" placeholder="Ex: 30" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
 
-                  <FormField
-                  control={form.control}
-                  name="carboidratos"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel className="font-semibold">Carboidratos (g)</FormLabel>
-                      <FormControl>
-                          <Input type="number" step="0.01" placeholder="Ex: 55" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
+                      <FormField
+                      control={form.control}
+                      name="carboidratos"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="font-semibold">Carboidratos (g)</FormLabel>
+                          <FormControl>
+                              <Input type="number" step="0.01" placeholder="Ex: 55" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
 
-                  <FormField
-                  control={form.control}
-                  name="gorduras"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel className="font-semibold">Gorduras (g)</FormLabel>
-                      <FormControl>
-                          <Input type="number" step="0.01" placeholder="Ex: 20" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
+                      <FormField
+                      control={form.control}
+                      name="gorduras"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="font-semibold">Gorduras (g)</FormLabel>
+                          <FormControl>
+                              <Input type="number" step="0.01" placeholder="Ex: 20" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                  </div>
               </div>
-            </form>
-          </Form>
-        </div>
-        <SheetFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
-            Cancelar
-          </Button>
-          <Button type="submit" form="edit-meal-form" disabled={isSubmitting} className='w-full sm:w-auto'>
-             {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-            Salvar
-          </Button>
-        </SheetFooter>
+            </div>
+            <SheetFooter className="p-6 pt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className='w-full sm:w-auto'>
+                {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                )}
+                Salvar
+              </Button>
+            </SheetFooter>
+        </form>
       </SheetContent>
     </Sheet>
   );

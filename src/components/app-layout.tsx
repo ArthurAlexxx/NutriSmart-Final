@@ -61,8 +61,8 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
             "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-            !disabled && "hover:bg-accent hover:text-accent-foreground",
-            isActive && !disabled && "bg-primary/80 text-primary-foreground",
+            !disabled && "hover:bg-accent/50",
+            isActive && !disabled && "bg-primary/10 text-primary",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
@@ -79,7 +79,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
-        !disabled && "hover:bg-accent hover:text-accent-foreground",
+        !disabled && "hover:bg-accent/50",
         isActive && !disabled && "bg-primary/10 font-semibold text-primary",
         disabled && "cursor-not-allowed opacity-60"
       )}
@@ -238,7 +238,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-4 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
+          <nav className="hidden md:flex items-center gap-1 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
               {renderNavLinks(false, true)}
           </nav>
           
@@ -253,14 +253,14 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                     </Avatar>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <SheetHeader className="text-left">
+                <SheetContent side="right" className="flex flex-col p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <SheetHeader className="text-left p-6 pb-4">
                         <SheetTitle>
                             <p className='font-semibold'>{userProfile?.fullName}</p>
                             <p className='text-sm font-normal text-muted-foreground'>{user?.email}</p>
                         </SheetTitle>
                     </SheetHeader>
-                    <div className="grid gap-2 py-4">
+                    <div className="grid gap-2 p-6 pt-0">
                         <SheetClose asChild>
                             <Link href="/profile">
                                 <Button variant="outline" className="w-full justify-start gap-2">
@@ -269,6 +269,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                 </Button>
                             </Link>
                         </SheetClose>
+                    </div>
+                     <div className='mt-auto p-6 border-t'>
                         <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-2'>
                             <LogOut className="h-4 w-4" />
                             <span>Sair</span>

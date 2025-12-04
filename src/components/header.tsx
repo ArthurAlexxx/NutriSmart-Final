@@ -1,5 +1,3 @@
-
-
 // src/components/header.tsx
 'use client';
 
@@ -144,14 +142,14 @@ export default function Header() {
                                       <span className="sr-only">Menu de Navegação</span>
                                     </Button>
                                   </SheetTrigger>
-                                   <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                      <SheetHeader className="text-left">
-                                        <SheetTitle>Navegação</SheetTitle>
+                                   <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                      <SheetHeader className="p-6 border-b">
+                                        <SheetTitle className="text-left">Navegação</SheetTitle>
                                       </SheetHeader>
-                                      <nav className="flex flex-col py-4 gap-4">
+                                      <nav className="flex flex-col p-6 gap-4">
                                         {navLinks}
                                       </nav>
-                                     <div className='grid grid-cols-2 gap-2 pt-4 border-t'>
+                                     <div className='grid grid-cols-2 gap-2 p-6 mt-auto border-t'>
                                           {user ? (
                                              <Button asChild size="lg" className="w-full">
                                                 <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
@@ -213,14 +211,14 @@ export default function Header() {
                       <span className="sr-only">Menu de Navegação</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-                      <SheetHeader className="text-left">
-                        <SheetTitle>Navegação</SheetTitle>
+                  <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                      <SheetHeader className="p-6 border-b">
+                        <SheetTitle className="text-left">Navegação</SheetTitle>
                       </SheetHeader>
-                      <nav className="flex flex-col py-4 gap-4">
+                      <nav className="flex flex-col p-6 gap-4">
                         {navLinks}
                       </nav>
-                     <div className='grid grid-cols-2 gap-2 pt-4 border-t'>
+                     <div className='grid grid-cols-2 gap-2 p-6 mt-auto border-t'>
                           {user ? (
                              <Button asChild size="lg" className="w-full">
                                 <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>

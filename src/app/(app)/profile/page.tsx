@@ -422,11 +422,11 @@ export default function ProfilePage() {
                                     <Menu className="h-4 w-4" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                <SheetHeader className="text-left">
-                                    <SheetTitle>Navegação</SheetTitle>
+                            <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                <SheetHeader className="p-6 border-b">
+                                    <SheetTitle className="text-left">Navegação</SheetTitle>
                                 </SheetHeader>
-                                <div className="grid gap-2 py-4">
+                                <div className="grid gap-2 p-6">
                                      {navItems.map(item => (
                                         <NavButton 
                                             key={item.id}
