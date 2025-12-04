@@ -37,16 +37,16 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
                     <Icon className="h-4 w-4 text-white" />
                 </div>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col justify-center items-center flex-grow text-center">
-                <div className="relative flex items-center justify-center h-28 w-28">
+            <CardContent className="p-4 pt-2 flex flex-col justify-center items-center flex-grow text-center">
+                <div className="relative flex items-center justify-center h-24 w-24">
                     <CircularProgress value={progressValue} colorClass={color} />
                     <div className='absolute flex flex-col items-center justify-center'>
-                         <span className='text-3xl font-bold text-foreground'>{value}</span>
+                         <span className='text-2xl font-bold text-foreground'>{value}</span>
                          <span className='text-xs text-muted-foreground -mt-1'>{unit}</span>
                     </div>
                 </div>
 
-                <div className='h-4 mt-3'>
+                <div className='h-4 mt-2'>
                     {goal != null && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3"/> Meta: {goal.toLocaleString('pt-BR')} {unit}</p>
                     )}
@@ -96,7 +96,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
       {summaryCardsData.map((card, index) => (
         <div key={card.title} className="animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
             <SummaryCard {...card} />
