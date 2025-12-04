@@ -20,6 +20,7 @@ import { Separator } from './ui/separator';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Utensils as UtensilsIcon } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
 
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
@@ -121,76 +122,78 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
         </DropdownMenu>
       </div>
       
-      <div className='space-y-4'>
-           {filteredEntries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-center rounded-lg border-2 border-dashed">
-                    <CalendarOff className="h-10 w-10 text-muted-foreground mb-4" />
-                    <p className="text-base font-medium text-muted-foreground">Nenhuma refeição encontrada.</p>
-                    <p className="text-sm text-muted-foreground mt-1">{searchTerm ? "Tente uma busca diferente ou limpe os filtros." : "Use o botão \"Adicionar Refeição\" para começar a registrar."}</p>
-                </div>
-           ) : (
-            filteredEntries.map(entry => (
-                <div key={entry.id} className="bg-background p-4 rounded-xl shadow-sm transition-all hover:shadow-md border animate-fade-in">
-                  <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                         {entry.mealData.imageUrl && (
-                            <Avatar className="h-12 w-12 border">
-                                <AvatarImage src={entry.mealData.imageUrl} alt={`Foto de ${getMealTypeName(entry.mealType)}`} />
-                                <AvatarFallback><UtensilsIcon className='h-5 w-5 text-muted-foreground'/></AvatarFallback>
-                            </Avatar>
-                         )}
-                          <div>
-                              <p className="font-bold text-lg text-foreground">{getMealTypeName(entry.mealType)}</p>
-                              <p className="text-sm font-normal text-muted-foreground -mt-1">{getMealTime(entry)}</p>
+      <ScrollArea className="max-h-[600px] pr-4">
+        <div className='space-y-4'>
+            {filteredEntries.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-center rounded-lg border-2 border-dashed">
+                        <CalendarOff className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-base font-medium text-muted-foreground">Nenhuma refeição encontrada.</p>
+                        <p className="text-sm text-muted-foreground mt-1">{searchTerm ? "Tente uma busca diferente ou limpe os filtros." : "Use o botão \"Adicionar Refeição\" para começar a registrar."}</p>
+                    </div>
+            ) : (
+                filteredEntries.map(entry => (
+                    <div key={entry.id} className="bg-background p-4 rounded-xl shadow-sm transition-all hover:shadow-md border animate-fade-in">
+                      <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            {entry.mealData.imageUrl && (
+                                <Avatar className="h-12 w-12 border">
+                                    <AvatarImage src={entry.mealData.imageUrl} alt={`Foto de ${getMealTypeName(entry.mealType)}`} />
+                                    <AvatarFallback><UtensilsIcon className='h-5 w-5 text-muted-foreground'/></AvatarFallback>
+                                </Avatar>
+                            )}
+                              <div>
+                                  <p className="font-bold text-lg text-foreground">{getMealTypeName(entry.mealType)}</p>
+                                  <p className="text-sm font-normal text-muted-foreground -mt-1">{getMealTime(entry)}</p>
+                              </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-500" onClick={() => onMealEdit(entry)}>
+                                              <Pencil className="h-4 w-4" />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Editar Valores</p></TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => onMealDeleted(entry.id)}
+                                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                          >
+                                              <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Excluir Refeição</p></TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
                           </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                          <TooltipProvider>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-500" onClick={() => onMealEdit(entry)}>
-                                          <Pencil className="h-4 w-4" />
-                                      </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Editar Valores</p></TooltipContent>
-                              </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => onMealDeleted(entry.id)}
-                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                      >
-                                          <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Excluir Refeição</p></TooltipContent>
-                              </Tooltip>
-                          </TooltipProvider>
+                      
+                      <div className="mb-4 space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                            {entry.mealData.alimentos[0].name}
+                        </p>
+                      </div>
+
+                      <Separator />
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                          <NutrientDisplay label="Calorias" value={entry.mealData.totais.calorias} unit='kcal' icon={Flame} color='text-orange-500'/>
+                          <NutrientDisplay label="Proteínas" value={entry.mealData.totais.proteinas} unit='g' icon={Rocket} color='text-blue-500'/>
+                          <NutrientDisplay label="Carbos" value={entry.mealData.totais.carboidratos} unit='g' icon={FaBreadSlice} color='text-yellow-500' />
+                          <NutrientDisplay label="Gorduras" value={entry.mealData.totais.gorduras} unit='g' icon={Donut} color='text-pink-500'/>
                       </div>
                   </div>
-                  
-                  <div className="mb-4 space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                        {entry.mealData.alimentos[0].name}
-                    </p>
-                  </div>
-
-                  <Separator />
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
-                      <NutrientDisplay label="Calorias" value={entry.mealData.totais.calorias} unit='kcal' icon={Flame} color='text-orange-500'/>
-                      <NutrientDisplay label="Proteínas" value={entry.mealData.totais.proteinas} unit='g' icon={Rocket} color='text-blue-500'/>
-                      <NutrientDisplay label="Carbos" value={entry.mealData.totais.carboidratos} unit='g' icon={FaBreadSlice} color='text-yellow-500' />
-                      <NutrientDisplay label="Gorduras" value={entry.mealData.totais.gorduras} unit='g' icon={Donut} color='text-pink-500'/>
-                  </div>
-              </div>
-            ))
-           )}
-      </div>
+                ))
+            )}
+        </div>
+      </ScrollArea>
     </>
   );
 }
