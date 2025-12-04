@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -84,7 +85,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left p-6 shrink-0",
+      "flex flex-col space-y-1.5 text-center sm:text-left p-6 shrink-0",
       className
     )}
     {...props}

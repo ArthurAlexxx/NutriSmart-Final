@@ -121,37 +121,39 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className="p-6 pb-4">
+        <SheetHeader>
           <SheetTitle className="text-2xl font-bold">Adicionar Paciente</SheetTitle>
           <SheetDescription>
             Insira o nome da sala e o código de compartilhamento do paciente.
           </SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 px-6">
-            <FormField control={form.control} name="roomName" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Nome da Sala *</FormLabel>
-                    <FormControl><Input placeholder="Ex: Acompanhamento de Juliana" {...field} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <FormField control={form.control} name="shareCode" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Código de Compartilhamento *</FormLabel>
-                    <FormControl><Input placeholder="ABC123XY" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <SheetFooter className="!mt-8 p-6 pt-4 -mx-6 bg-background border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Criar Sala
-              </Button>
-            </SheetFooter>
-          </form>
-        </Form>
+        <div className="flex-1 space-y-6 py-6 px-6 overflow-y-auto">
+          <Form {...form}>
+            <form id="create-room-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField control={form.control} name="roomName" render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Nome da Sala *</FormLabel>
+                      <FormControl><Input placeholder="Ex: Acompanhamento de Juliana" {...field} /></FormControl>
+                      <FormMessage />
+                  </FormItem>
+              )}/>
+              <FormField control={form.control} name="shareCode" render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Código de Compartilhamento *</FormLabel>
+                      <FormControl><Input placeholder="ABC123XY" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                      <FormMessage />
+                  </FormItem>
+              )}/>
+            </form>
+          </Form>
+        </div>
+        <SheetFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button type="submit" form="create-room-form" disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Criar Sala
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
