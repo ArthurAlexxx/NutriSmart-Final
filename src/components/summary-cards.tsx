@@ -19,6 +19,8 @@ interface SummaryCardsProps {
    nutrientGoals?: {
     calories: number;
     protein: number;
+    carbs?: number;
+    fat?: number;
   };
   isAnalysisPage?: boolean;
 }
@@ -59,8 +61,16 @@ const MobileSummaryCard = ({ summaryCardsData, totalNutrients, nutrientGoals }: 
         <CardContent>
              <div className="grid grid-cols-2 gap-4">
                 {summaryCardsData.map((card, index) => {
-                    const goal = card.title === 'Calorias' ? nutrientGoals?.calories : (card.title === 'Proteínas' ? nutrientGoals?.protein : null);
-                    const value = card.title === 'Calorias' ? totalNutrients.calorias : (card.title === 'Proteínas' ? totalNutrients.proteinas : (card.title === 'Carboidratos' ? totalNutrients.carboidratos : totalNutrients.gorduras));
+                    const goal = card.title === 'Calorias' ? nutrientGoals?.calories : 
+                                 card.title === 'Proteínas' ? nutrientGoals?.protein :
+                                 card.title === 'Carboidratos' ? nutrientGoals?.carbs :
+                                 card.title === 'Gorduras' ? nutrientGoals?.fat : null;
+                    
+                    const value = card.title === 'Calorias' ? totalNutrients.calorias : 
+                                  card.title === 'Proteínas' ? totalNutrients.proteinas : 
+                                  card.title === 'Carboidratos' ? totalNutrients.carboidratos : 
+                                  totalNutrients.gorduras;
+
                     const progressValue = (goal && value && goal > 0) ? Math.min((value / goal) * 100, 100) : 0;
                     
                     return (
@@ -79,6 +89,11 @@ const MobileSummaryCard = ({ summaryCardsData, totalNutrients, nutrientGoals }: 
                                      <span className='text-xs text-muted-foreground -mt-1'>{card.unit}</span>
                                 </div>
                             </div>
+                            {goal != null && (
+                                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                                    <Target className="h-3 w-3"/> Meta: {goal.toLocaleString('pt-BR')} {card.unit}
+                                </p>
+                            )}
                         </div>
                     );
                 })}
@@ -107,7 +122,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
       unit: 'g',
       icon: Rocket,
       color: 'bg-blue-400',
-      goal: nutrientGoals?.protein
+      goal: nutrientGoals?.protein,
     },
     {
       title: 'Carboidratos',
@@ -115,7 +130,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
       unit: 'g',
       icon: FaHamburger,
       color: 'bg-yellow-400',
-      goal: null,
+      goal: nutrientGoals?.carbs,
     },
     {
       title: 'Gorduras',
@@ -123,7 +138,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
       unit: 'g',
       icon: Donut,
       color: 'bg-pink-400',
-      goal: null,
+      goal: nutrientGoals?.fat,
     }
   ];
 

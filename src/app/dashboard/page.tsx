@@ -207,8 +207,10 @@ export default function DashboardPage() {
   ), [todayMeals]);
 
   const nutrientGoals = useMemo(() => ({
-    calories: userProfile?.calorieGoal || 2200,
-    protein: userProfile?.proteinGoal || 160,
+    calories: userProfile?.calorieGoal || 2000,
+    protein: userProfile?.proteinGoal || 175,
+    carbs: userProfile?.carbGoal || 200,
+    fat: userProfile?.fatGoal || 56,
   }), [userProfile]);
 
   return (
