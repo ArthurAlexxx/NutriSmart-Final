@@ -18,6 +18,8 @@ import {
 import { getMealTime } from '@/lib/date-utils';
 import { Separator } from './ui/separator';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Utensils as UtensilsIcon } from 'lucide-react';
 
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
@@ -130,10 +132,17 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
             filteredEntries.map(entry => (
                 <div key={entry.id} className="bg-background p-4 rounded-xl shadow-sm transition-all hover:shadow-md border animate-fade-in">
                   <div className="flex justify-between items-start mb-4">
-                      <div>
-                          <p className="font-bold text-lg text-foreground">{getMealTypeName(entry.mealType)}
-                            <span className="text-sm font-normal text-muted-foreground ml-2">{getMealTime(entry)}</span>
-                          </p>
+                      <div className="flex items-center gap-3">
+                         {entry.mealData.imageUrl && (
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarImage src={entry.mealData.imageUrl} alt={`Foto de ${getMealTypeName(entry.mealType)}`} />
+                                <AvatarFallback><UtensilsIcon className='h-5 w-5 text-muted-foreground'/></AvatarFallback>
+                            </Avatar>
+                         )}
+                          <div>
+                              <p className="font-bold text-lg text-foreground">{getMealTypeName(entry.mealType)}</p>
+                              <p className="text-sm font-normal text-muted-foreground -mt-1">{getMealTime(entry)}</p>
+                          </div>
                       </div>
                       <div className="flex items-center gap-1">
                           <TooltipProvider>
@@ -165,16 +174,6 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
                   </div>
                   
                   <div className="mb-4 space-y-3">
-                    {entry.mealData.imageUrl && (
-                        <div className='relative w-full aspect-video rounded-lg overflow-hidden'>
-                            <Image 
-                                src={entry.mealData.imageUrl}
-                                alt={`Foto de ${getMealTypeName(entry.mealType)}`}
-                                fill
-                                className='object-cover'
-                            />
-                        </div>
-                    )}
                     <p className="text-sm text-muted-foreground">
                         {entry.mealData.alimentos[0].name}
                     </p>
