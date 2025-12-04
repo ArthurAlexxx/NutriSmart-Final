@@ -240,52 +240,56 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 z-30 flex h-header items-center gap-4 bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
-          <div className="md:hidden">
-            <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                <SheetTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 [app-region:no-drag]"
-                    >
-                        <Menu className="h-5 w-5" />
-                        <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                    <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
-                        <LogoDisplay />
-                        <SheetClose asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full">
-                                <X className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
+          <div className="flex w-full items-center justify-between">
+              {/* Left Section */}
+              <div className="flex items-center gap-2 md:w-64">
+                <div className="md:hidden">
+                    <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 [app-region:no-drag]"
+                            >
+                                <Menu className="h-5 w-5" />
+                                <span className="sr-only">Toggle navigation menu</span>
                             </Button>
-                        </SheetClose>
-                        <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
-                    </SheetHeader>
-                    <SidebarContent isMobile />
-                </SheetContent>
-            </Sheet>
-          </div>
-          
-          <div className="hidden md:flex items-center">
-             <LogoDisplay />
-          </div>
-
-          <nav className="hidden md:flex items-center gap-1 mx-auto p-1.5 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-md dark:shadow-md-dark">
-            {renderNavLinks(false, true)}
-          </nav>
-
-
-          <div className="flex w-full items-center gap-4 md:ml-auto md:w-auto md:flex-initial [app-region:no-drag]">
-              <div className="ml-auto flex-1 sm:flex-initial">
-                  {/* Pode adicionar um search bar aqui no futuro */}
+                        </SheetTrigger>
+                        <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                            <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-header">
+                                <LogoDisplay />
+                                <SheetClose asChild>
+                                    <Button variant="ghost" size="icon" className="rounded-full">
+                                        <X className="h-5 w-5" />
+                                        <span className="sr-only">Close</span>
+                                    </Button>
+                                </SheetClose>
+                                <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                            </SheetHeader>
+                            <SidebarContent isMobile />
+                        </SheetContent>
+                    </Sheet>
+                  </div>
+                  <div className="hidden md:flex">
+                    <LogoDisplay />
+                  </div>
               </div>
-              <ThemeToggle />
-              <DashboardHeader
-                  user={user}
-                  userProfile={userProfile}
-              />
+
+              {/* Center Section */}
+              <div className="hidden md:flex flex-1 justify-center">
+                  <nav className="flex items-center gap-1 p-1.5 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-md dark:shadow-md-dark">
+                      {renderNavLinks(false, true)}
+                  </nav>
+              </div>
+              
+              {/* Right Section */}
+              <div className="flex items-center justify-end gap-4 md:w-64 [app-region:no-drag]">
+                  <ThemeToggle />
+                  <DashboardHeader
+                      user={user}
+                      userProfile={userProfile}
+                  />
+              </div>
           </div>
       </header>
       <main className={cn(
