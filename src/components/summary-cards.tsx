@@ -31,8 +31,8 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
 
     return (
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-2xl flex flex-col h-full bg-gradient-to-br from-secondary/30 to-transparent">
-             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
+                <CardTitle className="font-bold text-lg text-foreground">{title}</CardTitle>
                 <div className={cn("p-1.5 rounded-md", color)}>
                     <Icon className="h-4 w-4 text-white" />
                 </div>
