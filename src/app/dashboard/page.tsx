@@ -27,6 +27,7 @@ import WeightReminderCard from '@/components/weight-reminder-card';
 import { PageHeader } from '@/components/page-header';
 import Link from 'next/link';
 import GoalsModal from '@/components/goals-modal';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 export default function DashboardPage() {
@@ -208,7 +209,7 @@ export default function DashboardPage() {
 
   const nutrientGoals = useMemo(() => ({
     calories: userProfile?.calorieGoal || 2000,
-    protein: userProfile?.proteinGoal || 175,
+    protein: userProfile?.proteinGoal || 150,
     carbs: userProfile?.carbGoal || 200,
     fat: userProfile?.fatGoal || 56,
   }), [userProfile]);
@@ -262,11 +263,13 @@ export default function DashboardPage() {
                             <CardTitle>Refeições de Hoje</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           <ConsumedFoodsList 
-                              mealEntries={todayMeals} 
-                              onMealDeleted={handleMealDeleted}
-                              onMealEdit={(meal) => setEditingMeal(meal)}
-                            />
+                            <ScrollArea className="max-h-[600px] pr-4">
+                                <ConsumedFoodsList 
+                                    mealEntries={todayMeals} 
+                                    onMealDeleted={handleMealDeleted}
+                                    onMealEdit={(meal) => setEditingMeal(meal)}
+                                />
+                            </ScrollArea>
                         </CardContent>
                     </Card>
                 </div>

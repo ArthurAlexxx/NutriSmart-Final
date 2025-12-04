@@ -122,7 +122,6 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
         </DropdownMenu>
       </div>
       
-      <ScrollArea className="max-h-[600px] pr-4">
         <div className='space-y-4'>
             {filteredEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-48 text-center rounded-lg border-2 border-dashed">
@@ -193,7 +192,6 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
                 ))
             )}
         </div>
-      </ScrollArea>
     </>
   );
 }
