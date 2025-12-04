@@ -1,10 +1,13 @@
 // src/components/summary-cards.tsx
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Target } from 'lucide-react';
+'use client';
+
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Target, Rocket, Flame, Donut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Rocket } from 'lucide-react';
 import { FaHamburger } from 'react-icons/fa';
-import { Flame, Droplet, Donut } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import MacronutrientChart from './macronutrient-chart';
 
 interface SummaryCardsProps {
   totalNutrients: {
@@ -50,6 +53,11 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
 
 
 export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysisPage = false }: SummaryCardsProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  if (isMobile && !isAnalysisPage) {
+    return <MacronutrientChart totalNutrients={totalNutrients} nutrientGoals={nutrientGoals} />;
+  }
   
   const titlePrefix = isAnalysisPage ? 'Média ' : '';
 
