@@ -238,7 +238,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-4 mx-auto p-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
+          <nav className="hidden md:flex items-center gap-4 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
               {renderNavLinks(false, true)}
           </nav>
           
