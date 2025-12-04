@@ -196,10 +196,11 @@ export default function DashboardPage() {
 
   const totalNutrients = useMemo(() => todayMeals.reduce(
     (acc, meal) => {
-        acc.calorias += meal.mealData.totais.calorias;
-        acc.proteinas += meal.mealData.totais.proteinas;
-        acc.carboidratos += meal.mealData.totais.carboidratos || 0;
-        acc.gorduras += meal.mealData.totais.gorduras || 0;
+        const totals = meal.mealData.totais;
+        acc.calorias += totals.calorias || 0;
+        acc.proteinas += totals.proteinas || 0;
+        acc.carboidratos += totals.carboidratos || 0;
+        acc.gorduras += totals.gorduras || 0;
         return acc;
     },
     { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
