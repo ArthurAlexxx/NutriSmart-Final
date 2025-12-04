@@ -1,7 +1,7 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -38,8 +38,9 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
 
   return (
     <>
-      <div className="hidden md:flex items-center gap-4">
+      <div className="flex items-center gap-2">
           <InstallPWAButton />
+          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button id="user-profile-button" variant="ghost" className="relative h-10 w-10 rounded-full">
