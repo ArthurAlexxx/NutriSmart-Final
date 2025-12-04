@@ -30,14 +30,14 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
     const progressValue = (goal && numericValue && goal > 0) ? Math.min((numericValue / goal) * 100, 100) : 0;
 
     return (
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-2xl flex flex-col h-full bg-gradient-to-br from-secondary/30 to-transparent">
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl flex flex-col h-full bg-background">
              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
-                <CardTitle className="font-semibold text-base text-foreground">{title}</CardTitle>
-                <div className={cn("p-1.5 rounded-md", color)}>
+                <CardTitle className="font-semibold text-sm sm:text-base text-foreground break-words">{title}</CardTitle>
+                <div className={cn("p-1.5 rounded-md flex-shrink-0", color)}>
                     <Icon className="h-4 w-4 text-white" />
                 </div>
             </CardHeader>
-            <CardContent className="p-4 pt-2 flex flex-col justify-center items-center flex-grow text-center">
+            <CardContent className="p-4 pt-0 flex flex-col justify-center items-center flex-grow text-center">
                 <div className="relative flex items-center justify-center h-24 w-24">
                     <CircularProgress value={progressValue} colorClass={color} />
                     <div className='absolute flex flex-col items-center justify-center'>
@@ -98,7 +98,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
   return (
     <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
       {summaryCardsData.map((card, index) => (
-        <div key={card.title} className="animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
+        <div key={card.title} className="animate-in fade-in-50" style={{animationDelay: `${index * 100}ms`}}>
             <SummaryCard {...card} />
         </div>
       ))}

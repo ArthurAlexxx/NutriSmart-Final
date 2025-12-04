@@ -220,8 +220,8 @@ export default function DashboardPage() {
         userProfile={userProfile}
         onProfileUpdate={handleProfileUpdateWithToast}
     >
-      <div className="w-full flex flex-col items-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-7xl flex flex-col gap-8 pb-16 sm:pb-8">
+      <div className="w-full flex-grow flex flex-col items-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-screen-2xl flex-grow flex flex-col gap-8 pb-16 sm:pb-8">
             <div className='flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left animate-fade-in'>
                 <div className='flex-1'>
                     <h2 className='text-3xl font-bold font-heading flex items-center gap-3 justify-center sm:justify-start'>
@@ -241,8 +241,8 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-start">
-                <div className="xl:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-grow">
+                <div className="lg:col-span-8 xl:col-span-9 space-y-8">
                      <Collapsible open={isAddMealFormOpen} onOpenChange={setAddMealFormOpen}>
                         <CollapsibleContent>
                            <Card className="shadow-lg rounded-2xl w-full mb-8">
@@ -258,7 +258,7 @@ export default function DashboardPage() {
                         />
                      )}
 
-                    <Card className="shadow-lg rounded-2xl w-full flex flex-col h-[700px] md:h-auto">
+                    <Card className="shadow-sm rounded-2xl w-full flex flex-col h-[700px] md:h-auto">
                         <CardHeader>
                             <CardTitle>Refeições de Hoje</CardTitle>
                         </CardHeader>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="md:col-span-2 xl:col-span-1 space-y-8">
+                <div className="lg:col-span-4 xl:col-span-3 space-y-8">
                      <div id="summary-cards">
                         <SummaryCards
                             totalNutrients={totalNutrients}
