@@ -127,10 +127,10 @@ export async function saveAnalyzedMealAction(input: SaveAnalyzedMealInput): Prom
                 calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0
             }],
             totais: {
-                calorias: totals.calories,
-                proteinas: totals.protein,
-                carboidratos: totals.carbs,
-                gorduras: totals.fat,
+                calorias: totals.calories || 0,
+                proteinas: totals.protein || 0,
+                carboidratos: totals.carbs || 0,
+                gorduras: totals.fat || 0,
                 fibras: 0
             },
         };
