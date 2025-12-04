@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -20,7 +19,7 @@ import { doc, runTransaction, serverTimestamp, arrayUnion, getDoc, updateDoc, Ti
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useState, useEffect } from 'react';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import AIPlanConfirmationModal from '@/components/ai-plan-confirmation-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -77,7 +76,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
 
   const activePlan = isProfessional ? room?.activePlan : userProfile?.activePlan;
   
-  const calculatedProteinGoal = (calories: number) => Math.round((calories * 0.35) / 4);
+  const calculatedProteinGoal = (calories: number) => Math.round((calories * 0.30) / 4);
 
   const getTargetDate = () => {
     const targetDate = isProfessional ? room?.patientInfo?.targetDate : userProfile?.targetDate;
@@ -129,8 +128,8 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
   useEffect(() => {
       const isCalorieGoalDirty = form.formState.dirtyFields.calorieGoal;
       if (watchedCalorieGoal > 0 && isCalorieGoalDirty) {
-          const newProteinGoal = calculatedProteinGoal(watchedCalorieGoal);
-          form.setValue('proteinGoal', newProteinGoal, { shouldDirty: true });
+          form.setValue('proteinGoal', Math.round((watchedCalorieGoal * 0.30) / 4), { shouldDirty: true });
+          // Note: The AI plan generator overrides these, but manual adjustment is useful.
       }
   }, [watchedCalorieGoal, form]);
 
@@ -311,27 +310,23 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
     
     try {
         const formValues = form.getValues();
-        const today = new Date();
-        const targetDate = formValues.targetDate || today;
-        const duration = differenceInDays(targetDate, today) + 1;
-        const durationInDays = Math.max(1, Math.min(duration, 7)); // Min 1, Max 7
         
         const payload = {
-            durationInDays,
             weight: formValues.weight,
             targetWeight: formValues.targetWeight,
+            targetDate: formValues.targetDate ? formValues.targetDate.toISOString().split('T')[0] : undefined,
+            // We no longer pass manual goals to the AI
         };
 
         const generatedPlan = await generateMealPlanAction(payload);
         
-        const allMeals = generatedPlan.dailyPlans.flatMap(daily => daily.meals);
-
+        // Use the goals returned by the AI to update the form
         const finalData = {
             ...form.getValues(), // keep weight, targetWeight, etc.
             calorieGoal: generatedPlan.calorieGoal,
             proteinGoal: generatedPlan.proteinGoal,
             hydrationGoal: generatedPlan.hydrationGoal,
-            meals: allMeals,
+            meals: generatedPlan.meals,
         };
 
         // Validate the final combined data
@@ -342,7 +337,7 @@ export default function PlanEditor({ room, userProfile, isFeatureLocked = false,
             
             toast({
                 title: "Plano Gerado e Salvo!",
-                description: `O novo plano de ${durationInDays} dia(s) foi criado e salvo.`,
+                description: "O novo plano foi criado e salvo.",
             });
         } else {
              console.error("Zod validation error:", validationResult.error);

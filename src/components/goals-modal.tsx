@@ -61,9 +61,9 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
 
   useEffect(() => {
       if (watchedCalorieGoal > 0 && form.formState.dirtyFields.calorieGoal) {
-          form.setValue('proteinGoal', Math.round((watchedCalorieGoal * 0.35) / 4), { shouldDirty: true });
+          form.setValue('proteinGoal', Math.round((watchedCalorieGoal * 0.30) / 4), { shouldDirty: true });
           form.setValue('carbGoal', Math.round((watchedCalorieGoal * 0.40) / 4), { shouldDirty: true });
-          form.setValue('fatGoal', Math.round((watchedCalorieGoal * 0.25) / 9), { shouldDirty: true });
+          form.setValue('fatGoal', Math.round((watchedCalorieGoal * 0.30) / 9), { shouldDirty: true });
       }
   }, [watchedCalorieGoal, form]);
 
@@ -81,7 +81,7 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
             <SheetHeader className="p-6 pb-4">
             <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
             <SheetDescription>
-                Defina sua meta de calorias e as outras serão calculadas automaticamente seguindo uma distribuição saudável (40% Carbos, 35% Proteínas, 25% Gorduras).
+                Defina sua meta de calorias e as outras serão calculadas automaticamente seguindo uma distribuição saudável (40% Carbos, 30% Proteínas, 30% Gorduras).
             </SheetDescription>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto px-6">
