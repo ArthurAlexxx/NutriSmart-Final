@@ -53,9 +53,8 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
 
 
 export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysisPage = false }: SummaryCardsProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
   
-  if (isMobile && !isAnalysisPage) {
+  if (!isAnalysisPage) {
     return <MacronutrientChart totalNutrients={totalNutrients} nutrientGoals={nutrientGoals} />;
   }
   

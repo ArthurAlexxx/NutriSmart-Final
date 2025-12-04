@@ -32,7 +32,7 @@ export default function MacronutrientChart({ totalNutrients, nutrientGoals }: Ma
   }, [proteinas, carboidratos, gorduras]);
 
   return (
-    <Card className="shadow-sm rounded-2xl">
+    <Card className="shadow-lg rounded-2xl">
       <CardHeader>
         <CardTitle className='flex items-center gap-2 font-semibold text-lg'>
           <Flame className='h-6 w-6 text-primary'/>
@@ -40,7 +40,7 @@ export default function MacronutrientChart({ totalNutrients, nutrientGoals }: Ma
         </CardTitle>
         <CardDescription>Distribuição de macronutrientes e total de calorias.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center">
+      <CardContent className="flex flex-col items-center justify-center pt-2">
         {macroData.length > 0 ? (
           <DashboardCharts chartType="macros" data={macroData} />
         ) : (
