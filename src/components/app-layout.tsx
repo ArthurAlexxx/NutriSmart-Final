@@ -207,6 +207,12 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
       <div className="flex-1 py-4 overflow-y-auto">
         {renderNavLinks(isMobile, false)}
       </div>
+      <div className='p-4 mt-auto border-t'>
+         <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-4'>
+            <LogOut className="h-5 w-5" />
+            <span>Sair</span>
+        </Button>
+      </div>
     </>
   );
   
@@ -232,7 +238,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-2 mx-auto p-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50">
+          <nav className="hidden md:flex items-center gap-2 mx-auto p-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
               {renderNavLinks(false, true)}
           </nav>
           
