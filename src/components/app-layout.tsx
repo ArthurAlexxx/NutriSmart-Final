@@ -61,14 +61,14 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
             "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-            !disabled && "hover:bg-accent/80 hover:text-accent-foreground",
-            isActive && !disabled && "bg-primary/10 text-primary font-semibold",
+            !disabled && "hover:bg-accent/80",
+            isActive && !disabled && "bg-primary/10",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
         >
-          <Icon className="h-4 w-4" />
-          {label}
+          <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
+          <span className={cn(isActive ? "text-foreground font-semibold" : "text-muted-foreground")}>{label}</span>
       </Link>
       )
   }
@@ -80,14 +80,14 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
-        !disabled && "hover:bg-accent hover:text-primary",
-        isActive && !disabled && "bg-primary/10 font-semibold text-primary",
+        !disabled && "hover:bg-accent",
+        isActive && !disabled && "bg-primary/10",
         disabled && "cursor-not-allowed opacity-60"
       )}
       aria-disabled={disabled}
     >
-        <Icon className="h-5 w-5" />
-        {label}
+        <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
+        <span className={cn(isActive && "text-foreground font-semibold")}>{label}</span>
     </Link>
   );
 };
@@ -165,8 +165,8 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
     
     if (isHorizontal) {
         let links = [];
-        if(isAdmin) links = [...adminLinks, ...proLinks, ...patientLinks];
-        else if(isProUser) links = [...proLinks, ...patientLinks];
+        if(isAdmin) links = [...adminLinks];
+        else if(isProUser) links = [...proLinks];
         else links = [...patientLinks];
         return <>{links}</>
     }
@@ -271,7 +271,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
              <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-sm">
+          <nav className="hidden md:flex items-center gap-1 mx-auto p-1.5 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-sm">
             {renderNavLinks(false, true)}
           </nav>
 
