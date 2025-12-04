@@ -61,7 +61,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
             "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            !disabled && "hover:bg-primary/10 hover:text-primary",
+            !disabled && "hover:bg-accent hover:text-accent-foreground",
             isActive && !disabled && "bg-primary/10 text-primary",
             disabled && "cursor-not-allowed opacity-60"
           )}
@@ -79,7 +79,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
-        !disabled && "hover:bg-primary/10 hover:text-primary",
+        !disabled && "hover:bg-accent hover:text-accent-foreground",
         isActive && !disabled && "bg-primary text-primary-foreground font-semibold hover:bg-primary/90 hover:text-primary-foreground",
         disabled && "cursor-not-allowed opacity-60"
       )}
