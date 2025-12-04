@@ -20,6 +20,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
 import { motion, PanInfo } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { ThemeToggle } from './ui/theme-toggle';
 
 interface AppLayoutProps {
   user: User | null;
@@ -81,7 +82,6 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 );
 
 const LogoDisplay = () => {
-    const { isPWA } = usePWA();
     const { theme, resolvedTheme } = useTheme();
     const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
 
@@ -105,6 +105,7 @@ const LogoDisplay = () => {
         />
     );
 
+    const { isPWA } = usePWA();
     if (isPWA) {
         return <div className="flex items-center gap-2 font-semibold">{LogoComponent}</div>;
     }
@@ -299,16 +300,16 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                   </SheetContent>
               </Sheet>
               
-              <div className="w-full flex-1 md:hidden [app-region:no-drag]">
-                {/* This div is to push the profile button to the right on mobile */}
+              <div className="flex w-full flex-1 items-center justify-end gap-2 md:gap-4 [app-region:no-drag]">
+                <ThemeToggle />
+                <div className='hidden md:flex'>
+                    <DashboardHeader
+                        user={user}
+                        userProfile={userProfile}
+                    />
+                </div>
               </div>
 
-              <div className='hidden md:flex flex-1 justify-end [app-region:no-drag]'>
-                <DashboardHeader
-                    user={user}
-                    userProfile={userProfile}
-                />
-              </div>
           </header>
           <main className={cn(
             "relative flex-1 bg-muted/40 print:bg-white print:p-0", 

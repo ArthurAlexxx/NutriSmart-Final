@@ -40,7 +40,6 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
   return (
     <>
       <div className="hidden md:flex items-center gap-4">
-          <ThemeToggle />
           <InstallPWAButton />
           <Sheet>
             <SheetTrigger asChild>
