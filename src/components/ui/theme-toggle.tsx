@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Monitor } from "lucide-react"
+import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -11,23 +11,14 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark');
-    } else if (theme === 'dark') {
-      setTheme('system');
-    } else {
-      setTheme('light');
-    }
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   const Icon = () => {
      if (theme === 'dark') {
       return <Moon className="h-[1.2rem] w-[1.2rem]" />;
     }
-    if (theme === 'light') {
-      return <Sun className="h-[1.2rem] w-[1.2rem]" />;
-    }
-    return <Monitor className="h-[1.2rem] w-[1.2rem]" />;
+    return <Sun className="h-[1.2rem] w-[1.2rem]" />;
   }
 
   return (
