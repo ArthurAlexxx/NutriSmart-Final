@@ -6,8 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Target, Rocket, Flame, Donut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FaHamburger } from 'react-icons/fa';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import MacronutrientChart from './macronutrient-chart';
 
 interface SummaryCardsProps {
   totalNutrients: {
@@ -53,12 +51,6 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
 
 
 export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysisPage = false }: SummaryCardsProps) {
-  const isMobile = useMediaQuery('(max-width: 767px)');
-
-  if (!isAnalysisPage && isMobile) {
-    return <MacronutrientChart totalNutrients={totalNutrients} nutrientGoals={nutrientGoals} />;
-  }
-  
   const titlePrefix = isAnalysisPage ? 'Média ' : '';
 
   const summaryCardsData = [
@@ -95,7 +87,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
   ];
 
   return (
-    <div className={cn("grid gap-4", isAnalysisPage ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2")}>
+    <div className="grid grid-cols-2 gap-4">
       {summaryCardsData.map((card, index) => (
         <div key={card.title} className="animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
             <SummaryCard {...card} />
