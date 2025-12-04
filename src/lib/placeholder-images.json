@@ -3,13 +3,13 @@
     {
       "id": "logo",
       "description": "Nutrinea logo for light theme",
-      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/LogoWhite.png?alt=media&token=4356dda7-cfde-44e1-9e14-87a7b3412021",
+      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/newwhite.png?alt=media&token=04e0cc17-778d-44dc-97f5-b969015229f1",
       "imageHint": "logo"
     },
     {
       "id": "logo-dark",
       "description": "Nutrinea logo for dark theme",
-      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/LogoBlack.png?alt=media&token=a6b9b526-a599-4e2c-916a-37d5650f7ce9",
+      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/newblack.png?alt=media&token=d0ba51f5-99ed-417e-b6b7-81d1fb75b902",
       "imageHint": "logo dark"
     },
     {
