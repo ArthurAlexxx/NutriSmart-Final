@@ -1,16 +1,22 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
-import { Permanent_Marker } from 'next/font/google';
+import { Lexend, Poppins } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import RootLayoutContent from './layout-content';
 import { ThemeProvider } from '@/components/theme-provider';
 
-const permanentMarker = Permanent_Marker({
+const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-permanent-marker',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+});
+
+const lexend = Lexend({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-lexend',
 });
 
 
@@ -46,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${permanentMarker.variable} !scroll-smooth h-full`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`} suppressHydrationWarning>
       <head />
       <body className='h-full'>
         <ThemeProvider

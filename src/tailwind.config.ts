@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -22,8 +23,8 @@ export default {
         'main': 'calc(100vh - var(--header-height))',
       },
       fontFamily: {
-        sans: ['var(--font-permanent-marker)', 'cursive'],
-        heading: ['var(--font-permanent-marker)', 'cursive'],
+        sans: ['var(--font-poppins)', 'sans-serif'],
+        heading: ['var(--font-lexend)', 'sans-serif'],
       },
       boxShadow: {
         // Default (light mode) shadows
