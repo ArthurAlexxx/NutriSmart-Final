@@ -1,3 +1,4 @@
+
 // src/components/header.tsx
 'use client';
 
@@ -91,154 +92,103 @@ export default function Header() {
   );
 
   return (
-    <header className={cn(
-        "top-0 w-full z-50 transition-all duration-300",
-        scrolled ? "sticky" : "relative"
-    )}>
-        {/* Scrolled State */}
-        <AnimatePresence>
-            {scrolled && (
-                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="container my-3 mx-auto px-4 sm:px-6 lg:px-8"
-                >
-                    <div className="relative mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
-                        <div className="absolute left-6 flex items-center">
-                            <Link href="/" className="flex items-center gap-2">
-                                <LogoDisplay />
-                            </Link>
-                        </div>
-                        
-                        <nav className="hidden items-center gap-6 md:flex">
-                            {navLinks}
-                        </nav>
-                        
-                        <div className="absolute right-6 flex items-center gap-2">
-                            <div className='hidden md:flex items-center gap-2'>
-                               <ThemeToggle />
-                               {user ? (
-                                 <Button asChild size="sm">
-                                   <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
-                                </Button>
-                              ) : (
-                                <>
-                                   <Button asChild variant="ghost" size="sm">
-                                       <Link href="/login">Login</Link>
-                                   </Button>
-                                   <Button asChild size="sm">
-                                       <Link href="/register">Cadastre-se</Link>
-                                   </Button>
-                                </>
-                              )}
-                            </div>
-                             <div className="md:hidden">
-                                <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                                  <SheetTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <Menu className="h-6 w-6" />
-                                      <span className="sr-only">Menu de Navegação</span>
-                                    </Button>
-                                  </SheetTrigger>
-                                   <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                      <SheetHeader className="p-6 border-b">
-                                        <SheetTitle className="text-left">Navegação</SheetTitle>
-                                      </SheetHeader>
-                                      <nav className="flex flex-col p-6 gap-4">
-                                        {navLinks}
-                                      </nav>
-                                     <div className='grid grid-cols-2 gap-2 p-6 mt-auto border-t'>
-                                          {user ? (
-                                             <Button asChild size="lg" className="w-full">
-                                                <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
-                                             </Button>
-                                          ) : (
-                                            <>
-                                               <Button asChild variant="secondary" size="lg">
-                                                  <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
-                                               </Button>
-                                               <Button asChild size="lg">
-                                                  <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
-                                               </Button>
-                                            </>
-                                           )}
-                                       </div>
-                                  </SheetContent>
-                                </Sheet>
-                            </div>
-                        </div>
-                    </div>
-                 </motion.div>
-            )}
-        </AnimatePresence>
-        
-        {/* Top State */}
-        <div className={cn("container flex h-20 items-center justify-between border-b border-transparent", scrolled && "hidden")}>
-             <Link href="/" className="flex items-center gap-2">
-                <LogoDisplay />
-            </Link>
-            
-            <nav className="hidden items-center gap-8 md:flex">
+    <header className="sticky top-0 z-50 w-full transition-all duration-300">
+      <div
+        className={cn(
+          'container relative mx-auto flex h-20 items-center justify-between transition-all duration-300',
+          scrolled && 'h-16'
+        )}
+      >
+        {/* Background element */}
+        <motion.div
+          initial={false}
+          animate={scrolled ? 'scrolled' : 'top'}
+          variants={{
+            top: {
+              backgroundColor: 'rgba(255, 255, 255, 0)',
+              backdropFilter: 'blur(0px)',
+              boxShadow: '0 0 0 0 rgba(0,0,0,0)',
+              borderColor: 'transparent'
+            },
+            scrolled: {
+              backgroundColor: 'hsl(var(--background) / 0.8)',
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+              borderColor: 'hsl(var(--border))'
+            },
+          }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-x-4 top-0 mx-auto my-3 h-16 rounded-2xl border"
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex w-full items-center justify-between px-6">
+           <div className="flex items-center">
+              <Link href="/" className="flex items-center gap-2">
+                  <LogoDisplay />
+              </Link>
+          </div>
+          
+          <nav className="hidden items-center gap-6 md:flex">
               {navLinks}
-            </nav>
-
-            <div className="flex items-center gap-2">
-                <div className='hidden md:flex items-center gap-2'>
-                  <ThemeToggle />
-                  {user ? (
+          </nav>
+          
+          <div className="flex items-center gap-2">
+              <div className='hidden md:flex items-center gap-2'>
+                <ThemeToggle />
+                {user ? (
+                   <Button asChild className="rounded-full">
+                     <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
+                  </Button>
+                ) : (
+                  <>
+                     <Button asChild variant="outline" className="rounded-full">
+                         <Link href="/login">Login</Link>
+                     </Button>
                      <Button asChild className="rounded-full">
-                       <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"}>Ir para o App</Link>
-                    </Button>
-                  ) : (
-                    <>
-                       <Button asChild variant="outline" className="rounded-full">
-                           <Link href="/login">Login</Link>
-                       </Button>
-                       <Button asChild className="rounded-full">
-                           <Link href="/register">Cadastre-se</Link>
-                       </Button>
-                    </>
-                  )}
-                </div>
-
-              <div className="md:hidden">
-                <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-6 w-6" />
-                      <span className="sr-only">Menu de Navegação</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                      <SheetHeader className="p-6 border-b">
-                        <SheetTitle className="text-left">Navegação</SheetTitle>
-                      </SheetHeader>
-                      <nav className="flex flex-col p-6 gap-4">
-                        {navLinks}
-                      </nav>
-                     <div className='grid grid-cols-2 gap-2 p-6 mt-auto border-t'>
-                          {user ? (
-                             <Button asChild size="lg" className="w-full">
-                                <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
-                             </Button>
-                          ) : (
-                            <>
-                               <Button asChild variant="secondary" size="lg">
-                                  <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
-                               </Button>
-                               <Button asChild size="lg">
-                                  <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
-                               </Button>
-                            </>
-                           )}
-                       </div>
-                  </SheetContent>
-                </Sheet>
+                         <Link href="/register">Cadastre-se</Link>
+                     </Button>
+                  </>
+                )}
               </div>
+
+            <div className="md:hidden">
+              <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Menu de Navegação</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <SheetHeader className="p-6 border-b">
+                      <SheetTitle className="text-left">Navegação</SheetTitle>
+                    </SheetHeader>
+                    <nav className="flex flex-col p-6 gap-4">
+                      {navLinks}
+                    </nav>
+                   <div className='grid grid-cols-2 gap-2 p-6 mt-auto border-t'>
+                        {user ? (
+                           <Button asChild size="lg" className="w-full">
+                              <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
+                           </Button>
+                        ) : (
+                          <>
+                             <Button asChild variant="secondary" size="lg">
+                                <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
+                             </Button>
+                             <Button asChild size="lg">
+                                <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
+                             </Button>
+                          </>
+                         )}
+                     </div>
+                </SheetContent>
+              </Sheet>
             </div>
+          </div>
         </div>
+      </div>
     </header>
   );
 }
