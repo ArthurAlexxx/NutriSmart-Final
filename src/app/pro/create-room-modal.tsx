@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,6 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
           throw new Error('Este paciente já está sendo acompanhado por um profissional.');
         }
         
-        // Build patientInfo object, only including defined values.
         const patientInfo: PatientInfo = {
             name: patientData.fullName,
             email: patientData.email,
@@ -120,40 +119,42 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Adicionar Paciente</DialogTitle>
-          <DialogDescription>
-            Insira o nome da sala e o código de compartilhamento do paciente.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-            <FormField control={form.control} name="roomName" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Nome da Sala *</FormLabel>
-                    <FormControl><Input placeholder="Ex: Acompanhamento de Juliana" {...field} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <FormField control={form.control} name="shareCode" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Código de Compartilhamento *</FormLabel>
-                    <FormControl><Input placeholder="ABC123XY" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} /></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
-            <DialogFooter className="!mt-8">
+          <form id="create-room-form" onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <SheetHeader>
+              <SheetTitle className="text-2xl font-bold">Adicionar Paciente</SheetTitle>
+              <SheetDescription>
+                Insira o nome da sala e o código de compartilhamento do paciente.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 space-y-6 py-6 px-1">
+              <FormField control={form.control} name="roomName" render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Nome da Sala *</FormLabel>
+                      <FormControl><Input placeholder="Ex: Acompanhamento de Juliana" {...field} /></FormControl>
+                      <FormMessage />
+                  </FormItem>
+              )}/>
+              <FormField control={form.control} name="shareCode" render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Código de Compartilhamento *</FormLabel>
+                      <FormControl><Input placeholder="ABC123XY" {...field} onChange={e => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                      <FormMessage />
+                  </FormItem>
+              )}/>
+            </div>
+            <SheetFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" form="create-room-form" disabled={isSubmitting}>
                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Criar Sala
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

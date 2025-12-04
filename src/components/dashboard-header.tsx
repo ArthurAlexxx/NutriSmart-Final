@@ -1,7 +1,7 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,7 +12,6 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { InstallPWAButton } from './install-pwa-button';
 import Link from 'next/link';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { ThemeToggle } from './ui/theme-toggle';
 
 
@@ -52,14 +51,14 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
                 </Avatar>
               </Button>
             </SheetTrigger>
-            <SheetContent className="p-0" side="right">
-                <SheetHeader className='p-6 text-left'>
+            <SheetContent className="flex flex-col" side="right" onOpenAutoFocus={(e) => e.preventDefault()}>
+                <SheetHeader className='text-left'>
                     <SheetTitle>
                         <p className='font-semibold'>{userName}</p>
                         <p className='text-sm font-normal text-muted-foreground'>{userEmail}</p>
                     </SheetTitle>
                 </SheetHeader>
-              <div className="mt-6 flex flex-col gap-2 p-6 pt-0">
+              <div className="mt-6 flex flex-col gap-2 flex-1">
                 <SheetClose asChild>
                     <Link href="/profile" className='w-full'>
                        <Button variant='outline' className='w-full justify-start gap-2'>
@@ -68,7 +67,9 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
                        </Button>
                     </Link>
                 </SheetClose>
-                <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-2'>
+              </div>
+              <div className="mt-auto">
+                 <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-2'>
                     <LogOut className="h-4 w-4" />
                     <span>Sair</span>
                 </Button>

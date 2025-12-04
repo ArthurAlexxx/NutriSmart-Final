@@ -68,16 +68,16 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className="p-6 pb-4">
-          <SheetTitle className="text-2xl font-bold">Nova Orientação</SheetTitle>
-          <SheetDescription>
-            Crie um texto de orientação para reutilizar com seus pacientes (ex: lista de compras, dicas).
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent side="right" className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <Form {...form}>
           <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
-            <div className="flex-1 space-y-6 px-6 overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="text-2xl font-bold">Nova Orientação</SheetTitle>
+              <SheetDescription>
+                Crie um texto de orientação para reutilizar com seus pacientes (ex: lista de compras, dicas).
+              </SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 space-y-6 py-6 px-1 overflow-y-auto">
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Título da Orientação *</FormLabel>
@@ -93,7 +93,7 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
                     </FormItem>
                 )}/>
             </div>
-            <SheetFooter className='p-6 pt-4 mt-auto border-t'>
+            <SheetFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
               <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
