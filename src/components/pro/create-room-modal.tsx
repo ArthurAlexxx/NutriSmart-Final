@@ -120,15 +120,15 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader>
+      <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetHeader className="p-6 pb-4">
           <SheetTitle className="text-2xl font-bold">Adicionar Paciente</SheetTitle>
           <SheetDescription>
             Insira o nome da sala e o código de compartilhamento do paciente.
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 px-6">
             <FormField control={form.control} name="roomName" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Nome da Sala *</FormLabel>
@@ -143,7 +143,7 @@ export default function CreateRoomModal({ isOpen, onOpenChange, professionalId }
                     <FormMessage />
                 </FormItem>
             )}/>
-            <SheetFooter className="!mt-8">
+            <SheetFooter className="!mt-8 p-6 pt-4 -mx-6 bg-background border-t">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting}>
                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

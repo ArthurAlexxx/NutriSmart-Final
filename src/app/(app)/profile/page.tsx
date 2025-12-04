@@ -28,6 +28,8 @@ import { Separator } from '@/components/ui/separator';
 import { usePWA } from '@/context/pwa-context';
 import AppLayout from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
+import { useMediaQuery } from '@/hooks/use-media-query';
+
 
 const profileFormSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -420,11 +422,11 @@ export default function ProfilePage() {
                                     <Menu className="h-4 w-4" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                <SheetHeader className="text-left">
+                            <SheetContent side="bottom" className="rounded-t-2xl p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                <SheetHeader className="p-6 pb-2 text-left">
                                     <SheetTitle>Navegação</SheetTitle>
                                 </SheetHeader>
-                                <div className="grid gap-2 py-4">
+                                <div className="grid gap-2 p-4">
                                      {navItems.map(item => (
                                         <NavButton 
                                             key={item.id}

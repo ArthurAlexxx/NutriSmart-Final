@@ -68,16 +68,16 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader>
+      <SheetContent side="right" className="sm:max-w-md p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetHeader className="p-6 pb-4">
           <SheetTitle className="text-2xl font-bold">Nova Orientação</SheetTitle>
           <SheetDescription>
             Crie um texto de orientação para reutilizar com seus pacientes (ex: lista de compras, dicas).
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 h-full flex flex-col">
-            <div className="flex-1 space-y-6">
+          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 h-full flex flex-col">
+            <div className="flex-1 space-y-6 px-6">
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Título da Orientação *</FormLabel>
@@ -93,12 +93,12 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
                     </FormItem>
                 )}/>
             </div>
-            <SheetFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
-                <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
+            <SheetFooter className='p-6 pt-4 mt-auto border-t'>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>Cancelar</Button>
+              <Button type="submit" form="create-guideline-form" disabled={isSubmitting} className='w-full sm:w-auto'>
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Salvar Orientação
-                </Button>
+              </Button>
             </SheetFooter>
           </form>
         </Form>

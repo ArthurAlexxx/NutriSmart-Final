@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Flame, Rocket, Droplet } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 const goalsSchema = z.object({
   calorieGoal: z.coerce.number().min(1, 'A meta de calorias é obrigatória.'),
@@ -28,6 +29,7 @@ interface GoalsModalProps {
 }
 
 export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfileUpdate }: GoalsModalProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const form = useForm<GoalsFormValues>({
     resolver: zodResolver(goalsSchema),
     defaultValues: {
@@ -65,7 +67,7 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className='rounded-t-2xl' onOpenAutoFocus={(e) => e.preventDefault()}>
+      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "sm:max-w-md" : "rounded-t-2xl"} onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-left'>
           <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
           <SheetDescription>

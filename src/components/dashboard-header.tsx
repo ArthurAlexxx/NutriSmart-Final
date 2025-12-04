@@ -51,14 +51,14 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
                 </Avatar>
               </Button>
             </SheetTrigger>
-            <SheetContent>
-                <SheetHeader className='text-left'>
+            <SheetContent className="p-0" side="right">
+                <SheetHeader className='p-6 text-left'>
                     <SheetTitle>
                         <p className='font-semibold'>{userName}</p>
                         <p className='text-sm font-normal text-muted-foreground'>{userEmail}</p>
                     </SheetTitle>
                 </SheetHeader>
-              <div className="mt-6 flex flex-col gap-2">
+              <div className="mt-6 flex flex-col gap-2 p-6 pt-0">
                 <SheetClose asChild>
                     <Link href="/profile" className='w-full'>
                        <Button variant='outline' className='w-full justify-start gap-2'>

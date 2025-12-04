@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Save } from 'lucide-react';
 import { type MealEntry } from '@/types/meal';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 const formSchema = z.object({
   calorias: z.coerce.number().min(0, 'As calorias não podem ser negativas.'),
@@ -29,6 +30,7 @@ interface EditMealModalProps {
 }
 
 export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealUpdate }: EditMealModalProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const form = useForm<EditMealFormValues>({
     resolver: zodResolver(formSchema),
   });
@@ -60,7 +62,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
         },
         alimentos: [{
             ...mealEntry.mealData.alimentos[0],
-            nome: `(Editado) ${mealEntry.mealData.alimentos.map(f => f.nome).join(', ')}`.substring(0, 100),
+            name: `(Editado) ${mealEntry.mealData.alimentos.map(f => f.nome).join(', ')}`.substring(0, 100),
             portion: 1,
             unit: 'porção'
         }]
@@ -85,7 +87,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <SheetContent side={isDesktop ? "right" : "bottom"} className={isDesktop ? "" : "rounded-t-2xl"} onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className='text-left'>
           <SheetTitle className="text-2xl font-bold">Editar Refeição</SheetTitle>
           <SheetDescription>
@@ -151,7 +153,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                 )}
                 />
             </div>
-            <SheetFooter className="!mt-8 gap-2 sm:gap-0 sm:space-x-2 flex-col sm:flex-row">
+            <SheetFooter className='!mt-8 gap-2 sm:gap-0 sm:space-x-2 flex-col sm:flex-row'>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
                 Cancelar
               </Button>
