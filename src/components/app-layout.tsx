@@ -1,3 +1,4 @@
+
 // src/components/app-layout.tsx
 'use client';
 
@@ -220,7 +221,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             </div>
             <SidebarContent />
              <div className="mt-auto border-t p-4">
-                <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start gap-4 text-muted-foreground hover:text-destructive">
+                <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start gap-4 text-muted-foreground hover:text-destructive dark:hover:text-red-500 dark:hover:bg-destructive/10">
                     <LogOut className="h-5 w-5"/>
                     <span>Sair</span>
                 </Button>
@@ -234,34 +235,35 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             dragElastic={{ left: 0.05, right: 0 }}
         >
           <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
-              <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-                  <SheetTrigger asChild>
-                      <Button
-                          variant="outline"
-                          size="icon"
-                          className="shrink-0 md:hidden [app-region:no-drag]"
-                      >
-                          <Menu className="h-5 w-5" />
-                          <span className="sr-only">Toggle navigation menu</span>
-                      </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                      <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                          <LogoDisplay />
-                           <SheetClose asChild>
-                              <Button variant="ghost" size="icon" className="rounded-full">
-                                <X className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
-                              </Button>
-                          </SheetClose>
-                          <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
-                      </SheetHeader>
-                      <SidebarContent isMobile />
-                       <div className="mt-auto border-t p-4">
-                           <Sheet>
+              <div className="flex-1 [app-region:no-drag]">
+                <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+                    <SheetTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 md:hidden"
+                        >
+                            <Menu className="h-5 w-5" />
+                            <span className="sr-only">Toggle navigation menu</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
+                        <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
+                            <LogoDisplay />
+                            <SheetClose asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full">
+                                    <X className="h-5 w-5" />
+                                    <span className="sr-only">Close</span>
+                                </Button>
+                            </SheetClose>
+                            <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                        </SheetHeader>
+                        <SidebarContent isMobile />
+                        <div className="mt-auto border-t p-4">
+                            <Sheet>
                                 <SheetTrigger asChild>
                                     <Button variant="ghost" className="w-full justify-start h-auto p-2">
-                                         <div className="flex w-full cursor-pointer items-center gap-3">
+                                        <div className="flex w-full cursor-pointer items-center gap-3">
                                             <Avatar className="h-10 w-10 border">
                                                 <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
                                                 <AvatarFallback>{userProfile?.fullName?.[0]}</AvatarFallback>
@@ -296,11 +298,12 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                                     </div>
                                 </SheetContent>
                             </Sheet>
-                      </div>
-                  </SheetContent>
-              </Sheet>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+              </div>
               
-              <div className="flex w-full flex-1 items-center justify-end gap-2 md:gap-4 [app-region:no-drag]">
+              <div className="flex items-center gap-2 md:gap-4 [app-region:no-drag]">
                 <ThemeToggle />
                 <div className='hidden md:flex'>
                     <DashboardHeader
