@@ -12,10 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Save, Flame, Rocket, Droplet } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { FaBreadSlice } from 'react-icons/fa';
+import { Donut } from 'lucide-react';
 
 const goalsSchema = z.object({
   calorieGoal: z.coerce.number().min(1, 'A meta de calorias é obrigatória.'),
   proteinGoal: z.coerce.number().min(1, 'A meta de proteína é obrigatória.'),
+  carbGoal: z.coerce.number().min(1, 'A meta de carboidratos é obrigatória.'),
+  fatGoal: z.coerce.number().min(1, 'A meta de gorduras é obrigatória.'),
   waterGoal: z.coerce.number().min(1, 'A meta de água é obrigatória.'),
 });
 
@@ -34,7 +38,9 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
     resolver: zodResolver(goalsSchema),
     defaultValues: {
       calorieGoal: userProfile?.calorieGoal || 2000,
-      proteinGoal: userProfile?.proteinGoal || 140,
+      proteinGoal: userProfile?.proteinGoal || 175,
+      carbGoal: userProfile?.carbGoal || 200,
+      fatGoal: userProfile?.fatGoal || 56,
       waterGoal: userProfile?.waterGoal || 2000,
     },
   });
@@ -43,7 +49,9 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
     if (userProfile) {
       form.reset({
         calorieGoal: userProfile.calorieGoal || 2000,
-        proteinGoal: userProfile.proteinGoal || 140,
+        proteinGoal: userProfile.proteinGoal || 175,
+        carbGoal: userProfile.carbGoal || 200,
+        fatGoal: userProfile.fatGoal || 56,
         waterGoal: userProfile.waterGoal || 2000,
       });
     }
@@ -53,8 +61,9 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
 
   useEffect(() => {
       if (watchedCalorieGoal > 0 && form.formState.dirtyFields.calorieGoal) {
-          const newProteinGoal = Math.round((watchedCalorieGoal * 0.35) / 4);
-          form.setValue('proteinGoal', newProteinGoal, { shouldDirty: true });
+          form.setValue('proteinGoal', Math.round((watchedCalorieGoal * 0.35) / 4), { shouldDirty: true });
+          form.setValue('carbGoal', Math.round((watchedCalorieGoal * 0.40) / 4), { shouldDirty: true });
+          form.setValue('fatGoal', Math.round((watchedCalorieGoal * 0.25) / 9), { shouldDirty: true });
       }
   }, [watchedCalorieGoal, form]);
 
@@ -72,7 +81,7 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
             <SheetHeader className="p-6 pb-4">
             <SheetTitle>Ajustar Metas Nutricionais</SheetTitle>
             <SheetDescription>
-                Defina suas metas diárias de calorias, proteínas e hidratação. A meta de proteína será sugerida com base nas calorias.
+                Defina sua meta de calorias e as outras serão calculadas automaticamente seguindo uma distribuição saudável (40% Carbos, 35% Proteínas, 25% Gorduras).
             </SheetDescription>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto px-6">
@@ -96,6 +105,32 @@ export default function GoalsModal({ isOpen, onOpenChange, userProfile, onProfil
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel className='flex items-center gap-2'><Rocket className='h-5 w-5 text-blue-500'/> Meta de Proteínas (g)</FormLabel>
+                        <FormControl>
+                        <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="carbGoal"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className='flex items-center gap-2'><FaBreadSlice className='h-5 w-5 text-yellow-500'/> Meta de Carboidratos (g)</FormLabel>
+                        <FormControl>
+                        <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="fatGoal"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className='flex items-center gap-2'><Donut className='h-5 w-5 text-pink-500'/> Meta de Gorduras (g)</FormLabel>
                         <FormControl>
                         <Input type="number" {...field} />
                         </FormControl>

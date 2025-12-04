@@ -8,6 +8,18 @@ export interface MealPlanItem {
     items: string;
 }
 
+export interface ActivePlan {
+    id?: string; // Added for history tracking
+    name?: string; // Optional name for the plan
+    meals: MealPlanItem[];
+    hydrationGoal: number;
+    calorieGoal: number;
+    proteinGoal: number;
+    carbGoal?: number; // Adicionado
+    fatGoal?: number; // Adicionado 
+    createdAt: Timestamp | { seconds: number; nanoseconds: number; };
+}
+
 export interface UserProfile {
     id: string;
     fullName: string;
@@ -47,6 +59,8 @@ export interface UserProfile {
     // These are derived/set by the active plan, not directly by user in goals
     calorieGoal?: number;
     proteinGoal?: number;
+    carbGoal?: number;
+    fatGoal?: number;
     waterGoal?: number;
 
     subscriptionStatus?: 'premium' | 'free' | 'professional';
@@ -57,4 +71,5 @@ export interface UserProfile {
     lastPhotoAnalysisDate?: string; // YYYY-MM-DD
     
     unlockedAchievements?: string[]; // New field for achievements
+    activePlan?: ActivePlan; // Adicionado para o perfil do paciente
 }

@@ -28,6 +28,8 @@
         "targetDate": { "type": "string", "format": "date-time" },
         "calorieGoal": { "type": "number" },
         "proteinGoal": { "type": "number" },
+        "carbGoal": { "type": "number" },
+        "fatGoal": { "type": "number" },
         "waterGoal": { "type": "number" },
         "unlockedAchievements": { "type": "array", "items": { "type": "string" } },
         "photoAnalysisCount": { "type": "number" },
