@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getMealTime } from '@/lib/date-utils';
 import { Separator } from './ui/separator';
+import Image from 'next/image';
 
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
@@ -163,7 +164,17 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEd
                       </div>
                   </div>
                   
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-3">
+                    {entry.mealData.imageUrl && (
+                        <div className='relative w-full aspect-video rounded-lg overflow-hidden'>
+                            <Image 
+                                src={entry.mealData.imageUrl}
+                                alt={`Foto de ${getMealTypeName(entry.mealType)}`}
+                                fill
+                                className='object-cover'
+                            />
+                        </div>
+                    )}
                     <p className="text-sm text-muted-foreground">
                         {entry.mealData.alimentos[0].name}
                     </p>
