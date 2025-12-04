@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
 import { motion, PanInfo } from 'framer-motion';
+import { useTheme } from 'next-themes';
 
 interface AppLayoutProps {
   user: User | null;
@@ -81,10 +82,21 @@ const NavSection = ({ title, children }: { title: string, children: React.ReactN
 
 const LogoDisplay = () => {
     const { isPWA } = usePWA();
-    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const { theme, resolvedTheme } = useTheme();
+    const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
+
+    useEffect(() => {
+        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
+        const newLogo = PlaceHolderImages.find(p => p.id === logoId);
+        if (newLogo) {
+            setLogoUrl(newLogo.imageUrl);
+        }
+    }, [theme, resolvedTheme]);
+
     const LogoComponent = (
         <Image 
-            src={logoImage?.imageUrl || ''}
+            src={logoUrl}
             alt="Nutrinea Logo"
             width={140}
             height={35}

@@ -16,6 +16,7 @@ import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, Goog
 import { useAuth, usePWA } from '@/firebase';
 import { FaGoogle } from 'react-icons/fa';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useTheme } from 'next-themes';
 
 const registerSchema = z.object({
   fullName: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
@@ -31,10 +32,21 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const LogoDisplay = () => {
     const { isPWA } = usePWA();
-    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const { theme, resolvedTheme } = useTheme();
+    const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
+
+    useEffect(() => {
+        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
+        const newLogo = PlaceHolderImages.find(p => p.id === logoId);
+        if (newLogo) {
+            setLogoUrl(newLogo.imageUrl);
+        }
+    }, [theme, resolvedTheme]);
+
     const LogoComponent = (
         <Image 
-            src={logoImage?.imageUrl || ''}
+            src={logoUrl}
             alt="Nutrinea Logo"
             width={140}
             height={35}

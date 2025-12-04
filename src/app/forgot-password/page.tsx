@@ -15,6 +15,7 @@ import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth, usePWA } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useTheme } from 'next-themes';
 
 const formSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -24,10 +25,21 @@ type ForgotPasswordFormValues = z.infer<typeof formSchema>;
 
 const LogoDisplay = () => {
     const { isPWA } = usePWA();
-    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const { theme, resolvedTheme } = useTheme();
+    const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
+
+    useEffect(() => {
+        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
+        const newLogo = PlaceHolderImages.find(p => p.id === logoId);
+        if (newLogo) {
+            setLogoUrl(newLogo.imageUrl);
+        }
+    }, [theme, resolvedTheme]);
+
     const LogoComponent = (
         <Image 
-            src={logoImage?.imageUrl || ''}
+            src={logoUrl}
             alt="Nutrinea Logo"
             width={160}
             height={40}

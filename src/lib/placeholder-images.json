@@ -2,9 +2,15 @@
   "placeholderImages": [
     {
       "id": "logo",
-      "description": "Nutrinea logo",
+      "description": "Nutrinea logo for light theme",
       "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/logoNutrinea.png?alt=media&token=cd8a18f2-c192-491d-9b2f-2a95fdb12d8f",
       "imageHint": "logo"
+    },
+    {
+      "id": "logo-dark",
+      "description": "Nutrinea logo for dark theme",
+      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-1428917996-c3da9.firebasestorage.app/o/LogoBlack.png?alt=media&token=a6b9b526-a599-4e2c-916a-37d5650f7ce9",
+      "imageHint": "logo dark"
     },
     {
       "id": "hero-image-1",

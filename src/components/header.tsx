@@ -1,4 +1,5 @@
 
+
 // src/components/header.tsx
 'use client';
 
@@ -14,6 +15,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScroll } from '@/hooks/use-scroll';
 import { ThemeToggle } from './ui/theme-toggle';
+import { useTheme } from 'next-themes';
 
 const NavLink = ({ href, children, onClick, className }: { href: string; children: React.ReactNode, onClick?: () => void, className?: string }) => {
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -49,10 +51,21 @@ const NavLink = ({ href, children, onClick, className }: { href: string; childre
 
 
 const LogoDisplay = () => {
-    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const { theme, resolvedTheme } = useTheme();
+    const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
+
+    useEffect(() => {
+        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
+        const newLogo = PlaceHolderImages.find(p => p.id === logoId);
+        if (newLogo) {
+            setLogoUrl(newLogo.imageUrl);
+        }
+    }, [theme, resolvedTheme]);
+
     return (
         <Image 
-            src={logoImage?.imageUrl || ''}
+            src={logoUrl}
             alt="Nutrinea Logo"
             width={140}
             height={35}
@@ -93,14 +106,18 @@ export default function Header() {
                     transition={{ duration: 0.3 }}
                     className="container my-3 mx-auto px-4 sm:px-6 lg:px-8"
                 >
-                    <div className="mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
-                        <Link href="/" className="flex items-center gap-2">
-                            <LogoDisplay />
-                        </Link>
+                    <div className="relative mx-auto flex h-16 items-center justify-center gap-8 rounded-2xl bg-background/80 px-6 shadow-lg backdrop-blur-lg border transition-all duration-300 sm:px-6">
+                        <div className="absolute left-6 flex items-center">
+                            <Link href="/" className="flex items-center gap-2">
+                                <LogoDisplay />
+                            </Link>
+                        </div>
+                        
                         <nav className="hidden items-center gap-6 md:flex">
                             {navLinks}
                         </nav>
-                        <div className="flex items-center gap-2">
+                        
+                        <div className="absolute right-6 flex items-center gap-2">
                             <div className='hidden md:flex items-center gap-2'>
                                <ThemeToggle />
                                {user ? (

@@ -2,12 +2,26 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useTheme } from 'next-themes';
+import { useState, useEffect } from 'react';
 
 const LogoDisplay = () => {
-    const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
+    const { theme, resolvedTheme } = useTheme();
+    const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
+
+    useEffect(() => {
+        // We need to check for resolvedTheme which is available on the client after mount.
+        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
+        const newLogo = PlaceHolderImages.find(p => p.id === logoId);
+        if (newLogo) {
+            setLogoUrl(newLogo.imageUrl);
+        }
+    }, [theme, resolvedTheme]);
+
     return (
         <Image 
-            src={logoImage?.imageUrl || ''}
+            src={logoUrl}
             alt="Nutrinea Logo"
             width={140}
             height={35}
