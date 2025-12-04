@@ -1,16 +1,16 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
-import { Satisfy } from 'next/font/google';
+import { Permanent_Marker } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import RootLayoutContent from './layout-content';
 import { ThemeProvider } from '@/components/theme-provider';
 
-const satisfy = Satisfy({
+const permanentMarker = Permanent_Marker({
   subsets: ['latin'],
   weight: ['400'],
-  variable: '--font-satisfy',
+  variable: '--font-permanent-marker',
 });
 
 
@@ -46,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${satisfy.variable} !scroll-smooth h-full`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${permanentMarker.variable} !scroll-smooth h-full`} suppressHydrationWarning>
       <head />
       <body className='h-full'>
         <ThemeProvider
