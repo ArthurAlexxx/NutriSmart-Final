@@ -1,40 +1,52 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
-import { AnimatePresence, motion } from "framer-motion"
+import { useUser } from "@/firebase"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { setTheme, theme } = useTheme()
+  const { onProfileUpdate } = useUser();
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    onProfileUpdate({ theme: newTheme });
   };
 
   const Icon = () => {
-     if (theme === 'dark') {
-      return <Moon className="h-[1.2rem] w-[1.2rem]" />;
-    }
-    return <Sun className="h-[1.2rem] w-[1.2rem]" />;
+    if (theme === 'dark') return <Moon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />;
+    if (theme === 'light') return <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />;
+    return <Monitor className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />;
   }
 
   return (
-    <Button variant="outline" size="icon" onClick={toggleTheme}>
-      <AnimatePresence initial={false} mode="wait">
-        <motion.div
-          key={theme}
-          initial={{ y: -20, opacity: 0, rotate: -90 }}
-          animate={{ y: 0, opacity: 1, rotate: 0 }}
-          exit={{ y: 20, opacity: 0, rotate: 90 }}
-          transition={{ duration: 0.3 }}
-        >
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon">
           <Icon />
-        </motion.div>
-      </AnimatePresence>
-      <span className="sr-only">Toggle theme</span>
-    </Button>
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => handleThemeChange("light")}>
+          Claro
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
+          Escuro
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange("system")}>
+          Sistema
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

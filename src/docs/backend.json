@@ -15,6 +15,7 @@
         "status": { "type": "string", "enum": ["active", "paused"], "description": "The current status of the user account." },
         "profileType": { "type": "string", "enum": ["patient", "professional"], "description": "The primary type of the user profile." },
         "role": { "type": "string", "enum": ["patient", "professional", "admin"], "description": "The access control role of the user." },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"], "description": "The user's preferred theme." },
         "dashboardShareCode": { "type": "string", "description": "A unique code for patients to share their dashboard with a professional." },
         "subscriptionStatus": { "type": "string", "enum": ["free", "premium", "professional"], "description": "User's subscription status." },
         "subscriptionExpiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current subscription or trial period expires." },

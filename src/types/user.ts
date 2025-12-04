@@ -17,6 +17,7 @@ export interface UserProfile {
     status?: 'active' | 'paused';
     profileType: 'patient' | 'professional';
     role: 'patient' | 'professional' | 'admin';
+    theme?: 'light' | 'dark' | 'system';
     
     // Novos campos para pagamento
     phone?: string;

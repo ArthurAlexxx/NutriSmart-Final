@@ -8,6 +8,7 @@ import { Firestore, doc, onSnapshot, updateDoc, setDoc, serverTimestamp, Timesta
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 import type { UserProfile } from '@/types/user';
+import { useTheme } from 'next-themes';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -57,6 +58,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   auth,
 }) => {
   const router = useRouter();
+  const { setTheme } = useTheme();
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
     userProfile: null,
@@ -116,6 +118,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             if (profileDoc.exists()) {
                 const profileData = { id: profileDoc.id, ...profileDoc.data() } as UserProfile;
                 
+                 if (profileData.theme) {
+                    setTheme(profileData.theme);
+                }
+                
                 const updates: Partial<UserProfile> = {};
                 if (!profileData.dashboardShareCode) {
                     updates.dashboardShareCode = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -153,6 +159,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                         subscriptionStatus: 'free',
                         profileType: 'patient',
                         role: 'patient',
+                        theme: 'system',
                         calorieGoal: 2000,
                         proteinGoal: 140,
                         waterGoal: 2000,
@@ -183,7 +190,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     );
     return () => unsubscribeProfile();
 
-  }, [userAuthState.user, firestore]);
+  }, [userAuthState.user, firestore, setTheme]);
 
   const handleProfileUpdate = async (updatedProfile: Partial<UserProfile>) => {
     if (!userAuthState.user || !firestore) {
