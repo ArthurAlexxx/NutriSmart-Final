@@ -79,7 +79,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       href={disabled ? '#' : href}
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
-        "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
+        "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 transition-all",
         !disabled && "hover:bg-accent",
         isActive && !disabled && "bg-primary/10",
         disabled && "cursor-not-allowed opacity-60"
@@ -87,7 +87,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       aria-disabled={disabled}
     >
         <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-        <span className={cn(isActive ? "text-foreground font-semibold" : "text-muted-foreground", 'text-foreground')}>{label}</span>
+        <span className={cn(isActive ? "text-foreground font-semibold" : "text-muted-foreground")}>{label}</span>
     </Link>
   );
 };
