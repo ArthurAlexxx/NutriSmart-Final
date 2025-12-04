@@ -60,7 +60,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           href={disabled ? '#' : href}
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
-            "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+            "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
             !disabled && "hover:bg-accent hover:text-accent-foreground",
             isActive && !disabled && "bg-primary/80 text-primary-foreground",
             disabled && "cursor-not-allowed opacity-60"

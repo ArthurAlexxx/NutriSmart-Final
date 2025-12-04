@@ -55,6 +55,7 @@ const LogoDisplay = () => {
     const [logoUrl, setLogoUrl] = useState(PlaceHolderImages.find(p => p.id === 'logo')?.imageUrl || '');
 
     useEffect(() => {
+        // We need to check for resolvedTheme which is available on the client after mount.
         const currentTheme = theme === 'system' ? resolvedTheme : theme;
         const logoId = currentTheme === 'dark' ? 'logo-dark' : 'logo';
         const newLogo = PlaceHolderImages.find(p => p.id === logoId);
@@ -143,32 +144,24 @@ export default function Header() {
                                       <span className="sr-only">Menu de Navegação</span>
                                     </Button>
                                   </SheetTrigger>
-                                  <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                                     <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                                         <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                                            <LogoDisplay />
-                                          </Link>
-                                           <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                                              <X className="h-5 w-5" />
-                                              <span className="sr-only">Close</span>
-                                          </SheetClose>
-                                          <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                                   <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                      <SheetHeader className="text-left">
+                                        <SheetTitle>Navegação</SheetTitle>
                                       </SheetHeader>
-                                    <nav className="flex flex-col flex-1 p-6 gap-6">
-                                      {navLinks}
-                                    </nav>
-                                     <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
-                                          <ThemeToggle />
+                                      <nav className="flex flex-col py-4 gap-4">
+                                        {navLinks}
+                                      </nav>
+                                     <div className='grid grid-cols-2 gap-2 pt-4 border-t'>
                                           {user ? (
-                                             <Button asChild size="lg">
+                                             <Button asChild size="lg" className="w-full">
                                                 <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
                                              </Button>
                                           ) : (
                                             <>
-                                               <Button asChild size="lg">
+                                               <Button asChild variant="secondary" size="lg">
                                                   <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
                                                </Button>
-                                               <Button asChild variant="secondary" size="lg">
+                                               <Button asChild size="lg">
                                                   <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
                                                </Button>
                                             </>
@@ -220,32 +213,24 @@ export default function Header() {
                       <span className="sr-only">Menu de Navegação</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm" closeButton={false}>
-                     <SheetHeader className="flex flex-row items-center justify-between border-b p-4 h-20">
-                         <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                            <LogoDisplay />
-                          </Link>
-                           <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                              <X className="h-5 w-5" />
-                              <span className="sr-only">Close</span>
-                          </SheetClose>
-                          <SheetTitle className='sr-only'>Menu Principal</SheetTitle>
+                  <SheetContent side="bottom" className="rounded-t-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+                      <SheetHeader className="text-left">
+                        <SheetTitle>Navegação</SheetTitle>
                       </SheetHeader>
-                    <nav className="flex flex-col flex-1 p-6 gap-6">
-                      {navLinks}
-                    </nav>
-                     <div className='grid gap-4 p-6 pt-0 border-t mt-auto'>
-                          <ThemeToggle />
+                      <nav className="flex flex-col py-4 gap-4">
+                        {navLinks}
+                      </nav>
+                     <div className='grid grid-cols-2 gap-2 pt-4 border-t'>
                           {user ? (
-                             <Button asChild size="lg">
+                             <Button asChild size="lg" className="w-full">
                                 <Link href={effectiveSubscriptionStatus === 'professional' ? "/pro/dashboard" : "/dashboard"} onClick={() => setSheetOpen(false)}>Ir para o App</Link>
                              </Button>
                           ) : (
                             <>
-                               <Button asChild size="lg">
+                               <Button asChild variant="secondary" size="lg">
                                   <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
                                </Button>
-                               <Button asChild variant="secondary" size="lg">
+                               <Button asChild size="lg">
                                   <Link href="/register" onClick={() => setSheetOpen(false)}>Cadastre-se</Link>
                                </Button>
                             </>
