@@ -2,10 +2,11 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, Rocket, Flame, Donut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FaHamburger } from 'react-icons/fa';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface SummaryCardsProps {
   totalNutrients: {
@@ -49,9 +50,39 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
     );
 };
 
+const MobileSummaryCard = ({ summaryCardsData }: { summaryCardsData: any[] }) => (
+    <Card className="shadow-lg rounded-2xl animate-fade-in">
+        <CardHeader>
+            <CardTitle>Resumo do Dia</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+                {summaryCardsData.map((card, index) => (
+                     <div key={card.title} className="flex items-start gap-3 p-2 rounded-lg bg-secondary/30">
+                        <div className={cn("p-2 rounded-lg mt-1", card.color)}>
+                            <card.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-muted-foreground">{card.title}</p>
+                             <div className="flex items-baseline gap-1">
+                                <p className="text-2xl font-bold">{card.value}</p>
+                                <p className="text-sm text-muted-foreground">{card.unit}</p>
+                            </div>
+                            {card.goal != null && (
+                                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3"/> Meta: {card.goal.toLocaleString('pt-BR')} {card.unit}</p>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </CardContent>
+    </Card>
+)
+
 
 export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysisPage = false }: SummaryCardsProps) {
   const titlePrefix = isAnalysisPage ? 'Média ' : '';
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const summaryCardsData = [
     {
@@ -76,6 +107,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
       unit: 'g',
       icon: FaHamburger,
       color: 'bg-yellow-400',
+      goal: null, // No goal for carbs
     },
     {
       title: `${titlePrefix}Gorduras`,
@@ -83,8 +115,13 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
       unit: 'g',
       icon: Donut,
       color: 'bg-pink-400',
+      goal: null, // No goal for fats
     }
   ];
+
+  if (isMobile && !isAnalysisPage) {
+      return <MobileSummaryCard summaryCardsData={summaryCardsData} />;
+  }
 
   return (
     <div className="grid grid-cols-2 gap-4">
