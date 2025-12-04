@@ -79,7 +79,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       onClick={disabled ? (e) => e.preventDefault() : onClick}
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
-        !disabled && "hover:bg-accent/50",
+        !disabled && "hover:bg-accent/50 hover:text-primary",
         isActive && !disabled && "bg-primary/10 font-semibold text-primary",
         disabled && "cursor-not-allowed opacity-60"
       )}
@@ -232,64 +232,21 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="sticky top-0 z-30 flex h-header items-center gap-4 bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
-          <div className="flex items-center gap-4 [app-region:no-drag]">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-muted/40 md:flex md:flex-col no-print">
+         <div className="flex h-header items-center border-b px-6">
             <LogoDisplay />
-          </div>
-
-          <nav className="hidden md:flex items-center gap-1 mx-auto p-2 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
-              {renderNavLinks(false, true)}
-          </nav>
-          
-          <div className="flex items-center gap-2 md:gap-4 ml-auto [app-region:no-drag]">
-            <ThemeToggle />
-             <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full md:hidden">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={userProfile?.photoURL || user?.photoURL || ''} alt={userProfile?.fullName} />
-                      <AvatarFallback>{userProfile?.fullName?.[0]}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="flex flex-col p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <SheetHeader className="text-left p-6 pb-4">
-                        <SheetTitle>
-                            <p className='font-semibold'>{userProfile?.fullName}</p>
-                            <p className='text-sm font-normal text-muted-foreground'>{user?.email}</p>
-                        </SheetTitle>
-                    </SheetHeader>
-                    <div className="grid gap-2 p-6 pt-0">
-                        <SheetClose asChild>
-                            <Link href="/profile">
-                                <Button variant="outline" className="w-full justify-start gap-2">
-                                    <Settings className="h-4 w-4" />
-                                    <span>Configurações</span>
-                                </Button>
-                            </Link>
-                        </SheetClose>
-                    </div>
-                     <div className='mt-auto p-6 border-t'>
-                        <Button onClick={handleSignOut} variant='destructive' className='w-full justify-start gap-2'>
-                            <LogOut className="h-4 w-4" />
-                            <span>Sair</span>
-                        </Button>
-                    </div>
-                </SheetContent>
-            </Sheet>
-            <div className='hidden md:flex'>
-                <DashboardHeader
-                    user={user}
-                    userProfile={userProfile}
-                />
-            </div>
+         </div>
+        <SidebarContent />
+      </div>
+      <div className="flex flex-col">
+        <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
             <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="shrink-0 md:hidden"
+                        className="shrink-0 md:hidden [app-region:no-drag]"
                     >
                         <Menu className="h-5 w-5" />
                         <span className="sr-only">Toggle navigation menu</span>
@@ -309,14 +266,25 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
                     <SidebarContent isMobile />
                 </SheetContent>
             </Sheet>
-          </div>
-      </header>
-      <main className={cn(
-        "relative flex-1 bg-muted/40 print:bg-white print:p-0", 
-        pathname.startsWith('/chef') || pathname.startsWith('/live-analysis') ? 'overflow-hidden' : 'overflow-y-auto'
-      )}>
-        {children}
-      </main>
+
+            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 [app-region:no-drag]">
+                <div className="ml-auto flex-1 sm:flex-initial">
+                    {/* Pode adicionar um search bar aqui no futuro */}
+                </div>
+                <ThemeToggle />
+                <DashboardHeader
+                    user={user}
+                    userProfile={userProfile}
+                />
+            </div>
+        </header>
+        <main className={cn(
+          "relative flex flex-1 flex-col gap-4 bg-muted/40 print:bg-white print:p-0", 
+          pathname.startsWith('/chef') || pathname.startsWith('/live-analysis') ? 'overflow-hidden' : 'overflow-y-auto'
+        )}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
