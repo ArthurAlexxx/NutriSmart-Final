@@ -14,7 +14,7 @@ export function CTASection() {
                             <h2 className="text-3xl font-bold md:text-4xl font-heading">
                                 Sua melhor versão está esperando.
                             </h2>
-                            <p className="mt-4 text-lg text-primary-foreground/80 max-w-xl">
+                            <p className="mt-4 text-lg text-primary-foreground max-w-xl">
                                 Dê o primeiro passo hoje e descubra como a tecnologia pode simplificar sua jornada para uma vida mais saudável e feliz.
                             </p>
                         </div>
