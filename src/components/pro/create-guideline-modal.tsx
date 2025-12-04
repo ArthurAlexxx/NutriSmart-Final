@@ -76,8 +76,8 @@ export default function CreateGuidelineModal({ isOpen, onOpenChange, userId }: C
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 h-full flex flex-col">
-            <div className="flex-1 space-y-6 px-6">
+          <form id="create-guideline-form" onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
+            <div className="flex-1 space-y-6 px-6 overflow-y-auto">
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Título da Orientação *</FormLabel>
