@@ -240,8 +240,8 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-start">
+                <div className="xl:col-span-2 space-y-8">
                      <Collapsible open={isAddMealFormOpen} onOpenChange={setAddMealFormOpen}>
                         <CollapsibleContent>
                            <Card className="shadow-lg rounded-2xl w-full mb-8">
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-1 space-y-8">
+                <div className="md:col-span-2 xl:col-span-1 space-y-8">
                      <div id="summary-cards">
                         <SummaryCards
                             totalNutrients={totalNutrients}

@@ -250,54 +250,57 @@ export default function AnalysisPage() {
       <div className="w-full space-y-6 sm:space-y-8 relative">
         {isFeatureLocked && <SubscriptionOverlay />}
         <div className={cn("w-full space-y-6 sm:space-y-8", isFeatureLocked && 'blur-md pointer-events-none')}>
-          <div className="w-full space-y-6">
-            <SummaryCards
-              totalNutrients={totalNutrients}
-              nutrientGoals={userProfile ? { calories: userProfile.calorieGoal || 2000, protein: userProfile.proteinGoal || 140 } : undefined}
-              isAnalysisPage={true}
-            />
-            <p className="text-xs text-muted-foreground text-center -mt-2">
-              Médias calculadas para o período de {period} dias.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="w-full space-y-6">
+                <SummaryCards
+                totalNutrients={totalNutrients}
+                nutrientGoals={userProfile ? { calories: userProfile.calorieGoal || 2000, protein: userProfile.proteinGoal || 140 } : undefined}
+                isAnalysisPage={true}
+                />
+                <p className="text-xs text-muted-foreground text-center -mt-2">
+                Médias calculadas para o período de {period} dias.
+                </p>
+            </div>
+            <div className="space-y-6">
+                <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden">
+                    <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <div className="flex-1 text-center sm:text-left">
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <Settings className="h-5 w-5 text-primary" />
+                                    Opções de Visualização
+                                </CardTitle>
+                            </div>
+                            <div className="flex items-center gap-2 p-1.5 rounded-xl bg-secondary/50 border border-border/50 w-full sm:w-auto">
+                                {( [7, 15, 30] as Period[]).map(p => (
+                                    <Button 
+                                        key={p} 
+                                        onClick={() => setPeriod(p)}
+                                        variant={period === p ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className={cn("rounded-lg flex-1 sm:flex-initial transition-all duration-200", period === p && 'shadow-sm')}
+                                    >
+                                        <Calendar className="mr-2 h-4 w-4" /> {p} Dias
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                            {isGeneratingInsights ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Lightbulb className="mr-2 h-4 w-4" />
+                            )}
+                            Gerar Insights com IA
+                        </Button>
+                    </CardContent>
+                </Card>
+                 <InsightsCard insights={insights} isLoading={isGeneratingInsights} />
+            </div>
           </div>
           
-           <Card className="shadow-md rounded-2xl border-border/50 overflow-hidden">
-                <CardHeader className="bg-gradient-to-br from-secondary/30 to-transparent">
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                        <div className="flex-1 text-center sm:text-left">
-                            <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                <Settings className="h-5 w-5 text-primary" />
-                                Opções de Visualização
-                            </CardTitle>
-                        </div>
-                        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-secondary/50 border border-border/50 w-full sm:w-auto">
-                            {( [7, 15, 30] as Period[]).map(p => (
-                                <Button 
-                                    key={p} 
-                                    onClick={() => setPeriod(p)}
-                                    variant={period === p ? 'default' : 'ghost'}
-                                    size="sm"
-                                    className={cn("rounded-lg flex-1 sm:flex-initial transition-all duration-200", period === p && 'shadow-sm')}
-                                >
-                                    <Calendar className="mr-2 h-4 w-4" /> {p} Dias
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                     <Button onClick={handleGenerateInsights} disabled={isGeneratingInsights || isFeatureLocked} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-                        {isGeneratingInsights ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Lightbulb className="mr-2 h-4 w-4" />
-                        )}
-                        Gerar Insights com IA
-                    </Button>
-                </CardContent>
-           </Card>
-
-            <InsightsCard insights={insights} isLoading={isGeneratingInsights} />
             
             <div className={cn(isFeatureLocked && 'blur-md pointer-events-none')}>
               <ChartsView
