@@ -276,7 +276,7 @@ export async function analyzeMealFromPhotoAction(input: AnalyzeMealInput): Promi
 
     REGRAS DE ANÁLISE:
     1.  **IDENTIFICAÇÃO DETALHADA**: Identifique CADA alimento visível na imagem. Para cada um, estime a quantidade em gramas (g). Agrupe itens similares (ex: 'Folhas verdes').
-    2.  **CÁLCULO NUTRICIONAL**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. Os valores devem ser números.
+    2.  **CÁLCULO NUTRICIONAL (FONTE TACO)**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. **Utilize a Tabela Brasileira de Composição de Alimentos (TACO) como principal fonte para os valores nutricionais.** Os valores devem ser números.
     3.  **DESCRIÇÃO**: Crie uma descrição geral da refeição em uma única frase (campo 'description').
     4.  **AVALIAÇÃO DE SAUDABILIDADE**: Dê uma nota de 0 a 10 para o quão saudável a refeição é (campo 'rating'). O valor deve ser um número. Considere o equilíbrio de macronutrientes, a presença de vegetais, e o método de preparo aparente.
     5.  **JUSTIFICATIVA DA NOTA**: Forneça uma justificativa curta (1-2 frases) para a nota que você deu (campo 'ratingJustification').
@@ -369,7 +369,7 @@ export async function analyzeMealFromTextAction(input: AnalyzeMealFromTextInput)
 
     REGRAS DE ANÁLISE:
     1.  **INTERPRETAÇÃO**: Interprete a descrição do usuário para identificar os alimentos e suas quantidades. Use bom senso para estimar porções se não forem explícitas.
-    2.  **CÁLCULO NUTRICIONAL**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. Os valores devem ser números.
+    2.  **CÁLCULO NUTRICIONAL (FONTE TACO)**: Calcule os totais de **calories (calories)**, **proteínas (protein)**, **carboidratos (carbs)** e **gorduras (fat)** para a refeição completa. **Utilize a Tabela Brasileira de Composição de Alimentos (TACO) como principal fonte para os valores nutricionais.** Os valores devem ser números.
     3.  **DESCRIÇÃO**: Crie uma descrição geral da refeição em uma única frase (campo 'description').
     4.  **AVALIAÇÃO DE SAUDABILIDADE**: Dê uma nota de 0 a 10 para o quão saudável a refeição é (campo 'rating').
     5.  **JUSTIFICATIVA DA NOTA**: Forneça uma justificativa curta (1-2 frases) para a nota que você deu (campo 'ratingJustification').
