@@ -12,7 +12,6 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { InstallPWAButton } from './install-pwa-button';
 import Link from 'next/link';
-import { ThemeToggle } from './ui/theme-toggle';
 
 
 interface DashboardHeaderProps {
@@ -40,7 +39,6 @@ export default function DashboardHeader({ user, userProfile }: DashboardHeaderPr
     <>
       <div className="flex items-center gap-2">
           <InstallPWAButton />
-          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button id="user-profile-button" variant="ghost" className="relative h-10 w-10 rounded-full">
