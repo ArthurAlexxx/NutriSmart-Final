@@ -61,8 +61,8 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           onClick={disabled ? (e) => e.preventDefault() : onClick}
           className={cn(
             "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            !disabled && "hover:bg-accent hover:text-accent-foreground",
-            isActive && !disabled && "bg-background text-foreground shadow-sm",
+            !disabled && "hover:bg-primary/10 hover:text-primary",
+            isActive && !disabled && "bg-primary/10 text-primary",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
@@ -111,7 +111,7 @@ const LogoDisplay = () => {
             width={140}
             height={35}
             priority
-            style={{ height: 'auto' }}
+            style={{ height: 35, width: 'auto' }}
         />
     );
 
