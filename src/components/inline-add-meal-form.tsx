@@ -68,7 +68,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
     resolver: zodResolver(manualFormSchema),
     defaultValues: {
       mealType: '',
-      foods: [{ name: '', portion: NaN, unit: '' }],
+      foods: [{ name: '', portion: NaN, unit: 'g' }],
     },
     disabled: disabled
   });
@@ -111,7 +111,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
       
       setProgress(100);
       await saveMeal(data.mealType, mealData);
-      manualForm.reset({ mealType: '', foods: [{ name: '', portion: NaN, unit: '' }] });
+      manualForm.reset({ mealType: '', foods: [{ name: '', portion: NaN, unit: 'g' }] });
       onMealAdded();
 
     } catch (error: any) {
@@ -338,7 +338,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Alimentos *</h3>
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: '' })} disabled={disabled}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', portion: NaN, unit: 'g' })} disabled={disabled}>
                       <Plus className="mr-2 h-4 w-4" /> Adicionar
                     </Button>
                   </div>
@@ -454,7 +454,7 @@ export default function InlineAddMealForm({ userId, onMealAdded, disabled = fals
                 />
 
                 {imagePreview && isPhotoFeatureAvailable && (
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border mt-4">
+                  <div className="relative w-full max-w-sm mx-auto h-48 rounded-lg overflow-hidden border mt-4">
                     <img src={imagePreview} alt="Preview da refeição" className="w-full h-full object-cover"/>
                     <Button
                       type="button"
