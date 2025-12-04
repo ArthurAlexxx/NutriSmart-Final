@@ -62,7 +62,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           className={cn(
             "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
             !disabled && "hover:bg-accent hover:text-accent-foreground",
-            isActive && !disabled && "bg-primary/10 text-primary",
+            isActive && !disabled && "bg-primary text-primary-foreground",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
@@ -80,7 +80,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       className={cn(
         "flex items-center gap-4 rounded-lg px-4 py-3 text-lg md:text-base md:py-2 md:px-3 text-muted-foreground transition-all",
         !disabled && "hover:bg-accent hover:text-accent-foreground",
-        isActive && !disabled && "bg-primary text-primary-foreground font-semibold hover:bg-primary/90 hover:text-primary-foreground",
+        isActive && !disabled && "bg-primary/10 font-semibold text-primary",
         disabled && "cursor-not-allowed opacity-60"
       )}
       aria-disabled={disabled}
@@ -238,7 +238,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
             <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-2 mx-auto p-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
+          <nav className="hidden md:flex items-center gap-4 mx-auto p-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-lg">
               {renderNavLinks(false, true)}
           </nav>
           
