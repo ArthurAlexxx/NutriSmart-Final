@@ -62,7 +62,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
           className={cn(
             "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
             !disabled && "hover:bg-accent hover:text-accent-foreground",
-            isActive && !disabled && "bg-primary text-primary-foreground",
+            isActive && !disabled && "bg-primary/80 text-primary-foreground",
             disabled && "cursor-not-allowed opacity-60"
           )}
           aria-disabled={disabled}
