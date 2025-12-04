@@ -87,7 +87,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       aria-disabled={disabled}
     >
         <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-        <span className={cn(isActive && "text-foreground font-semibold")}>{label}</span>
+        <span className={cn(isActive ? "text-foreground font-semibold" : "text-muted-foreground", 'text-foreground')}>{label}</span>
     </Link>
   );
 };
@@ -238,7 +238,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
+      <header className="sticky top-0 z-30 flex h-header items-center gap-4 bg-muted/40 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
           <div className="md:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
