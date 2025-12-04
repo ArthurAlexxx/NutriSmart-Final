@@ -233,7 +233,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="sticky top-0 z-30 flex h-header items-center gap-4 bg-background/95 px-4 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
+      <header className="sticky top-0 z-30 flex h-header items-center gap-4 bg-background/95 px-4 py-3 backdrop-blur-lg sm:px-6 no-print [app-region:drag]">
           <div className="flex items-center gap-4 [app-region:no-drag]">
             <LogoDisplay />
           </div>
