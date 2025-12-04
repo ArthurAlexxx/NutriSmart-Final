@@ -87,7 +87,7 @@ const NavLink = ({ id, href, label, icon: Icon, pathname, onClick, disabled = fa
       )}
       aria-disabled={disabled}
     >
-        <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "")} />
+        <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-foreground")} />
         <span className={cn(isActive ? "text-foreground font-semibold" : "text-muted-foreground")}>{label}</span>
     </Link>
   );
@@ -272,7 +272,7 @@ export default function AppLayout({ user, userProfile, onProfileUpdate, children
              <LogoDisplay />
           </div>
 
-          <nav className="hidden md:flex items-center gap-1 mx-auto p-1.5 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-md">
+          <nav className="hidden md:flex items-center gap-1 mx-auto p-1.5 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 shadow-md dark:shadow-md-dark">
             {renderNavLinks(false, true)}
           </nav>
 
