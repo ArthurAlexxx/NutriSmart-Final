@@ -28,61 +28,14 @@ import { PageHeader } from '@/components/page-header';
 import Link from 'next/link';
 import GoalsModal from '@/components/goals-modal';
 
-// --- START: Mock Data for Screenshot ---
-const MOCK_MEAL_ENTRIES: MealEntry[] = [
-  {
-    id: 'mock1',
-    userId: 'mock-user',
-    date: getLocalDateString(new Date()),
-    mealType: 'cafe-da-manha',
-    createdAt: new Date(),
-    mealData: {
-      alimentos: [{ name: 'Ovos mexidos com queijo e uma fatia de pão integral.', portion: 1, unit: 'un', calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }],
-      totais: { calorias: 350, proteinas: 25, carboidratos: 20, gorduras: 18, fibras: 5 },
-    },
-  },
-  {
-    id: 'mock2',
-    userId: 'mock-user',
-    date: getLocalDateString(new Date()),
-    mealType: 'almoco',
-    createdAt: new Date(),
-    mealData: {
-      alimentos: [{ name: '150g de peito de frango grelhado, 100g de arroz branco e salada.', portion: 1, unit: 'un', calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }],
-      totais: { calorias: 550, proteinas: 45, carboidratos: 40, gorduras: 20, fibras: 8 },
-    },
-  },
-    {
-    id: 'mock3',
-    userId: 'mock-user',
-    date: getLocalDateString(new Date()),
-    mealType: 'lanche',
-    createdAt: new Date(),
-    mealData: {
-      alimentos: [{ name: 'Iogurte Grego com frutas vermelhas e amêndoas.', portion: 1, unit: 'un', calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }],
-      totais: { calorias: 250, proteinas: 18, carboidratos: 15, gorduras: 12, fibras: 4 },
-    },
-  },
-];
-
-const MOCK_HYDRATION_ENTRY: HydrationEntry = {
-    id: 'mock-hydration',
-    userId: 'mock-user',
-    date: getLocalDateString(new Date()),
-    intake: 1750,
-    goal: 2500,
-};
-// --- END: Mock Data for Screenshot ---
-
 
 export default function DashboardPage() {
   const db = useFirestore();
   const { user, userProfile, onProfileUpdate } = useUser();
   const router = useRouter();
 
-  // Use mock data directly instead of fetching from Firestore
-  const [mealEntries, setMealEntries] = useState<MealEntry[]>(MOCK_MEAL_ENTRIES);
-  const [hydrationEntries, setHydrationEntries] = useState<HydrationEntry[]>([MOCK_HYDRATION_ENTRY]);
+  const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
+  const [hydrationEntries, setHydrationEntries] = useState<HydrationEntry[]>([]);
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const { toast } = useToast();
   
@@ -92,14 +45,11 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    // This effect can be kept for user authentication checks
     if (!user) {
-      // router.push('/login'); // We can disable redirect for screenshot purposes if needed
+       // O RootLayoutContent já cuida do redirecionamento
     }
   }, [user, router]);
   
-  /*
-  // --- REAL DATA FETCHING (Temporarily Disabled) ---
   useEffect(() => {
     if (!user || !db) return;
 
@@ -137,7 +87,6 @@ export default function DashboardPage() {
     };
 
   }, [user, db, toast]);
-  */
 
   const handleMealDeleted = useCallback(async (entryId: string) => {
     if (!db || !user) return;
