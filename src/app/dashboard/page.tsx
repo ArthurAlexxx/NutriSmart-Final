@@ -242,7 +242,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-grow">
-                <div className="lg:col-span-8 xl:col-span-9 space-y-8">
+                <div className="lg:col-span-8 space-y-8">
                      <Collapsible open={isAddMealFormOpen} onOpenChange={setAddMealFormOpen}>
                         <CollapsibleContent>
                            <Card className="shadow-lg rounded-2xl w-full mb-8">
@@ -258,12 +258,12 @@ export default function DashboardPage() {
                         />
                      )}
 
-                    <Card className="shadow-sm rounded-2xl w-full flex flex-col h-[700px] md:h-auto">
+                    <Card className="shadow-sm rounded-2xl w-full flex flex-col h-auto">
                         <CardHeader>
                             <CardTitle>Refeições de Hoje</CardTitle>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                            <ScrollArea className="h-full pr-4 -mr-4">
+                            <ScrollArea className="h-[500px] pr-4 -mr-4">
                                 <ConsumedFoodsList 
                                     mealEntries={todayMeals} 
                                     onMealDeleted={handleMealDeleted}
@@ -273,7 +273,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-4 xl:col-span-3 space-y-8">
+                <div className="lg:col-span-4 space-y-8">
                      <div id="summary-cards">
                         <SummaryCards
                             totalNutrients={totalNutrients}
