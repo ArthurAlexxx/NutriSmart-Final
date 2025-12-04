@@ -7,6 +7,7 @@ import { Target, Rocket, Flame, Donut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FaHamburger } from 'react-icons/fa';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { Progress } from './ui/progress';
 
 interface SummaryCardsProps {
   totalNutrients: {
@@ -50,30 +51,35 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color, goal }: { title: s
     );
 };
 
-const MobileSummaryCard = ({ summaryCardsData }: { summaryCardsData: any[] }) => (
+const MobileSummaryCard = ({ summaryCardsData, totalNutrients, nutrientGoals }: { summaryCardsData: any[], totalNutrients: SummaryCardsProps['totalNutrients'], nutrientGoals?: SummaryCardsProps['nutrientGoals'] }) => (
     <Card className="shadow-lg rounded-2xl animate-fade-in">
         <CardHeader>
             <CardTitle>Resumo do Dia</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-                {summaryCardsData.map((card, index) => (
-                     <div key={card.title} className="flex items-start gap-3 p-2 rounded-lg bg-secondary/30">
-                        <div className={cn("p-2 rounded-lg mt-1", card.color)}>
-                            <card.icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-semibold text-muted-foreground">{card.title}</p>
-                             <div className="flex items-baseline gap-1">
-                                <p className="text-2xl font-bold">{card.value}</p>
-                                <p className="text-sm text-muted-foreground">{card.unit}</p>
+            <div className="space-y-4">
+                {summaryCardsData.map((card, index) => {
+                    const goal = card.title === 'Calorias' ? nutrientGoals?.calories : (card.title === 'Proteínas' ? nutrientGoals?.protein : null);
+                    const value = card.title === 'Calorias' ? totalNutrients.calorias : (card.title === 'Proteínas' ? totalNutrients.proteinas : (card.title === 'Carboidratos' ? totalNutrients.carboidratos : totalNutrients.gorduras));
+                    const progressValue = (goal && value) ? Math.min((value / goal) * 100, 100) : 0;
+                    
+                    return (
+                        <div key={card.title} className="space-y-2">
+                            <div className="flex justify-between items-center text-sm font-medium">
+                                <div className='flex items-center gap-2'>
+                                    <div className={cn("p-1.5 rounded-md", card.color)}>
+                                        <card.icon className="h-4 w-4 text-white" />
+                                    </div>
+                                    <span className="text-muted-foreground">{card.title}</span>
+                                </div>
+                                <span className='font-bold text-foreground'>{card.value}{card.unit}</span>
                             </div>
-                            {card.goal != null && (
-                                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3"/> Meta: {card.goal.toLocaleString('pt-BR')} {card.unit}</p>
+                            {goal != null && (
+                                <Progress value={progressValue} className='h-2' indicatorClassName={card.color} />
                             )}
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </CardContent>
     </Card>
@@ -120,7 +126,7 @@ export default function SummaryCards({ totalNutrients, nutrientGoals, isAnalysis
   ];
 
   if (isMobile && !isAnalysisPage) {
-      return <MobileSummaryCard summaryCardsData={summaryCardsData} />;
+      return <MobileSummaryCard summaryCardsData={summaryCardsData} totalNutrients={totalNutrients} nutrientGoals={nutrientGoals}/>;
   }
 
   return (
