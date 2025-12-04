@@ -1,23 +1,18 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
-import { Poppins, Lexend } from 'next/font/google';
+import { Satisfy } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import RootLayoutContent from './layout-content';
 import { ThemeProvider } from '@/components/theme-provider';
 
-const poppins = Poppins({
+const satisfy = Satisfy({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '700', '800'],
-  variable: '--font-poppins',
+  weight: ['400'],
+  variable: '--font-satisfy',
 });
 
-const lexend = Lexend({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-lexend',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -51,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${lexend.variable} !scroll-smooth h-full`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${satisfy.variable} !scroll-smooth h-full`} suppressHydrationWarning>
       <head />
       <body className='h-full'>
         <ThemeProvider

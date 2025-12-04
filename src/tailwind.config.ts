@@ -22,8 +22,8 @@ export default {
         'main': 'calc(100vh - var(--header-height))',
       },
       fontFamily: {
-        sans: ['var(--font-poppins)', 'sans-serif'],
-        heading: ['var(--font-lexend)', 'sans-serif'],
+        sans: ['var(--font-satisfy)', 'cursive'],
+        heading: ['var(--font-satisfy)', 'cursive'],
       },
       boxShadow: {
         // Default (light mode) shadows
